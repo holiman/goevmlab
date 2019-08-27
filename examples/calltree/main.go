@@ -157,8 +157,6 @@ func runit() error{
 		//	Tracer: &dumbTracer{},
 		//},
 	}
-	//trace.Start(os.Stderr)
-	//defer trace.Stop()
 	// Diagnose it
 	t0 := time.Now()
 	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
