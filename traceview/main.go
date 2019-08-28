@@ -15,10 +15,13 @@ const (
 )
 
 type viewManager struct {
+	trace *traces.Traces
+
 	traceView *tview.Table
 	stackView *tview.Table
 	memView   *tview.Table
 	opView    *tview.Form
+	root      *tview.Grid
 }
 
 func NewViewManager(trace *traces.Traces) *viewManager {
@@ -41,11 +44,20 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 	mem := tview.NewTable()
 	mem.SetTitle("Memory").SetBorder(true)
 
+	root := tview.NewGrid().
+		SetRows(3, 0, 15, 3).
+		SetColumns(0, 80).
+		SetBorders(true).
+		AddItem(newPrimitive("Header"), 0, 0, 1, 2, 0, 0, false).
+		AddItem(newPrimitive("Footer"), 3, 0, 1, 2, 0, 0, false)
+
 	mgr := viewManager{
+		trace:     trace,
 		traceView: ops,
 		opView:    opView,
 		stackView: stack,
 		memView:   mem,
+		root:      root,
 	}
 
 	mgr.init(trace)
@@ -53,20 +65,13 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 	//focus := 0
 	//focusOrder := [ops, opView, stack, mem]
 
-	grid := tview.NewGrid().
-		SetRows(3, 0, 15, 3).
-		SetColumns(0, 80).
-		SetBorders(true).
-		AddItem(newPrimitive("Header"), 0, 0, 1, 2, 0, 0, false).
-		AddItem(newPrimitive("Footer"), 3, 0, 1, 2, 0, 0, false)
-
 	// Layout for screens narrower than 100 cells (menu and side bar are hidden).
 	//grid.AddItem(menu, 0, 0, 0, 0, 0, 0, false).
 	//	AddItem(main, 1, 0, 1, 3, 0, 0, false).
 	//	AddItem(sideBar, 0, 0, 0, 0, 0, 0, false)
 
 	// Layout for screens wider than 100 cells.
-	grid.
+	root.
 		AddItem(opView, 1, 1, 1, 1, 0, 50, false).
 		AddItem(stack, 2, 0, 1, 1, 0, 50, false).
 		AddItem(mem, 2, 1, 1, 1, 0, 50, false).
@@ -81,12 +86,15 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 	//	}
 	//})
 
-	if err := tview.NewApplication().SetRoot(grid, true).Run(); err != nil {
-		panic(err)
-	}
 	return &mgr
 }
 
+// Starts the UI compoments
+func (mgr *viewManager) Run() {
+	if err := tview.NewApplication().SetRoot(mgr.root, true).Run(); err != nil {
+		panic(err)
+	}
+}
 func setHeadings(headings []string, table *tview.Table) {
 
 	table.SetFixed(1, 0).SetSelectable(false, false)
@@ -133,9 +141,14 @@ func (mgr *viewManager) onStepSelected(line *traces.TraceLine) {
 				mgr.stackView.SetCell(i+1, 2, tview.NewTableCell(popDescriptors[i]))
 			}
 		}
+		mgr.stackView.ScrollToBeginning()
 	}
 	{ // Update the mem view
-		traces.ShowHex(line.Memory(), mgr.memView)
+		var prevMem []byte
+		if prevOp := mgr.trace.Get(int(line.Step()) - 1); prevOp != nil {
+			prevMem = prevOp.Memory()
+		}
+		traces.ShowHex(line.Memory(), prevMem, mgr.memView)
 	}
 }
 
@@ -178,9 +191,9 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 				data := elem.Get(title)
 				table.SetCell(row, col, tview.NewTableCell(data))
 			}
-			if i == 100 {
-				break
-			}
+			//if i == 100 {
+			//	break
+			//}
 		}
 	}
 	{ // Stack
@@ -191,14 +204,17 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 
 func main() {
 
-	//trace, err := traces.ReadTrace("/home/user/go/src/github.com/holiman/goevmlab/testdata/traces/geth_nomemory.jsonl")
-	//trace, err := traces.ReadTrace("/home/user/go/src/github.com/holiman/goevmlab/testdata/traces/geth_memory.jsonl")
-	trace, err := traces.ReadTrace("/home/user/go/src/github.com/holiman/goevmlab/testdata/traces/geth_traceTransaction.json")
+	//trace, err := traces.ReadFile("../testdata/traces/geth_nomemory.jsonl")
+	//trace, err := traces.ReadFile("../testdata/traces/geth_memory.jsonl")
+	//trace, err := traces.ReadFile("../testdata/traces/geth_traceTransaction.json")
+
+	trace, err := traces.ReadFile("../testdata/traces/14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy")
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 
-	NewViewManager(trace)
+	mgr := NewViewManager(trace)
+	mgr.Run()
 
 }

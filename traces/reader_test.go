@@ -2,12 +2,13 @@ package traces
 
 import (
 	"fmt"
-	"github.com/holiman/goevmlab/ops"
-
-	//"github.com/holiman/goevmlab/ops"
 	"io/ioutil"
 	"path"
+	"strings"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/goevmlab/ops"
 )
 
 var (
@@ -21,18 +22,24 @@ func TestReaderBasics(t *testing.T) {
 		t.Fatalf("error reading files: %v", err)
 	}
 	for _, f := range files {
-		p := path.Join(testDir, f.Name())
-		_, err = ReadTrace(p)
-		if err != nil {
-			t.Errorf("err reading %v: %v", p, err)
+		if strings.HasSuffix(f.Name(), "jsonl") ||
+			strings.HasSuffix(f.Name(), "json") ||
+			strings.HasSuffix(f.Name(), "snappy") {
+			p := path.Join(testDir, f.Name())
+			_, err = ReadFile(p)
+			if err != nil {
+				t.Errorf("err reading %v: %v", p, err)
+			}
+			fmt.Printf("read %v\n", p)
+		} else {
+			fmt.Printf("skipped %v\n", f.Name())
 		}
-		fmt.Printf("read %v\n", p)
 	}
 }
 
 func TestParityReading(t *testing.T) {
 	p := path.Join(testDir, "parity_1352.jsonl")
-	traces, err := ReadTrace(p)
+	traces, err := ReadFile(p)
 	if err != nil {
 		t.Fatalf("err reading %v: %v", p, err)
 	}
@@ -53,7 +60,7 @@ func TestParityReading(t *testing.T) {
 
 func TestTraceTransactionReading(t *testing.T) {
 	p := path.Join(testDir, "geth_traceTransaction.json")
-	traces, err := ReadTrace(p)
+	traces, err := ReadFile(p)
 	if err != nil {
 		t.Fatalf("err reading %v: %v", p, err)
 	}
@@ -94,12 +101,59 @@ func TestTraceTransactionReading(t *testing.T) {
 	}
 }
 
+// Tests the file 14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json,
+// which was obtained from
+// https://github.com/aragon/aragonOS/issues/549
+func TestSecondTraceTxReading(t *testing.T) {
+	p := path.Join(testDir, "14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy")
+	traces, err := ReadFile(p)
+	if err != nil {
+		t.Fatalf("err reading %v: %v", p, err)
+	}
+	{
+		exp := 13024
+		if got := len(traces.Ops); got != exp {
+			t.Fatalf("trace length wrong, got %d, expected %d", got, exp)
+		}
+	}
+	{
+		exp := byte(0x61)
+		if got := traces.Get(12257).Op(); got != exp {
+			t.Fatalf("op wrong, got %x, expected %x", got, exp)
+		}
+	}
+
+	{
+		exp := common.HexToAddress("0x3c307fefd3d71c3ca8a3c26539ef4d47c61b6565")
+		if got := traces.Get(157).address; got == nil || *got != exp {
+			t.Fatalf("op wrong, got %x, expected %x", got, exp)
+		}
+	}
+	{ // At step 495, we should be back to depth 1,
+		exp := traces.Get(1).address
+		if got := traces.Get(495).address; got != exp {
+			t.Fatalf("op wrong, got %x, expected %x", got, exp)
+		}
+	}
+
+	// The example trace is a bit corrupt, reporting wrong gas values.
+	// Nothing we can do about it here....
+	//{
+	//	// Push2 gascost is 3
+	//	exp := "3"
+	//	if got := traces.Get(12257).Get("gasCost"); got != exp {
+	//		t.Fatalf("gascost wrong, got %v, expected %v", got, exp)
+	//	}
+	//
+	//}
+}
+
 func TestParityVsGeth(t *testing.T) {
-	pTrace, err := ReadTrace(path.Join(testDir, "parity_1352.jsonl"))
+	pTrace, err := ReadFile(path.Join(testDir, "parity_1352.jsonl"))
 	if err != nil {
 		t.Fatalf("err reading  parity: %v", err)
 	}
-	gTrace, err := ReadTrace(path.Join(testDir, "geth_1352.jsonl"))
+	gTrace, err := ReadFile(path.Join(testDir, "geth_1352.jsonl"))
 	if err != nil {
 		t.Fatalf("err reading geth: %v", err)
 	}
@@ -129,3 +183,20 @@ func TestParityVsGeth(t *testing.T) {
 		}
 	}
 }
+
+/*
+// Convenience func to re-encode some input files
+func TestReEncodeTrace(t *testing.T){
+	src := path.Join(testDir, "14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json")
+	dst := path.Join(testDir, "14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy")
+	data, err := ioutil.ReadFile(src)
+	if err != nil{
+		t.Fatal(err)
+	}
+	snapdata := snappy.Encode(nil, data)
+	err = ioutil.WriteFile(dst, snapdata, 0744)
+	if err != nil{
+		t.Fatal(err)
+	}
+}
+*/

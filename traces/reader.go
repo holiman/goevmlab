@@ -2,21 +2,24 @@ package traces
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/golang/snappy"
 	"github.com/holiman/goevmlab/ops"
+	"io"
 	"io/ioutil"
 	"math/big"
-	"os"
 	"strings"
 )
 
 type TraceLine struct {
-	step uint64
-	log  *vm.StructLog
+	step    uint64
+	address *common.Address
+	log     *vm.StructLog
 }
 
 type Traces struct {
@@ -53,6 +56,10 @@ func (t *TraceLine) Get(title string) string {
 		return fmt.Sprintf("%d", op.RefundCounter)
 	case "memsize":
 		return fmt.Sprintf("%d", op.MemorySize)
+	case "address", "addr":
+		if t.address != nil {
+			return t.address.Hex()
+		}
 	}
 	return "NA"
 }
@@ -67,6 +74,13 @@ func (t *TraceLine) Memory() []byte {
 
 func (t *TraceLine) Op() byte {
 	return byte(t.log.Op)
+}
+func (t *TraceLine) Step() uint64 {
+	return t.step
+}
+
+func (t *TraceLine) Depth() int {
+	return t.log.Depth
 }
 
 func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
@@ -126,7 +140,7 @@ type traceTxResult struct {
 	Logs []traceTxLog `json:"structLogs"`
 	// + some other fields we don't particularly care about
 }
-type traceTxData struct {
+type traceTxRPCResponse struct {
 	Result traceTxResult `json:"result"`
 	// + some other fields we don't particularly care about
 }
@@ -182,27 +196,36 @@ func parseMem(memStrings []interface{}) []byte {
 }
 
 // readJson attempts to slurp the file as a JSON file
-func readJson(location string) (*Traces, error) {
-
-	data, err := ioutil.ReadFile(location)
-	if err != nil {
-		return nil, err
-	}
-
+func readJson(data []byte) (*Traces, error) {
 	var (
-		traceData traceTxData
+		traceData traceTxRPCResponse
 		traces    Traces
 	)
-	err = json.Unmarshal(data, &traceData)
+	// Attempt one: read directly into traceTxResult,
+	// This will succeed if the file consist of the actual
+	// 'result', but not the full RPC response
+	err := json.Unmarshal(data, &traceData.Result)
 	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
+	if traceData.Result.Logs == nil {
+		// Attempt two: read into traceTxRPCResponse, in case
+		// the file is the complete RPC response from a
+		// traceTransaction invocation
+		err = json.Unmarshal(data, &traceData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	for step, log := range traceData.Result.Logs {
 		structLog := &vm.StructLog{
 			Depth:   int(log.Depth),
 			Pc:      log.Pc,
 			GasCost: log.GasCost,
-			Gas: log.Gas,
+			Gas:     log.Gas,
 			Op:      vm.OpCode(ops.StringToOp(log.Op)),
 		}
 		stack, err := parseStack(log.Stack)
@@ -222,18 +245,12 @@ func readJson(location string) (*Traces, error) {
 
 // readJsonLines attempts to read the file as json-lines, line by line
 // delimited json objects
-func readJsonLines(location string) (*Traces, error) {
-
-	f, err := os.Open(location)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
+func readJsonLines(input io.Reader) (*Traces, error) {
 
 	var traces Traces
 	step := uint64(0)
 	// Read line by line
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		l := scanner.Text()
 		obj := make(map[string]interface{})
@@ -258,18 +275,40 @@ func readJsonLines(location string) (*Traces, error) {
 		}
 
 	}
-	if err = scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		traces.Errs = append(traces.Errs, err.Error())
 	}
 	return &traces, nil
 
 }
 
-// ReadTrace opens a file containing a trace
-func ReadTrace(location string) (*Traces, error) {
-	t, err := readJsonLines(location)
+// ReadFile reads a trace from either a json-lines file or json-file, optionally
+// snappy encoded
+func ReadFile(location string) (*Traces, error) {
+	var (
+		err  error
+		data []byte
+	)
+	data, err = ioutil.ReadFile(location)
 	if err != nil {
-		t, err = readJson(location)
+		return nil, err
+	}
+	if strings.HasSuffix(location, "snappy") {
+		data, err = snappy.Decode(nil, data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// First attempt to read as JSON struct
+	t, err := readJson(data)
+	if err != nil {
+		// Second attempt, read as json lines.
+		// Need to reset the input
+		t, err = readJsonLines(bytes.NewReader(data))
+	}
+	// Do a second pass to assign addresses, where applicable
+	if err == nil {
+		AnalyzeCalls(t)
 	}
 	return t, err
 }
