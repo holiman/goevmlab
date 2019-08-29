@@ -78,6 +78,8 @@ func (p *program) Push(val interface{}) {
 		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
 	case *common.Address:
 		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
+	case nil:
+		p.pushBig(nil)
 	default:
 		panic(fmt.Sprintf("unsupported type %v", v))
 	}

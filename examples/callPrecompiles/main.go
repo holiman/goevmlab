@@ -45,17 +45,11 @@ func (d *dumbTracer) CaptureStart(from common.Address, to common.Address, call b
 }
 
 func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
-	if op == vm.CALL {
-		if depth == 1 {
-			fmt.Println("")
-		} else {
-			d.counter++
-		}
-		if depth < 2 {
-			fmt.Printf("(%d: %d)", depth, gas)
-		}
-
+	if op == vm.STATICCALL {
+		//fmt.Printf("%v: %v\n", pc, op.String())
+		d.counter++
 	}
+	//fmt.Printf("gas: %d\n", gas)
 	return nil
 }
 
@@ -80,35 +74,38 @@ func main() {
 
 func runit() error {
 	a := program.NewProgram()
-	b := program.NewProgram()
 
 	aAddr := common.HexToAddress("0xff0a")
-	bAddr := common.HexToAddress("0xff0b")
 
-	dest := a.Jumpdest()
-	a.Call(nil, bAddr, nil, 0, 0, 0, 0)
-	a.Jump(dest)
+	/*
+	nop
+	JUMPDEST    // []
+	MSIZE       // [0] out size
+	MSIZE       // [0,0] out offset
+	MSIZE       // [0,0,0] insize
+	MSIZE       // [0,0,0,0] inoffset
+	PUSH1 4     // [0,0,0,0,4] address
+	GAS         // [0,0,0,0,4,gas] Gas
+	STATICCALL  // [1] pops 6, pushes 1
+	JUMP        // []
 
-	// The self-call can be done a bit more clever, gas-wise
+	 */
 
-	b.Op(vm.PC)      // get zero on stack (out size)
-	b.Op(vm.DUP1)    // out offset
-	b.Op(vm.DUP1)    // insize
-	b.Op(vm.DUP1)    // inoffset
-	b.Op(vm.DUP1)    // value
-	b.Op(vm.ADDRESS) // address
-	b.Op(vm.GAS)     // Gas
-	b.Op(vm.CALL)
+	a.Op(vm.PC)
+	a.Op(vm.JUMPDEST)
+	a.Op(vm.MSIZE)
+	a.Op(vm.MSIZE)
+	a.Op(vm.MSIZE)
+	a.Op(vm.MSIZE)
+	a.Push(4)
+	a.Op(vm.GAS)
+	a.Op(vm.STATICCALL)
+	a.Op(vm.JUMP)
 
 	alloc := make(core.GenesisAlloc)
 	alloc[aAddr] = core.GenesisAccount{
 		Nonce:   0,
 		Code:    a.Bytecode(),
-		Balance: big.NewInt(0xffffffff),
-	}
-	alloc[bAddr] = core.GenesisAccount{
-		Nonce:   0,
-		Code:    b.Bytecode(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	//-------------
@@ -163,9 +160,11 @@ func runit() error {
 	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 	fmt.Printf("Time elapsed: %v\n", t1)
-	t0 = time.Now()
-	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
-	t1 = time.Since(t0)
-	fmt.Printf("Time elapsed: %v\n", t1)
+	for i:=0 ; i < 3; i++{
+		t0 = time.Now()
+		_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
+		t1 = time.Since(t0)
+		fmt.Printf("Time elapsed: %v\n", t1)
+	}
 	return err
 }
