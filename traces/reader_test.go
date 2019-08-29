@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	testDir = "../testdata/traces"
+	testDir = "testdata/"
 )
 
 // Tries to read all files in testdata/traces
