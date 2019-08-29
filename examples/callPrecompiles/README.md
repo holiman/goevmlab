@@ -91,6 +91,16 @@ Time elapsed: 148.180509ms
 ```
 I think `~150ms` is closest to the truth. 
 
+If we mod `geth` a bit more, to remove those `15` gas, the results are
+, with `161291` loops:
+
+```
+Time elapsed: 342.355984ms
+Time elapsed: 190.665687ms
+Time elapsed: 196.041588ms
+Time elapsed: 199.760443ms
+```
+Still around `200ms`.
 
 ## Summary
 
