@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/holiman/goevmlab/fuzzing"
 	"os"
 
 	"github.com/holiman/goevmlab/evms"
@@ -40,12 +41,12 @@ func testCompare(a, b evms.Evm, testfile string) {
 
 func main() {
 
-	//file := "/home/user/workspace/tests/GeneralStateTests/stPreCompiledContracts2/CALLBlake2f.json"
-	file := "/home/user/go/src/github.com/holiman/goevmlab/testdata/statetests/0003--randomStatetestmartin-Wed_10_02_29-14338-0-3-test.json"
+	// generate a test
 
+	//file := "/home/user/workspace/tests/GeneralStateTests/stPreCompiledContracts2/CALLBlake2f.json"
+	file := "/home/user/go/src/github.com/holiman/goevmlab/evms/testdata/statetest1.json"
 	geth := evms.NewGethEVM("/home/user/go/src/github.com/ethereum/go-ethereum/build/bin/evm")
-	//testEvm(geth, file)
 	parity := evms.NewParityVM("/home/user/go/src/github.com/holiman/goevmlab/parity-evm")
-	//testEvm(parity, file)
 	testCompare(geth, parity, file)
+	fmt.Printf("Done\n")
 }

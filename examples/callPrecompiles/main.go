@@ -150,21 +150,21 @@ func runit() error {
 			PetersburgBlock:     new(big.Int),
 			IstanbulBlock:       new(big.Int),
 		},
-		//EVMConfig: vm.Config{
-		//	Debug:  true,
-		//	Tracer: &dumbTracer{},
-		//},
+		EVMConfig: vm.Config{
+			Debug:  true,
+			Tracer: &dumbTracer{},
+		},
 	}
 	// Diagnose it
 	t0 := time.Now()
 	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 	fmt.Printf("Time elapsed: %v\n", t1)
-	for i:=0 ; i < 3; i++{
-		t0 = time.Now()
-		_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
-		t1 = time.Since(t0)
-		fmt.Printf("Time elapsed: %v\n", t1)
-	}
+	//for i:=0 ; i < 3; i++{
+	//	t0 = time.Now()
+	//	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
+	//	t1 = time.Since(t0)
+	//	fmt.Printf("Time elapsed: %v\n", t1)
+	//}
 	return err
 }

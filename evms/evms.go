@@ -1,8 +1,8 @@
 package evms
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/vm"
 )
 
 // The Evm interface represents external EVM implementations, which can
@@ -10,77 +10,58 @@ import (
 type Evm interface {
 	// StartStateTest runs the statetest on the underlying EVM. It returns a channel
 	// where the trace-output is delivered.
-	StartStateTest(path string) (chan *OutputItem, error)
+	StartStateTest(path string) (chan *vm.StructLog, error)
 	//Open() // Preparare for execution
 	Close() // Tear down processes
 }
 
-// OutputItem is what the EVMs spit out, representing an event during the trace
-type OutputItem map[string]interface{}
+// logString provides a human friendly string
+func logString(log *vm.StructLog) string {
+	return fmt.Sprintf("pc: %3d op: %18v depth: %2v gas: %5d stack size %d",
+		log.Pc, log.Op, log.Depth, log.Gas, len(log.Stack))
 
-// Diff returns a map containing differences between o and other
-func (o *OutputItem) Diff(other *OutputItem) *map[string][]interface{} {
-
-	var diff *map[string][]interface{}
-
-	addDiff := func(name string, diffs ...interface{}) {
-		if diff == nil {
-			d := make(map[string][]interface{})
-			diff = &d
-		}
-		(*diff)[name] = diffs
+}
+func DiffLogs(a, b *vm.StructLog) string {
+	if a.Pc != b.Pc {
+		return fmt.Sprintf("pc %d != %d", a.Pc, b.Pc)
 	}
-
-	// The output items either are regular ops, or they contain the stateroot
-	// Path one: regular op
-	_, aRegular := (*o)["pc"]
-	_, bRegular := (*other)["pc"]
-
-	if aRegular && bRegular {
-		// check pc, op, gas, depth
-		for _, label := range []string{"pc", "op", "gas", "depth"} {
-			a := (*o)[label]
-			b := (*other)[label]
-			if a != b {
-				addDiff(label, a, b)
-			}
-		}
-		// check stack
-		stackA := fmt.Sprintf("%v", (*o)["stack"])
-		stackB := fmt.Sprintf("%v", (*other)["stack"])
-		if stackA != stackB {
-			addDiff("stack", stackA, stackB)
-		}
-		return diff
+	if a.Op != b.Op {
+		return fmt.Sprintf("op %d != %d", a.Op, b.Op)
 	}
-
-	_, aStateRoot := (*o)["stateRoot"]
-	_, bStateRoot := (*other)["stateRoot"]
-
-	if aStateRoot && bStateRoot {
-		// Check stateroot
-		for _, label := range []string{"stateRoot"} {
-			a := (*o)[label]
-			b := (*other)[label]
-			if a == b {
-				addDiff(label, a, b)
-			}
-		}
-		return diff
+	if a.Depth != b.Depth {
+		return fmt.Sprintf("depth %d != %d", a.Depth, b.Depth)
 	}
-	return nil
+	if a.Gas != b.Gas {
+		return fmt.Sprintf("gas %d != %d", a.Gas, b.Gas)
+	}
+	// Parity seems to be lacking gasCost
+	//if a.GasCost != b.GasCost {
+	//	return fmt.Sprintf("gasCost %d != %d", a.GasCost, b.GasCost)
+	//}
+	if len(a.Stack) != len(b.Stack) {
+		return fmt.Sprintf("stack size %d != %d", len(a.Stack), len(b.Stack))
+
+	}
+	for i, item := range a.Stack {
+		if b.Stack[i].Cmp(item) != 0 {
+			return fmt.Sprintf("stack item %d, %x != %x", i, item, b.Stack[i])
+		}
+	}
+	return ""
 }
 
 // CompareVMs compares the outputs from the channels, returns a channel with
 // error info
-func CompareVms(a, b chan *OutputItem) chan string {
+func CompareVms(a, b chan *vm.StructLog) chan string {
 	output := make(chan string)
 
 	go func() {
+		// This whole thing is ugly. Needs to be rewritten
 		for {
 			var (
-				op1, op2     *OutputItem
+				op1, op2     *vm.StructLog
 				more1, more2 bool
+				step         = 0
 			)
 			select {
 			case op1, more1 = <-a:
@@ -89,20 +70,18 @@ func CompareVms(a, b chan *OutputItem) chan string {
 				op1, more1 = <-a
 			}
 			if more1 != more2 {
-				output <- fmt.Sprintf("Channel a: %v, chan b: %v", more1, more2)
+				output <- fmt.Sprintf("Channel a done: %v, chan b done: %v", more1, more2)
+
 			}
 			if !(more1 && more2) {
 				close(output)
 				return
 			}
-			if diff := op1.Diff(op2); diff != nil {
-				var info bytes.Buffer
-				info.WriteString("Error:\n")
-				for k, v := range *diff {
-					info.WriteString(fmt.Sprintf("\t%v: %v != %v\n", k, v[0], v[1]))
-				}
-				output <- info.String()
+			if diff := DiffLogs(op1, op2); len(diff) != 0 {
+				info := fmt.Sprintf("Diff detected, step %d: %v\n\t%v\n\t%v\n", step, diff, logString(op1), logString(op2))
+				output <- info
 			}
+			step++
 		}
 
 	}()
