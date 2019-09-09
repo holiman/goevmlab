@@ -2,9 +2,11 @@ package fuzzing
 
 import (
 	"encoding/binary"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math"
 	"math/big"
 	"math/rand"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/ops"
@@ -13,6 +15,18 @@ import (
 
 type memFunc func() (offset, size interface{})
 type valFunc func() interface{}
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+
+// randHex produces some random hex data
+func randHex(maxSize int) string {
+	size := rand.Intn(maxSize)
+	b := make([]byte, size)
+	rand.Read(b)
+	return hexutil.Encode(b)
+}
 
 // randInt returns a valFunc which spits out bigints,
 // - Chance of zero, expressed as N out of 255.

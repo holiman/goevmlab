@@ -3,6 +3,7 @@ package fuzzing
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/evms"
 	"os"
 	"path"
@@ -21,6 +22,17 @@ func TestGenerator(t *testing.T) {
 
 }
 
+func TestBlakeGenerator(t *testing.T) {
+	st := GenerateBlakeTest("randoTest")
+
+	data, err := json.MarshalIndent(st, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("data: \n")
+	fmt.Printf(string(data))
+
+}
 func testCompare(a, b evms.Evm, testfile string) (int, int, error) {
 	chA, err := a.StartStateTest(testfile)
 	if err != nil {
@@ -79,7 +91,7 @@ func TestBlake(t *testing.T) {
 		t.Fatal(err)
 	}
 	//fmt.Printf("file is %v \n", p)
-	gst := GenerateStateTest(testName)
+	gst := GenerateBlakeTest(testName)
 	encoder := json.NewEncoder(f)
 	encoder.SetIndent("", " ")
 	if err = encoder.Encode(gst); err != nil {
@@ -125,10 +137,17 @@ BenchmarkGenerator-6   	   20000	     60932 ns/op
 # using blake2 generator
 BenchmarkGenerator-6   	  100000	     13638 ns/op
 
+# blake2, but only doing new randcall
+BenchmarkGenerator-6   	  200000	      8413 ns/op
 */
 func BenchmarkGenerator(b *testing.B) {
+	t := GenerateBlake()
+	alloc := *t.pre
+	target := common.HexToAddress(t.tx.To)
+	dest := alloc[target]
 	for i := 0; i < b.N; i++ {
-		GenerateStateTest("randoTest")
+		dest.Code = RandCallBlake()
+		t.ToGeneralStateTest("rando")
 	}
 }
 
