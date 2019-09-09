@@ -22,10 +22,10 @@ Reads the given trace-file, and displays the tracing in a nice CLI user interfac
 func main() {
 
 	testTraces := []string{
-		"../testdata/traces/geth_nomemory.jsonl",
-		"../testdata/traces/geth_memory.jsonl",
-		"../testdata/traces/geth_traceTransaction.json",
-		"../testdata/traces/14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy",
+		"../../traces/testdata/geth_nomemory.jsonl",
+		"../../traces/testdata/geth_memory.jsonl",
+		"../../traces/testdata/geth_traceTransaction.json",
+		"../../traces/testdata/14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy",
 	}
 
 	flag.Parse()

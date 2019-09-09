@@ -29,6 +29,7 @@ func (evm *GethEVM) StartStateTest(path string) (chan *vm.StructLog, error) {
 		err    error
 	)
 	cmd := exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
+	fmt.Printf("Cmd")
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
 	}
@@ -62,6 +63,7 @@ func (evm *GethEVM) feed(input io.Reader, opsCh chan (*vm.StructLog)) {
 			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
+		//fmt.Printf("geth: %v\n", string(data))
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
@@ -72,10 +74,15 @@ func (evm *GethEVM) feed(input io.Reader, opsCh chan (*vm.StructLog)) {
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 
 			*/
-			fmt.Printf("geth non-op, line s:\n\t%v\n", string(data))
 			// For now, just ignore these
 			continue
 		}
+		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
+		// In order to handle that, we need to drop all STOP opcodes.
+		if elem.Op == 0x0 {
+			continue
+		}
+
 		opsCh <- &elem
 	}
 }

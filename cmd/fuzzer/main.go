@@ -39,6 +39,14 @@ func testCompare(a, b evms.Evm, testfile string) {
 	}
 }
 
+func testBlake(){
+
+	geth := evms.NewGethEVM("/home/user/go/src/github.com/ethereum/go-ethereum/build/bin/evm")
+	file := "/home/user/go/src/github.com/holiman/goevmlab/evms/testdata/blaketest1.json"
+	fuzzing.GenerateStateTest("blaketest")
+
+}
+
 func main() {
 
 	// generate a test

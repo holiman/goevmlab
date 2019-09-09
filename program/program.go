@@ -20,25 +20,26 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/holiman/goevmlab/ops"
 	"math/big"
 )
 
-type program struct {
+type Program struct {
 	code []byte
 }
 
-func NewProgram() *program {
-	p := &program{
+func NewProgram() *Program {
+	p := &Program{
 		code: make([]byte, 0),
 	}
 	return p
 }
 
-func (p *program) add(op byte) {
+func (p *Program) add(op byte) {
 	p.code = append(p.code, op)
 }
 
-func (p *program) pushBig(val *big.Int) {
+func (p *Program) pushBig(val *big.Int) {
 	if val == nil {
 		val = big.NewInt(0)
 	}
@@ -55,29 +56,35 @@ func (p *program) pushBig(val *big.Int) {
 
 }
 
-// AddAll adds the data to the program
-func (p *program) AddAll(data []byte) {
+// AddAll adds the data to the Program
+func (p *Program) AddAll(data []byte) {
 	p.code = append(p.code, data...)
 }
 
 // Op appends the given opcode
-func (p *program) Op(opCode vm.OpCode) {
-	p.add(byte(opCode))
+func (p *Program) Op(op ops.OpCode) {
+	p.add(byte(op))
 }
 
 // Push creates a PUSHX instruction with the data provided
-func (p *program) Push(val interface{}) {
+func (p *Program) Push(val interface{}) {
 	switch v := val.(type) {
 	case int:
 		p.pushBig(new(big.Int).SetUint64(uint64(v)))
 	case uint64:
 		p.pushBig(new(big.Int).SetUint64(v))
+	case uint32:
+		p.pushBig(new(big.Int).SetUint64(uint64(v)))
 	case *big.Int:
 		p.pushBig(v)
 	case common.Address:
 		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
 	case *common.Address:
 		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
+	case []byte:
+		p.pushBig(new(big.Int).SetBytes(v))
+	case byte:
+		p.pushBig(new(big.Int).SetUint64(uint64(v)))
 	case nil:
 		p.pushBig(nil)
 	default:
@@ -85,13 +92,13 @@ func (p *program) Push(val interface{}) {
 	}
 }
 
-// Bytecode returns the program bytecode
-func (p *program) Bytecode() []byte {
+// Bytecode returns the Program bytecode
+func (p *Program) Bytecode() []byte {
 	return p.code
 }
 
 // Call is a convenience function to make a call
-func (p *program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset, outSize interface{}) {
+func (p *Program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset, outSize interface{}) {
 	p.Push(outSize)
 	p.Push(outOffset)
 	p.Push(inSize)
@@ -99,27 +106,75 @@ func (p *program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset
 	p.Push(value)
 	p.Push(address)
 	if gas == nil {
-		p.Op(vm.GAS)
+		p.Op(ops.GAS)
 	} else {
 		p.pushBig(gas)
 	}
-	p.Op(vm.CALL)
+	p.Op(ops.CALL)
 }
 
 // Label returns the PC (of the next instruction)
-func (p *program) Label() uint64 {
+func (p *Program) Label() uint64 {
 	return uint64(len(p.code))
 }
 
 // Jumpdest adds a JUMPDEST op, and returns the PC of that instruction
-func (p *program) Jumpdest() uint64 {
+func (p *Program) Jumpdest() uint64 {
 	here := p.Label()
-	p.Op(vm.JUMPDEST)
+	p.Op(ops.JUMPDEST)
 	return here
 }
 
 // Jump pushes the destination and adds a JUMP
-func (p *program) Jump(loc interface{}) {
+func (p *Program) Jump(loc interface{}) {
 	p.Push(loc)
-	p.Op(vm.JUMP)
+	p.Op(ops.JUMP)
+}
+
+func (p *Program) Size() int {
+	return len(p.code)
+}
+
+// MStore stores the provided data (into the memory area starting at memStart)
+func (p *Program) Mstore(data []byte, memStart uint32) {
+	var idx = 0
+	// We need to store it in chunks of 32 bytes
+	for ; idx+32 < len(data); idx += 32 {
+		chunk := data[idx : idx+32]
+		// push the value
+		p.Push(chunk)
+		// push the memory index
+		p.Push(uint32(idx) + memStart)
+		p.Op(ops.MSTORE)
+	}
+	// Remainders become stored using MSTORE8
+	for ; idx < len(data); idx++ {
+		b := data[idx]
+		// push the byte
+		p.Push(b)
+		p.Push(uint32(idx) + memStart)
+		p.Op(ops.MSTORE8)
+	}
+}
+
+// MemToStorage copies the given memory area into SSTORE slots,
+// It expects data to be aligned to 32 byte, and does not zero out
+// remainders if some data is not
+// I.e, if given a 1-byte area, it will still copy the full 32 bytes to storage
+func (p *Program) MemToStorage(memStart, memSize, startSlot int) {
+	// We need to store it in chunks of 32 bytes
+	for idx := memStart; idx < (memStart + memSize); idx += 32 {
+		dataStart := idx
+		dataEnd := idx + 32
+		if dataEnd > (memStart + memSize) {
+			dataEnd = (memStart + memSize)
+		}
+		// Mload the chunk
+		p.Push(dataStart)
+		p.Op(ops.MLOAD)
+		// Value is now on stack,
+		p.Push(startSlot)
+		p.Op(ops.SSTORE)
+		startSlot++
+	}
 }

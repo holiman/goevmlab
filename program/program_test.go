@@ -23,7 +23,6 @@ import (
 	"testing"
 )
 
-
 func TestPush(t *testing.T) {
 	tests := []struct {
 		input    interface{}
@@ -51,7 +50,7 @@ func TestPush(t *testing.T) {
 	}
 }
 func TestCall(t *testing.T) {
-	{// Nil gas
+	{ // Nil gas
 		p := NewProgram()
 		p.Call(nil, common.HexToAddress("0x1337"), big.NewInt(1), 1, 2, 3, 4)
 		got := fmt.Sprintf("%02x", p.Bytecode())
@@ -60,7 +59,7 @@ func TestCall(t *testing.T) {
 			t.Errorf("got %v expected %v", got, exp)
 		}
 	}
-	{// Non nil gas
+	{ // Non nil gas
 		p := NewProgram()
 		p.Call(big.NewInt(0xffff), common.HexToAddress("0x1337"), big.NewInt(1), 1, 2, 3, 4)
 		got := fmt.Sprintf("%02x", p.Bytecode())
@@ -71,3 +70,53 @@ func TestCall(t *testing.T) {
 	}
 }
 
+func TestMstore(t *testing.T) {
+
+	{
+		p := NewProgram()
+		p.Mstore(common.FromHex("0xaabb"), 0)
+		got := fmt.Sprintf("%02x", p.Bytecode())
+		exp := "60aa60005360bb600153"
+		if got != exp {
+			t.Errorf("got %v expected %v", got, exp)
+		}
+	}
+
+	{
+		p := NewProgram()
+		p.Mstore(common.FromHex("0xaabb"), 3)
+		got := fmt.Sprintf("%02x", p.Bytecode())
+		exp := "60aa60035360bb600453"
+		if got != exp {
+			t.Errorf("got %v expected %v", got, exp)
+		}
+	}
+
+	{
+		// 34 bytes
+		data := common.FromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
+			"FFFF")
+
+		p := NewProgram()
+		p.Mstore(data, 0)
+		got := fmt.Sprintf("%02x", p.Bytecode())
+		exp := "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff60005260ff60205360ff602153"
+		if got != exp {
+			t.Errorf("got %v expected %v", got, exp)
+		}
+	}
+
+}
+
+func TestMemToStorage(t *testing.T) {
+	{
+		p := NewProgram()
+		p.MemToStorage(0, 33, 1)
+		got := fmt.Sprintf("%02x", p.Bytecode())
+		exp := "600051600155602051600255"
+		if got != exp {
+			t.Errorf("got %v expected %v", got, exp)
+		}
+	}
+}

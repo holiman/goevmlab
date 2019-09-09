@@ -68,7 +68,12 @@ func (vm *ParityVM) feed(input io.Reader, opsCh chan (*vm2.StructLog)) {
 			// For now, just ignore these
 			continue
 		}
-		fmt.Printf("parity: %v\n", string(data))
+		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
+		// In order to handle that, we need to drop all STOP opcodes.
+		if elem.Op == 0x0 {
+			continue
+		}
+		//fmt.Printf("parity: %v\n", string(data))
 		opsCh <- &elem
 	}
 }

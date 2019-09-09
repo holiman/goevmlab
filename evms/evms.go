@@ -50,9 +50,14 @@ func DiffLogs(a, b *vm.StructLog) string {
 	return ""
 }
 
+type Comparer struct {
+	Steps    int
+	MaxDepth int
+}
+
 // CompareVMs compares the outputs from the channels, returns a channel with
 // error info
-func CompareVms(a, b chan *vm.StructLog) chan string {
+func (c *Comparer) CompareVms(a, b chan *vm.StructLog) chan string {
 	output := make(chan string)
 
 	go func() {
@@ -61,7 +66,6 @@ func CompareVms(a, b chan *vm.StructLog) chan string {
 			var (
 				op1, op2     *vm.StructLog
 				more1, more2 bool
-				step         = 0
 			)
 			select {
 			case op1, more1 = <-a:
@@ -70,7 +74,8 @@ func CompareVms(a, b chan *vm.StructLog) chan string {
 				op1, more1 = <-a
 			}
 			if more1 != more2 {
-				output <- fmt.Sprintf("Channel a done: %v, chan b done: %v", more1, more2)
+				output <- fmt.Sprintf("Channel a done: %v, chan b done: %v", !more1, !more2)
+				fmt.Printf("op1 %v op2 %v\n", op1, op2)
 
 			}
 			if !(more1 && more2) {
@@ -78,10 +83,13 @@ func CompareVms(a, b chan *vm.StructLog) chan string {
 				return
 			}
 			if diff := DiffLogs(op1, op2); len(diff) != 0 {
-				info := fmt.Sprintf("Diff detected, step %d: %v\n\t%v\n\t%v\n", step, diff, logString(op1), logString(op2))
+				info := fmt.Sprintf("Diff detected, step %d: %v\n\t%v\n\t%v\n", c.Steps, diff, logString(op1), logString(op2))
 				output <- info
 			}
-			step++
+			c.Steps++
+			if depth := op1.Depth; depth > c.MaxDepth {
+				c.MaxDepth = depth
+			}
 		}
 
 	}()
