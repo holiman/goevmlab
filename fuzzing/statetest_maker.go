@@ -1,8 +1,10 @@
 package fuzzing
 
 import (
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
 	"math/big"
@@ -116,6 +118,8 @@ type GstMaker struct {
 	env   *stEnv
 	tx    stTransaction
 	forks []string
+	root  common.Hash
+	logs  common.Hash
 }
 
 func NewGstMaker() *GstMaker {
@@ -137,6 +141,34 @@ func NewGstMaker() *GstMaker {
 func (g *GstMaker) AddAccount(address common.Address, a GenesisAccount) {
 	alloc := *g.pre
 	alloc[address] = a
+}
+
+// GetDestination returns the to- address from the tx
+func (g *GstMaker) GetDestination() common.Address {
+	return common.HexToAddress(g.tx.To)
+}
+
+// SetCode sets the code at the given address (creating the account
+// if it did not previously exist)
+func (g *GstMaker) SetCode(address common.Address, code []byte) {
+	alloc := *g.pre
+	account, exist := alloc[address]
+	if !exist {
+		account = GenesisAccount{
+			Code:    code,
+			Storage: make(map[common.Hash]common.Hash),
+			Nonce:   0,
+			Balance: new(big.Int),
+		}
+	} else {
+		account.Code = code
+	}
+	alloc[address] = account
+}
+
+func (g *GstMaker) SetResult(root, logs common.Hash) {
+	g.root = root
+	g.logs = logs
 }
 
 // randomFillGenesisAlloc fills the state with some random data
@@ -165,28 +197,45 @@ func (g *GstMaker) SetTx(tx *stTransaction) {
 	g.tx = *tx
 }
 
-func (g *GstMaker) ToGeneralStateTest(name string) *GeneralStateTest {
+func (g *GstMaker) ToSubTest() *stJSON {
 	st := &stJSON{}
 	st.Pre = *g.pre
 	st.Env = *g.env
 	st.Tx = g.tx
 	for _, fork := range g.forks {
-		postHash := common.HexToHash("0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134")
-		logsHash := common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
+		//postHash := common.HexToHash("0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134")
+		//logsHash := common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
 		postState := make(map[string][]stPostState)
 		postState[fork] = []stPostState{
 			stPostState{
-				Logs:    common.UnprefixedHash(logsHash),
-				Root:    common.UnprefixedHash(postHash),
+				Logs:    common.UnprefixedHash(g.logs),
+				Root:    common.UnprefixedHash(g.root),
 				Indexes: stIndex{Gas: 0, Value: 0, Data: 0},
 			},
 		}
 		st.Post = postState
 	}
-	gst := make(GeneralStateTest)
-	gst[name] = st
-	return &gst
+	return st
+}
 
+func (g *GstMaker) ToGeneralStateTest(name string) *GeneralStateTest {
+	gst := make(GeneralStateTest)
+	gst[name] = g.ToSubTest()
+	return &gst
+}
+
+func (g *GstMaker) ToStateTest() (tests.StateTest, error) {
+
+	stjson := g.ToSubTest()
+	var gethStateTest tests.StateTest
+	data, err := json.Marshal(stjson)
+	if err != nil {
+		return gethStateTest, err
+	}
+	if err := json.Unmarshal(data, &gethStateTest); err != nil {
+		return gethStateTest, err
+	}
+	return gethStateTest, nil
 }
 
 func (g *GstMaker) EnableFork(fork string) {
@@ -230,12 +279,12 @@ func GenerateStateTest(name string) *GeneralStateTest {
 	return gst.ToGeneralStateTest(name)
 }
 
-func GenerateBlake() *GstMaker{
+func GenerateBlake() *GstMaker {
 	gst := basicStateTest()
 	// Add a contract which calls blake
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{
-		Code: RandCallBlake(),
+		Code:    RandCallBlake(),
 		Balance: new(big.Int),
 		Storage: make(map[common.Hash]common.Hash),
 	})
@@ -255,9 +304,9 @@ func GenerateBlake() *GstMaker{
 	}
 	return gst
 }
+
 // GenerateBlakeTest generates a random test of the blake F precompile
 func GenerateBlakeTest(name string) *GeneralStateTest {
 	gst := GenerateBlake()
 	return gst.ToGeneralStateTest(name)
 }
-

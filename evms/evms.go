@@ -2,7 +2,9 @@ package evms
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"time"
 )
 
 // The Evm interface represents external EVM implementations, which can
@@ -13,6 +15,12 @@ type Evm interface {
 	StartStateTest(path string) (chan *vm.StructLog, error)
 	//Open() // Preparare for execution
 	Close() // Tear down processes
+}
+
+type ExecutionInfo struct {
+	StateRoot common.Hash
+	ExecTime  time.Duration
+	Error     error
 }
 
 // logString provides a human friendly string

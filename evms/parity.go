@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	vm2 "github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os/exec"
 	"sync"
@@ -22,12 +22,12 @@ func NewParityVM(path string) *ParityVM {
 }
 
 // StartStateTest implements the Evm interface
-func (vm *ParityVM) StartStateTest(path string) (chan *vm2.StructLog, error) {
+func (evm *ParityVM) StartStateTest(path string) (chan *vm.StructLog, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
 	)
-	cmd := exec.Command(vm.path, "--std-json", "state-test", path)
+	cmd := exec.Command(evm.path, "--std-json", "state-test", path)
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
 	}
@@ -35,21 +35,21 @@ func (vm *ParityVM) StartStateTest(path string) (chan *vm2.StructLog, error) {
 		return nil, err
 	}
 	ch := make(chan *vm2.StructLog)
-	vm.wg.Add(1)
-	go vm.feed(stderr, ch)
+	evm.wg.Add(1)
+	go evm.feed(stderr, ch)
 	return ch, nil
 
 }
 
-func (vm *ParityVM) Close() {
-	vm.wg.Wait()
+func (evm *ParityVM) Close() {
+	evm.wg.Wait()
 }
 
 // feed reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
-func (vm *ParityVM) feed(input io.Reader, opsCh chan (*vm2.StructLog)) {
+func (evm *ParityVM) feed(input io.Reader, opsCh chan (*vm2.StructLog)) {
 	defer close(opsCh)
-	defer vm.wg.Done()
+	defer evm.wg.Done()
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
