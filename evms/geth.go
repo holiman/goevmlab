@@ -29,7 +29,6 @@ func (evm *GethEVM) StartStateTest(path string) (chan *vm.StructLog, error) {
 		err    error
 	)
 	cmd := exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
-	fmt.Printf("Cmd")
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
 	}
@@ -38,7 +37,10 @@ func (evm *GethEVM) StartStateTest(path string) (chan *vm.StructLog, error) {
 	}
 	ch := make(chan *vm.StructLog)
 	evm.wg.Add(1)
-	go evm.feed(stderr, ch)
+	go func(){
+		evm.feed(stderr, ch)
+		cmd.Wait()
+	}()
 	return ch, nil
 
 }

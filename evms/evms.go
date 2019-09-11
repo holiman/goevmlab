@@ -63,6 +63,10 @@ type Comparer struct {
 	MaxDepth int
 }
 
+func (c *Comparer) Stats() string {
+	return fmt.Sprintf("steps: %d, maxdepth: %d", c.Steps, c.MaxDepth)
+}
+
 // CompareVMs compares the outputs from the channels, returns a channel with
 // error info
 func (c *Comparer) CompareVms(a, b chan *vm.StructLog) chan string {

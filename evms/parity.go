@@ -34,9 +34,12 @@ func (evm *ParityVM) StartStateTest(path string) (chan *vm.StructLog, error) {
 	if err = cmd.Start(); err != nil {
 		return nil, err
 	}
-	ch := make(chan *vm2.StructLog)
+	ch := make(chan *vm.StructLog)
 	evm.wg.Add(1)
-	go evm.feed(stderr, ch)
+	go func() {
+		evm.feed(stderr, ch)
+		cmd.Wait()
+	}()
 	return ch, nil
 
 }
@@ -47,7 +50,7 @@ func (evm *ParityVM) Close() {
 
 // feed reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
-func (evm *ParityVM) feed(input io.Reader, opsCh chan (*vm2.StructLog)) {
+func (evm *ParityVM) feed(input io.Reader, opsCh chan (*vm.StructLog)) {
 	defer close(opsCh)
 	defer evm.wg.Done()
 	scanner := bufio.NewScanner(input)
@@ -55,7 +58,7 @@ func (evm *ParityVM) feed(input io.Reader, opsCh chan (*vm2.StructLog)) {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
-		var elem vm2.StructLog
+		var elem vm.StructLog
 		json.Unmarshal(data, &elem)
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
