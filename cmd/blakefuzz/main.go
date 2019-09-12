@@ -10,8 +10,11 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -37,12 +40,18 @@ var (
 		Usage:    "Location of go-ethereum 'parity-vm' binary",
 		Required: true,
 	}
+	ThreadFlag = cli.IntFlag{
+		Name:  "paralell",
+		Usage: "Number of paralell executions to use. (default = numcpu)",
+		Value: runtime.NumCPU(),
+	}
 )
 
 func init() {
 	app.Flags = []cli.Flag{
 		GethFlag,
 		ParityFlag,
+		ThreadFlag,
 	}
 	app.Action = testBlake
 }
@@ -56,12 +65,16 @@ func main() {
 
 func testBlake(c *cli.Context) error {
 
-	gethBin := c.GlobalString(GethFlag.Name)
-	parityBin := c.GlobalString(ParityFlag.Name)
-
+	var (
+		gethBin    = c.GlobalString(GethFlag.Name)
+		parityBin  = c.GlobalString(ParityFlag.Name)
+		numThreads = c.GlobalInt(ThreadFlag.Name)
+		numTests   uint64
+	)
+	fmt.Printf("numThreads: %d\n", numThreads)
 	var wg sync.WaitGroup
 	// The channel where we'll deliver tests
-	testCh := make(chan string)
+	testCh := make(chan string, 2)
 	// Cancel ability
 	sigs := make(chan os.Signal, 1)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -69,8 +82,7 @@ func testBlake(c *cli.Context) error {
 
 	wg.Add(1)
 	// Thread that creates tests, spits out filenames
-	for i := 0; i < 2; i++ {
-
+	for i := 0; i < 1; i++ {
 		go func(id int) {
 			defer wg.Done()
 			fmt.Printf("Generator started \n")
@@ -98,7 +110,7 @@ func testBlake(c *cli.Context) error {
 			}
 		}(i)
 	}
-	for i := 0; i < 4; i++ {
+	for i := 0; i < numThreads; i++ {
 		// Thread that executes the tests and compares the outputs
 		wg.Add(1)
 		go func() {
@@ -111,13 +123,30 @@ func testBlake(c *cli.Context) error {
 					fmt.Printf("Error occurred in executor: %v", err)
 					break
 				}
-			}
-			select {
-			case <-ctx.Done():
-				break
+				atomic.AddUint64(&numTests, 1)
 			}
 		}()
 	}
+	// One goroutine to spit out some statistics
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tStart := time.Now()
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				n := atomic.LoadUint64(&numTests)
+				timeSpent := time.Since(tStart)
+				execPerSecond := float64(uint64(time.Second)*n) / float64(timeSpent)
+				fmt.Printf("%d tests executed, in %v (%.02f tests/s)\n", n, timeSpent, execPerSecond)
+			case <-ctx.Done():
+				break
+			}
+		}
+
+	}()
 
 	<-sigs
 	fmt.Println("Exiting...")
