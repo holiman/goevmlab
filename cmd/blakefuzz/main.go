@@ -44,8 +44,13 @@ var (
 	}
 	ThreadFlag = cli.IntFlag{
 		Name:  "paralell",
-		Usage: "Number of paralell executions to use. (default = numcpu)",
+		Usage: "Number of paralell executions to use.",
 		Value: runtime.NumCPU(),
+	}
+	LocationFlag = cli.StringFlag{
+		Name:  "tempdir",
+		Usage: "Location to place temp files",
+		Value: "/tmp",
 	}
 )
 
@@ -54,6 +59,7 @@ func init() {
 		GethFlag,
 		ParityFlag,
 		ThreadFlag,
+		LocationFlag,
 	}
 	app.Action = testBlake
 }
@@ -71,6 +77,7 @@ func testBlake(c *cli.Context) error {
 		gethBin    = c.GlobalString(GethFlag.Name)
 		parityBin  = c.GlobalString(ParityFlag.Name)
 		numThreads = c.GlobalInt(ThreadFlag.Name)
+		location   = c.GlobalString(LocationFlag.Name)
 		numTests   uint64
 	)
 	fmt.Printf("numThreads: %d\n", numThreads)
@@ -98,7 +105,7 @@ func testBlake(c *cli.Context) error {
 				testName := fmt.Sprintf("%v-blaketest-%d", prefix, i)
 				test := base.ToGeneralStateTest(testName)
 
-				fileName, err := dumpTest(test, testName)
+				fileName, err := dumpTest(location, test, testName)
 				if err != nil {
 					fmt.Printf("Error occurred: %v", err)
 					break
@@ -145,8 +152,8 @@ func testBlake(c *cli.Context) error {
 				fmt.Printf("%d tests executed, in %v (%.02f tests/s)\n", n, timeSpent, execPerSecond)
 				// Update global counter
 				globalCount := uint64(0)
-				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil{
-					if count,err  := strconv.Atoi((string(content))); err == nil{
+				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil {
+					if count, err := strconv.Atoi((string(content))); err == nil {
 						globalCount = uint64(count)
 					}
 				}
@@ -185,10 +192,10 @@ func compareOutputs(a, b evms.Evm, testfile string) error {
 }
 
 // dumpTest saves a testcase to disk
-func dumpTest(test *fuzzing.GeneralStateTest, testName string) (string, error) {
+func dumpTest(location string, test *fuzzing.GeneralStateTest, testName string) (string, error) {
 
 	fileName := fmt.Sprintf("%v.json", testName)
-	fullPath := path.Join("/tmp/", fileName)
+	fullPath := path.Join(location, fileName)
 
 	f, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
 	if err != nil {
