@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"gopkg.in/urfave/cli.v1"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -141,6 +143,15 @@ func testBlake(c *cli.Context) error {
 				timeSpent := time.Since(tStart)
 				execPerSecond := float64(uint64(time.Second)*n) / float64(timeSpent)
 				fmt.Printf("%d tests executed, in %v (%.02f tests/s)\n", n, timeSpent, execPerSecond)
+				// Update global counter
+				globalCount := uint64(0)
+				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil{
+					if count,err  := strconv.Atoi((string(content))); err == nil{
+						globalCount = uint64(count)
+					}
+				}
+				globalCount += n
+				ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755)
 			case <-ctx.Done():
 				break
 			}
