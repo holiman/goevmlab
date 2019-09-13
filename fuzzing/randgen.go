@@ -80,20 +80,42 @@ func gasRandomizer() valFunc {
 
 var callTypes = []ops.OpCode{ops.CALL, ops.CALLCODE, ops.DELEGATECALL, ops.STATICCALL}
 
+func randCallType() ops.OpCode{
+	return callTypes[rand.Intn(len(callTypes))]
+}
+
 func RandCall(gas, addr, val valFunc, memIn, memOut memFunc) []byte {
 	p := program.NewProgram()
-	memOutOffset, memOutSize := memOut()
-	p.Push(memOutSize)   //mem out size
-	p.Push(memOutOffset) // mem out start
-	memInOffset, memInSize := memIn()
-	p.Push(memInSize)   //mem in size
-	p.Push(memInOffset) // mem in start
-	op := callTypes[rand.Intn(len(callTypes))]
+	if memOut != nil {
+		memOutOffset, memOutSize := memOut()
+		p.Push(memOutSize)   //mem out size
+		p.Push(memOutOffset) // mem out start
+	} else {
+		p.Push(0)
+		p.Push(0)
+	}
+	if memIn != nil {
+		memInOffset, memInSize := memIn()
+		p.Push(memInSize)   //mem in size
+		p.Push(memInOffset) // mem in start
+	} else {
+		p.Push(0)
+		p.Push(0)
+	}
+	op := randCallType()
 	if op == ops.CALL || op == ops.CALLCODE {
-		p.Push(val()) //value
+		if val != nil {
+			p.Push(val()) //value
+		} else {
+			p.Push(0)
+		}
 	}
 	p.Push(addr())
-	p.Push(gas())
+	if gas != nil {
+		p.Push(gas())
+	} else {
+		p.Op(ops.GAS)
+	}
 	p.Op(op)
 	return p.Bytecode()
 }

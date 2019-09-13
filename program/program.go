@@ -67,7 +67,7 @@ func (p *Program) Op(op ops.OpCode) {
 }
 
 // Push creates a PUSHX instruction with the data provided
-func (p *Program) Push(val interface{}) {
+func (p *Program) Push(val interface{}) *Program {
 	switch v := val.(type) {
 	case int:
 		p.pushBig(new(big.Int).SetUint64(uint64(v)))
@@ -90,11 +90,17 @@ func (p *Program) Push(val interface{}) {
 	default:
 		panic(fmt.Sprintf("unsupported type %v", v))
 	}
+	return p
 }
 
 // Bytecode returns the Program bytecode
 func (p *Program) Bytecode() []byte {
 	return p.code
+}
+
+// Bytecode returns the Program bytecode
+func (p *Program) Hex() string {
+	return fmt.Sprintf("%02x", p.Bytecode())
 }
 
 // Call is a convenience function to make a call
@@ -139,7 +145,7 @@ func (p *Program) Size() int {
 func (p *Program) Mstore(data []byte, memStart uint32) {
 	var idx = 0
 	// We need to store it in chunks of 32 bytes
-	for ; idx+32 < len(data); idx += 32 {
+	for ; idx+32 <= len(data); idx += 32 {
 		chunk := data[idx : idx+32]
 		// push the value
 		p.Push(chunk)
@@ -177,4 +183,60 @@ func (p *Program) MemToStorage(memStart, memSize, startSlot int) {
 		p.Op(ops.SSTORE)
 		startSlot++
 	}
+}
+
+// Sstore stores the given byte array to the given slot.
+// OBS! Does not verify that the value indeed fits into 32 bytes
+// If it does not, it will panic later on via pushBig
+func (p *Program) Sstore(slot interface{}, value interface{}) {
+	p.Push(value)
+	p.Push(slot)
+	p.Op(ops.SSTORE)
+}
+
+func (p *Program) Return(offset, len uint32) {
+	p.Push(len)
+	p.Push(offset)
+	p.Op(ops.RETURN)
+}
+
+// ReturnData loads the given data into memory, and does a return with it
+func (p *Program) ReturnData(data []byte) {
+	p.Mstore(data, 0)
+	p.Return(0, uint32(len(data)))
+}
+
+// CreateAndCall calls create/create2 with the given bytecode
+// and then checks if the returnvalue is non-zero. If so, it calls into the
+// newly created contract with all available gas
+func (p *Program) CreateAndCall(code []byte, isCreate2 bool, callOp ops.OpCode) {
+	var (
+		value    = 0
+		offset   = 0
+		size     = len(code)
+		salt     = 0
+		createOp = ops.CREATE
+	)
+	// Load the code into mem
+	p.Mstore(code, 0)
+	// Create it
+	if isCreate2 {
+		p.Push(salt)
+		createOp = ops.CREATE2
+	}
+	p.Push(size).Push(offset).Push(value).Op(createOp)
+	// If there happen to be a zero on the stack, it doesn't matter, we're
+	// not sending any value anyway
+	p.Push(0).Push(0) // mem out
+	p.Push(0).Push(0) // mem in
+	addrOffset := ops.DUP5
+	if callOp == ops.CALL || callOp == ops.CALLCODE {
+		p.Push(0) // value
+		addrOffset = ops.DUP6
+	}
+	p.Op(addrOffset) // address (from create-op above)
+	p.Op(ops.GAS)
+	p.Op(callOp)
+	p.Op(ops.POP) // pop the retval
+	p.Op(ops.POP) // pop the address
 }

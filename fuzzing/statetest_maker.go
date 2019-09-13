@@ -263,8 +263,8 @@ func GenerateStateTest(name string) *GeneralStateTest {
 	// The transaction
 	{
 		tx := &stTransaction{
-			// 3M gaslimit
-			GasLimit:   []uint64{3000000},
+			// 8M gaslimit
+			GasLimit:   []uint64{8000000},
 			Nonce:      0,
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
@@ -309,4 +309,44 @@ func GenerateBlake() *GstMaker {
 func GenerateBlakeTest(name string) *GeneralStateTest {
 	gst := GenerateBlake()
 	return gst.ToGeneralStateTest(name)
+}
+
+func Generate2200Test() *GstMaker {
+	gst := basicStateTest()
+	// The accounts which we want to be able to invoke
+	addrs := []common.Address{
+		common.HexToAddress("0xF1"),
+		common.HexToAddress("0xF2"),
+		common.HexToAddress("0xF3"),
+		common.HexToAddress("0xF4"),
+		common.HexToAddress("0xF5"),
+		common.HexToAddress("0xF6"),
+		common.HexToAddress("0xF7"),
+		common.HexToAddress("0xF8"),
+		common.HexToAddress("0xF9"),
+		common.HexToAddress("0xFA"),
+	}
+	//addrGen := addressRandomizer(addrs)
+	for _, addr := range addrs {
+		gst.AddAccount(addr, GenesisAccount{
+			Code:    RandCall2200(addrs),
+			Balance: new(big.Int),
+			Storage: RandStorage(15, 20),
+		})
+	}
+	// The transaction
+	{
+		tx := &stTransaction{
+			// 8M gaslimit
+			GasLimit:   []uint64{8000000},
+			Nonce:      0,
+			Value:      []string{randHex(4)},
+			Data:       []string{randHex(100)},
+			GasPrice:   big.NewInt(0x01),
+			To:         addrs[0].Hex(),
+			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		}
+		gst.SetTx(tx)
+	}
+	return gst
 }
