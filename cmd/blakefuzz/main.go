@@ -142,11 +142,14 @@ func testBlake(c *cli.Context) error {
 		defer wg.Done()
 		tStart := time.Now()
 		ticker := time.NewTicker(5 * time.Second)
+		testCount := uint64(0)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
 				n := atomic.LoadUint64(&numTests)
+				testsSinceLastUpdate := n - testCount
+				testCount = n
 				timeSpent := time.Since(tStart)
 				execPerSecond := float64(uint64(time.Second)*n) / float64(timeSpent)
 				fmt.Printf("%d tests executed, in %v (%.02f tests/s)\n", n, timeSpent, execPerSecond)
@@ -157,7 +160,8 @@ func testBlake(c *cli.Context) error {
 						globalCount = uint64(count)
 					}
 				}
-				globalCount += n
+				globalCount += testsSinceLastUpdate
+
 				ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755)
 			case <-ctx.Done():
 				break
