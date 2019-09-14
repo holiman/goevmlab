@@ -30,7 +30,7 @@ func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Author = "Martin Holst Swende"
-	app.Usage = "Generator for blake (state-)tests"
+	app.Usage = "Fuzzer targeting SSTORE and SLOAD"
 	app.Flags = []cli.Flag{
 		common.GethFlag,
 		common.ParityFlag,
@@ -51,14 +51,11 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	var (
-		i      = 0
-		base   = fuzzing.GenerateBlake()
-		target = base.GetDestination()
-	)
+	var i = 0
+	fmt.Printf("Generator started \n")
 	generator := func() (*fuzzing.GstMaker, string) {
-		base.SetCode(target, fuzzing.RandCallBlake())
-		testName := fmt.Sprintf("blaketest-%d", i)
+		base := fuzzing.Generate2200Test()
+		testName := fmt.Sprintf("storagefuzz-%d", i)
 		i++
 		return base, testName
 	}
