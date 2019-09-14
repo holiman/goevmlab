@@ -3,15 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/holiman/goevmlab/fuzzing"
-	"golang.org/x/crypto/sha3"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/holiman/goevmlab/common"
+	"github.com/holiman/goevmlab/fuzzing"
+	"gopkg.in/urfave/cli.v1"
 )
 
 func initApp() *cli.App {
@@ -23,26 +21,14 @@ func initApp() *cli.App {
 }
 
 var (
-	app        = initApp()
-	PrefixFlag = cli.StringFlag{
-		Name:  "prefix",
-		Usage: "prefix of output files",
-	}
-	LocationFlag = cli.StringFlag{
-		Name:  "output-dir",
-		Usage: "Location of where to place the generated files",
-	}
-	CountFlag = cli.IntFlag{
-		Name:  "count",
-		Usage: "number of tests to generate",
-	}
+	app = initApp()
 )
 
 func init() {
 	app.Flags = []cli.Flag{
-		PrefixFlag,
-		LocationFlag,
-		CountFlag,
+		common.PrefixFlag,
+		common.LocationFlag,
+		common.CountFlag,
 	}
 	app.Commands = []cli.Command{
 		generateCommand,
@@ -64,31 +50,6 @@ func main() {
 	}
 }
 
-func rlpHash(x interface{}) (h common.Hash) {
-	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
-	hw.Sum(h[:0])
-	return h
-}
-
-// fillTest uses go-ethereum internally to get the state root and logs
-func fillTest(gst *fuzzing.GstMaker) (root, logs common.Hash, err error) {
-	test, err := gst.ToStateTest()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
-	subtest := test.Subtests()[0]
-	cfg := vm.Config{}
-	statedb, _ := test.Run(subtest, cfg)
-
-	root = statedb.IntermediateRoot(true)
-	logs = rlpHash(statedb.Logs())
-
-	fmt.Printf("root: %x, logs: %x\n", root, logs)
-	return
-}
-
 func createTests(location, prefix string, limit int) error {
 	base := fuzzing.GenerateBlake()
 	target := base.GetDestination()
@@ -108,12 +69,10 @@ func createTests(location, prefix string, limit int) error {
 		base.SetCode(target, code)
 
 		// Get new state root and logs hash
-		root, logs, err := fillTest(base)
-		if err != nil {
+		if err := base.Fill(nil); err != nil {
 			f.Close()
 			return err
 		}
-		base.SetResult(root, logs)
 
 		test := base.ToGeneralStateTest(testName)
 		// Write to tfile
@@ -131,19 +90,19 @@ func createTests(location, prefix string, limit int) error {
 func generate(ctx *cli.Context) error {
 
 	var prefix = ""
-	if ctx.GlobalIsSet(PrefixFlag.Name) {
-		prefix = ctx.GlobalString(PrefixFlag.Name)
+	if ctx.GlobalIsSet(common.PrefixFlag.Name) {
+		prefix = ctx.GlobalString(common.PrefixFlag.Name)
 	}
 	var location = ""
-	if ctx.GlobalIsSet(LocationFlag.Name) {
-		location = ctx.GlobalString(LocationFlag.Name)
+	if ctx.GlobalIsSet(common.LocationFlag.Name) {
+		location = ctx.GlobalString(common.LocationFlag.Name)
 		if err := os.MkdirAll(location, 0755); err != nil {
 			return fmt.Errorf("could not create %v: %v", location, err)
 		}
 	}
 	var count = 0
-	if ctx.GlobalIsSet(CountFlag.Name) {
-		count = ctx.GlobalInt(CountFlag.Name)
+	if ctx.GlobalIsSet(common.CountFlag.Name) {
+		count = ctx.GlobalInt(common.CountFlag.Name)
 	}
 	return createTests(location, prefix, count)
 }

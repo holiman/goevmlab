@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"io"
 	"math/big"
 	"math/rand"
 )
@@ -241,6 +243,29 @@ func (g *GstMaker) ToStateTest() (tests.StateTest, error) {
 func (g *GstMaker) EnableFork(fork string) {
 	g.forks = append(g.forks, fork)
 }
+
+// FillTest uses go-ethereum internally to determine the state root and logs, and optionally
+// outputs the trace to the given writer (if non-nil)
+func (g *GstMaker) Fill(traceOutput io.Writer) error {
+
+	test, err := g.ToStateTest()
+	if err != nil {
+		return err
+	}
+	subtest := test.Subtests()[0]
+	cfg := vm.Config{}
+	if traceOutput != nil {
+		cfg.Debug = true
+		cfg.Tracer = vm.NewJSONLogger(&vm.LogConfig{}, traceOutput)
+	}
+	statedb, _ := test.Run(subtest, cfg)
+
+	root := statedb.IntermediateRoot(true)
+	logs := rlpHash(statedb.Logs())
+	g.SetResult(root, logs)
+	return nil
+}
+
 
 func basicStateTest() *GstMaker {
 	gst := NewGstMaker()

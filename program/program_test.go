@@ -131,15 +131,15 @@ func TestReturnData(t *testing.T) {
 		p := NewProgram()
 		// 32 bytes
 		data := common.FromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
-			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" )
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 		p.ReturnData(data)
-		if exp, got := "60ff60005360016000f3", p.Hex(); got != exp {
+		if exp, got := "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff60005260206000f3", p.Hex(); got != exp {
 			t.Errorf("got %v expected %v", got, exp)
 		}
 	}
 }
 
-func TestCreateAndCall(t *testing.T){
+func TestCreateAndCall(t *testing.T) {
 
 	// A constructor that stores a slot
 	ctor := NewProgram()
@@ -149,46 +149,45 @@ func TestCreateAndCall(t *testing.T){
 	deployed := NewProgram()
 	deployed.Push(0)
 	deployed.Op(ops.SLOAD) // [value] in stack
-	deployed.Push(0) // [value, 0]
+	deployed.Push(0)       // [value, 0]
 	deployed.Op(ops.MSTORE)
-	deployed.Return(0,32)
+	deployed.Return(0, 32)
 
 	// Pack them
 	ctor.ReturnData(deployed.Bytecode())
 	// Verify constructor + runtime code
 	{
 		exp := "6005600055606060005360006001536054600253606060035360006004536052600553606060065360206007536060600853600060095360f3600a53600b6000f3"
-		if got :=  ctor.Hex(); got != exp {
+		if got := ctor.Hex(); got != exp {
 			t.Fatalf("1: got %v expected %v", got, exp)
 		}
 	}
 
-	{// Verify CREATE + CALL
+	{ // Verify CREATE + CALL
 		p := NewProgram()
 		p.CreateAndCall(ctor.Bytecode(), false, ops.CALL)
 		exp := "7f60056000556060600053600060015360546002536060600353600060045360526000527f600553606060065360206007536060600853600060095360f3600a53600b600060205260f3604053604160006000f060006000600060006000855af15050"
-		if got :=  p.Hex(); got != exp {
+		if got := p.Hex(); got != exp {
 			t.Fatalf("2: got %v expected %v", got, exp)
 		}
 	}
 
-	{// Verify CREATE + DELEGATECALL
+	{ // Verify CREATE + DELEGATECALL
 		p := NewProgram()
-		p.CreateAndCall(ctor.Bytecode(), false,  ops.DELEGATECALL)
+		p.CreateAndCall(ctor.Bytecode(), false, ops.DELEGATECALL)
 		exp := "7f60056000556060600053600060015360546002536060600353600060045360526000527f600553606060065360206007536060600853600060095360f3600a53600b600060205260f3604053604160006000f06000600060006000845af45050"
-		if got :=  p.Hex(); got != exp {
+		if got := p.Hex(); got != exp {
 			t.Fatalf("3: got %v expected %v", got, exp)
 		}
 	}
 
-	{// Verify CREATE2 + STATICCALL
+	{ // Verify CREATE2 + STATICCALL
 		p := NewProgram()
 		p.CreateAndCall(ctor.Bytecode(), true, ops.STATICCALL)
 		exp := "7f60056000556060600053600060015360546002536060600353600060045360526000527f600553606060065360206007536060600853600060095360f3600a53600b600060205260f36040536000604160006000f56000600060006000845afa5050"
-		if got :=  p.Hex(); got != exp {
+		if got := p.Hex(); got != exp {
 			t.Fatalf("2: got %v expected %v", got, exp)
 		}
 	}
-
 
 }

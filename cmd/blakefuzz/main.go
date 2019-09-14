@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/holiman/goevmlab/common"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"os"
@@ -32,34 +33,14 @@ func initApp() *cli.App {
 
 var (
 	app      = initApp()
-	GethFlag = cli.StringFlag{
-		Name:     "geth",
-		Usage:    "Location of go-ethereum 'evm' binary",
-		Required: true,
-	}
-	ParityFlag = cli.StringFlag{
-		Name:     "parity",
-		Usage:    "Location of go-ethereum 'parity-vm' binary",
-		Required: true,
-	}
-	ThreadFlag = cli.IntFlag{
-		Name:  "paralell",
-		Usage: "Number of paralell executions to use.",
-		Value: runtime.NumCPU(),
-	}
-	LocationFlag = cli.StringFlag{
-		Name:  "tempdir",
-		Usage: "Location to place temp files",
-		Value: "/tmp",
-	}
 )
 
 func init() {
 	app.Flags = []cli.Flag{
-		GethFlag,
-		ParityFlag,
-		ThreadFlag,
-		LocationFlag,
+		common.GethFlag,
+		common.ParityFlag,
+		common.ThreadFlag,
+		common.LocationFlag,
 	}
 	app.Action = testBlake
 }
@@ -74,10 +55,10 @@ func main() {
 func testBlake(c *cli.Context) error {
 
 	var (
-		gethBin    = c.GlobalString(GethFlag.Name)
-		parityBin  = c.GlobalString(ParityFlag.Name)
-		numThreads = c.GlobalInt(ThreadFlag.Name)
-		location   = c.GlobalString(LocationFlag.Name)
+		gethBin    = c.GlobalString(common.GethFlag.Name)
+		parityBin  = c.GlobalString(common.ParityFlag.Name)
+		numThreads = c.GlobalInt(common.ThreadFlag.Name)
+		location   = c.GlobalString(common.LocationFlag.Name)
 		numTests   uint64
 	)
 	fmt.Printf("numThreads: %d\n", numThreads)

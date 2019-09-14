@@ -14,8 +14,7 @@ func init() {
 		fmt.Fprintln(os.Stderr, "Usage:", os.Args[0], "filename")
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr, `
-Reads the given trace-file, and displays the tracing in a nice CLI user interface
-`)
+Reads the given trace-file, and displays the tracing in a nice CLI user interface`)
 	}
 }
 

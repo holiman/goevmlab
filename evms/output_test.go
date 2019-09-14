@@ -40,9 +40,9 @@ func TestGethVsParityStatetestOutput(t *testing.T) {
 			vm.feed(file, parityChan)
 		}(output)
 	}
-
+	c := &Comparer{}
 	// Now we have two channels that will spit out OutputItems
-	outCh := CompareVms(gethChan, parityChan)
+	outCh := c.CompareVms(gethChan, parityChan)
 	for outp := range outCh {
 		t.Errorf("Expected no diff, got %v", outp)
 	}
@@ -98,7 +98,8 @@ func TestDifferentLengthOutput(t *testing.T) {
 	}
 
 	// Now we have two channels that will spit out OutputItems
-	outCh := CompareVms(gethChan, parityChan)
+	c := &Comparer{}
+	outCh := c.CompareVms(gethChan, parityChan)
 	expErrors := 4
 	errors := 0
 	for range outCh {

@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"os"
 	"time"
@@ -91,14 +92,14 @@ func runit() error {
 
 	// The self-call can be done a bit more clever, gas-wise
 
-	b.Op(vm.PC)      // get zero on stack (out size)
-	b.Op(vm.DUP1)    // out offset
-	b.Op(vm.DUP1)    // insize
-	b.Op(vm.DUP1)    // inoffset
-	b.Op(vm.DUP1)    // value
-	b.Op(vm.ADDRESS) // address
-	b.Op(vm.GAS)     // Gas
-	b.Op(vm.CALL)
+	b.Op(ops.PC)      // get zero on stack (out size)
+	b.Op(ops.DUP1)    // out offset
+	b.Op(ops.DUP1)    // insize
+	b.Op(ops.DUP1)    // inoffset
+	b.Op(ops.DUP1)    // value
+	b.Op(ops.ADDRESS) // address
+	b.Op(ops.GAS)     // Gas
+	b.Op(ops.CALL)
 
 	alloc := make(core.GenesisAlloc)
 	alloc[aAddr] = core.GenesisAccount{

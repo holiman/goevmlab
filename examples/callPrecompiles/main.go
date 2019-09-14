@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"os"
 	"time"
@@ -91,16 +92,16 @@ func runit() error {
 
 	 */
 
-	a.Op(vm.PC)
-	a.Op(vm.JUMPDEST)
-	a.Op(vm.MSIZE)
-	a.Op(vm.MSIZE)
-	a.Op(vm.MSIZE)
-	a.Op(vm.MSIZE)
+	a.Op(ops.PC)
+	a.Op(ops.JUMPDEST)
+	a.Op(ops.MSIZE)
+	a.Op(ops.MSIZE)
+	a.Op(ops.MSIZE)
+	a.Op(ops.MSIZE)
 	a.Push(4)
-	a.Op(vm.GAS)
-	a.Op(vm.STATICCALL)
-	a.Op(vm.JUMP)
+	a.Op(ops.GAS)
+	a.Op(ops.STATICCALL)
+	a.Op(ops.JUMP)
 
 	alloc := make(core.GenesisAlloc)
 	alloc[aAddr] = core.GenesisAccount{
