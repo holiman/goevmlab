@@ -67,9 +67,9 @@ var (
 	}
 )
 
-type GeneratorFn func() (*fuzzing.GstMaker, string)
+type GeneratorFn func() *fuzzing.GstMaker
 
-func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn) error {
+func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 
 	var (
 		gethBin    = c.GlobalString(GethFlag.Name)
@@ -81,7 +81,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn) error {
 	fmt.Printf("numThreads: %d\n", numThreads)
 	var wg sync.WaitGroup
 	// The channel where we'll deliver tests
-	testCh := make(chan string, 2)
+	testCh := make(chan string, 10)
 	// Cancel ability
 	sigs := make(chan os.Signal, 1)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -89,25 +89,28 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn) error {
 
 	wg.Add(1)
 	// Thread that creates tests, spits out filenames
-	go func() {
-		defer wg.Done()
-		for {
-			gstMaker, testName := generatorFn()
-			test := gstMaker.ToGeneralStateTest(testName)
-			fileName, err := storeTest(location, test, testName)
-			if err != nil {
-				fmt.Printf("Error: %v", err)
-				break
-			}
-			select {
-			case testCh <- fileName:
-			case <-ctx.Done():
-				break
-			}
-		}
-	}()
 
-	for i := 0; i < numThreads; i++ {
+	for i := 0; i < numThreads/2; i++ {
+		go func(threadId int) {
+			defer wg.Done()
+			for i := 0; ; i++ {
+				gstMaker := generatorFn()
+				testName := fmt.Sprintf("%d-%v-%d", threadId, name, i)
+				test := gstMaker.ToGeneralStateTest(testName)
+				fileName, err := storeTest(location, test, testName)
+				if err != nil {
+					fmt.Printf("Error: %v", err)
+					break
+				}
+				select {
+				case testCh <- fileName:
+				case <-ctx.Done():
+					break
+				}
+			}
+		}(i)
+	}
+	for i := 0; i < numThreads/2; i++ {
 		// Thread that executes the tests and compares the outputs
 		wg.Add(1)
 		go func() {

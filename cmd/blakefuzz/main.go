@@ -51,16 +51,11 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	var (
-		i      = 0
-		base   = fuzzing.GenerateBlake()
-		target = base.GetDestination()
-	)
-	generator := func() (*fuzzing.GstMaker, string) {
+	generator := func() (*fuzzing.GstMaker) {
+		base := fuzzing.GenerateBlake()
+		target := base.GetDestination()
 		base.SetCode(target, fuzzing.RandCallBlake())
-		testName := fmt.Sprintf("blaketest-%d", i)
-		i++
-		return base, testName
+		return base
 	}
-	return common.ExecuteFuzzer(c, generator)
+	return common.ExecuteFuzzer(c, generator, "blaketest")
 }

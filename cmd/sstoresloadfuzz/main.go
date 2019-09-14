@@ -51,13 +51,6 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	var i = 0
 	fmt.Printf("Generator started \n")
-	generator := func() (*fuzzing.GstMaker, string) {
-		base := fuzzing.Generate2200Test()
-		testName := fmt.Sprintf("storagefuzz-%d", i)
-		i++
-		return base, testName
-	}
-	return common.ExecuteFuzzer(c, generator)
+	return common.ExecuteFuzzer(c, fuzzing.Generate2200Test, "storagefuzz")
 }
