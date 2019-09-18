@@ -122,15 +122,12 @@ func generate(ctx *cli.Context) error {
 	if ctx.GlobalIsSet(common.PrefixFlag.Name) {
 		prefix = ctx.GlobalString(common.PrefixFlag.Name)
 	}
-	var location = ""
-	if ctx.GlobalIsSet(common.LocationFlag.Name) {
-		location = ctx.GlobalString(common.LocationFlag.Name)
-		if err := os.MkdirAll(path.Join(location, "tests"), 0755); err != nil {
-			return fmt.Errorf("could not create %v: %v", location, err)
-		}
-		//if err := os.MkdirAll(path.Join(location, "traces"), 0755); err != nil {
-		//	return fmt.Errorf("could not create %v: %v", location, err)
-		//}
+	var location = ctx.GlobalString(common.LocationFlag.Name)
+	//if err := os.MkdirAll(path.Join(location, "traces"), 0755); err != nil {
+	//	return fmt.Errorf("could not create %v: %v", location, err)
+	//}
+	if err := os.MkdirAll(path.Join(location, "tests"), 0755); err != nil {
+		return fmt.Errorf("could not create %v: %v", location, err)
 	}
 	var count = 0
 	if ctx.GlobalIsSet(common.CountFlag.Name) {
