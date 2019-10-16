@@ -65,9 +65,4 @@ Here is a CPU profile of the execution for Intel Xeon Processor (Skylake, IBRS):
 
 It is possible to create relatively slow transactions with large amounts of calldata.
 
-- Formula:
-```
-Maximize[{x * y, x/32*3+x*x/2**19+750y <= 10000000}, {x,y}]
-```   
-
 
