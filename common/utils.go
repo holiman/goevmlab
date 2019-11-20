@@ -17,13 +17,13 @@
 package common
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/holiman/goevmlab/evms"
-	"github.com/holiman/goevmlab/fuzzing"
 	"gopkg.in/urfave/cli.v1"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -34,6 +34,9 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/holiman/goevmlab/evms"
+	"github.com/holiman/goevmlab/fuzzing"
 )
 
 var (
@@ -82,50 +85,112 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	var wg sync.WaitGroup
 	// The channel where we'll deliver tests
 	testCh := make(chan string, 10)
+	// The channel for cleanup-taksks
+	removeCh := make(chan string, 10)
+	// channel for signalling consensus errors
+	consensusCh := make(chan string, 10)
+
 	// Cancel ability
 	sigs := make(chan os.Signal, 1)
 	ctx, cancel := context.WithCancel(context.Background())
+	abort := int64(0)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	wg.Add(1)
 	// Thread that creates tests, spits out filenames
-
-	for i := 0; i < numThreads/2; i++ {
+	numFactories := numThreads / 2
+	factories := int64(numFactories)
+	for i := 0; i < numFactories; i++ {
+		wg.Add(1)
 		go func(threadId int) {
 			defer wg.Done()
-			for i := 0; ; i++ {
+			defer func() {
+				if f := atomic.AddInt64(&factories, -1); f == 0 {
+					fmt.Printf("closing testCh\n")
+					close(testCh)
+				}
+			}()
+			for i := 0; atomic.LoadInt64(&abort) == 0; i++ {
 				gstMaker := generatorFn()
-				testName := fmt.Sprintf("%d-%v-%d", threadId, name, i)
+				testName := fmt.Sprintf("%08d-%v-%d", i, name, threadId)
 				test := gstMaker.ToGeneralStateTest(testName)
 				fileName, err := storeTest(location, test, testName)
 				if err != nil {
 					fmt.Printf("Error: %v", err)
 					break
 				}
-				select {
-				case testCh <- fileName:
-				case <-ctx.Done():
+				testCh <- fileName
+				if i > 100 {
 					break
 				}
 			}
 		}(i)
 	}
+	executors := int64(0)
+
+	evms := []evms.Evm{
+		evms.NewGethEVM(gethBin),
+		evms.NewParityVM(parityBin),
+	}
+
 	for i := 0; i < numThreads/2; i++ {
 		// Thread that executes the tests and compares the outputs
 		wg.Add(1)
-		go func() {
+		go func(threadId int) {
 			defer wg.Done()
-			geth := evms.NewGethEVM(gethBin)
-			parity := evms.NewParityVM(parityBin)
+			atomic.AddInt64(&executors, 1)
+			var outputs []*os.File
+			defer func() {
+				if f := atomic.AddInt64(&executors, -1); f == 0 {
+					close(removeCh)
+				}
+			}()
+			defer func() {
+				for _, f := range outputs {
+					f.Close()
+				}
+			}()
+			// Open/create outputs for writing
+			for _, evm := range evms {
+				out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755)
+				if err != nil {
+					fmt.Printf("failed opening file %v", err)
+					return
+				}
+				outputs = append(outputs, out)
+			}
 			fmt.Printf("Fuzzing started \n")
+
 			for file := range testCh {
-				if err := compareOutputs(geth, parity, file); err != nil {
-					fmt.Printf("Error occurred in executor: %v", err)
-					break
+				// Zero out the output files
+				for _, f := range outputs {
+					f.Truncate(0)
+				}
+				// Kick off the binaries
+				var wg sync.WaitGroup
+				wg.Add(len(evms))
+				for i, evm := range evms {
+					go func(out io.Writer) {
+						evm.RunStateTest(file, out)
+						wg.Done()
+					}(outputs[i])
+				}
+				wg.Wait()
+				// Seet to beginning
+				for _, f := range outputs {
+					f.Seek(0, 0)
 				}
 				atomic.AddUint64(&numTests, 1)
+				// Compare outputs
+				eq := compareFiles(outputs[0], outputs[1])
+				if !eq {
+					atomic.StoreInt64(&abort, 1)
+					consensusCh <- file
+					return
+				} else {
+					removeCh <- file
+				}
 			}
-		}()
+		}(i)
 	}
 	// One goroutine to spit out some statistics
 	wg.Add(1)
@@ -155,35 +220,46 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 
 				ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755)
 			case <-ctx.Done():
-				break
+				return
 			}
 		}
 
 	}()
+	// One goroutine to clean up after ourselves
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for path := range removeCh {
+			if err := os.Remove(path); err != nil {
+				fmt.Fprintf(os.Stderr, "Error deleting file %v, : %v\n", path, err)
+			}
+		}
+	}()
 
-	<-sigs
-	fmt.Println("Exiting...")
+	select {
+	case <-sigs:
+	case path := <-consensusCh:
+		fmt.Printf("Possible consensus error!\nFile: %v\n", path)
+	}
+	fmt.Printf("waiting for procs to exit\n")
+	atomic.StoreInt64(&abort, 1)
 	cancel()
+	wg.Wait()
 	return nil
 }
 
-func compareOutputs(a, b evms.Evm, testfile string) error {
-	comparer := evms.Comparer{}
-	chA, err := a.StartStateTest(testfile)
-	if err != nil {
-		return fmt.Errorf("failed [1] starting testfile %v: %v", testfile, err)
+func compareFiles(sf, df io.Reader) bool {
+	sscan := bufio.NewScanner(sf)
+	dscan := bufio.NewScanner(df)
+
+	for sscan.Scan() {
+		dscan.Scan()
+		if !bytes.Equal(sscan.Bytes(), dscan.Bytes()) {
+			fmt.Printf("diff: \nG: %v\nP: %v\n", string(sscan.Bytes()), string(dscan.Bytes()))
+			return false
+		}
 	}
-	chB, err := b.StartStateTest(testfile)
-	if err != nil {
-		return fmt.Errorf("failed [2] starting testfile %v: %v", testfile, err)
-	}
-	outCh := comparer.CompareVms(chA, chB)
-	for outp := range outCh {
-		fmt.Printf("Output: %v\n", outp)
-		err = errors.New("consensus error")
-	}
-	fmt.Printf("file %v: stats: %v\n", testfile, comparer.Stats())
-	return err
+	return true
 }
 
 // storeTest saves a testcase to disk

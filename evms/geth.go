@@ -23,13 +23,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os/exec"
-	"sync"
 )
 
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
 type GethEVM struct {
 	path string
-	wg   sync.WaitGroup
 }
 
 func NewGethEVM(path string) *GethEVM {
@@ -38,38 +36,36 @@ func NewGethEVM(path string) *GethEVM {
 	}
 }
 
-// StartStateTest implements the Evm interface
-func (evm *GethEVM) StartStateTest(path string) (chan *vm.StructLog, error) {
+// RunStateTest implements the Evm interface
+func (evm *GethEVM) RunStateTest(path string, out io.Writer) error {
 	var (
 		stderr io.ReadCloser
 		err    error
 	)
 	cmd := exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return nil, err
+		return err
 	}
 	if err = cmd.Start(); err != nil {
-		return nil, err
+		return err
 	}
-	ch := make(chan *vm.StructLog)
-	evm.wg.Add(1)
-	go func(){
-		evm.feed(stderr, ch)
-		cmd.Wait()
-	}()
-	return ch, nil
-
+	// copy everything to the given writer
+	evm.Copy(out, stderr)
+	return nil
 }
 
+func (evm *GethEVM) Name() string{
+	return "geth"
+}
+
+
 func (vm *GethEVM) Close() {
-	vm.wg.Wait()
 }
 
 // feed reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
-func (evm *GethEVM) feed(input io.Reader, opsCh chan (*vm.StructLog)) {
-	defer close(opsCh)
-	defer evm.wg.Done()
+func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
+	//defer close(opsCh)
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
@@ -100,8 +96,13 @@ func (evm *GethEVM) feed(input io.Reader, opsCh chan (*vm.StructLog)) {
 		if elem.Op == 0x0 {
 			continue
 		}
-
-		opsCh <- &elem
+		// Parity is missing gasCost, memSize and refund
+		elem.GasCost = 0
+		elem.MemorySize = 0
+		elem.RefundCounter = 0
+		jsondata, _ := json.Marshal(elem)
+		out.Write(jsondata)
+		out.Write([]byte("\n"))
 	}
 }
 
