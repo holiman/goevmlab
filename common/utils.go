@@ -119,9 +119,6 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					break
 				}
 				testCh <- fileName
-				if i > 100 {
-					break
-				}
 			}
 		}(i)
 	}
