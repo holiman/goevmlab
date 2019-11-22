@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os/exec"
+	"strings"
 )
 
 type ParityVM struct {
@@ -35,7 +36,7 @@ func NewParityVM(path string) *ParityVM {
 	}
 }
 
-func (evm *ParityVM) Name() string{
+func (evm *ParityVM) Name() string {
 	return "parity"
 }
 
@@ -43,10 +44,16 @@ func (evm *ParityVM) Name() string{
 func (evm *ParityVM) RunStateTest(path string, out io.Writer) error {
 	var (
 		stderr io.ReadCloser
+		stdout io.ReadCloser
 		err    error
 	)
 	cmd := exec.Command(evm.path, "--std-json", "state-test", path)
 	if stderr, err = cmd.StderrPipe(); err != nil {
+		return err
+	}
+	// Parity, when there's an error on state root, spits out the error on
+	// stdout. So we need to read that aswell
+	if stdout, err = cmd.StdoutPipe(); err != nil {
 		return err
 	}
 	if err = cmd.Start(); err != nil {
@@ -54,6 +61,9 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer) error {
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
+	// copy everything to the given writer -- this means that the
+	// stderr output will come _after_ all stderr data. Which is good.
+	evm.Copy(out, stdout)
 	// release resources
 	cmd.Wait()
 	return nil
@@ -62,13 +72,18 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer) error {
 func (evm *ParityVM) Close() {
 }
 
+type parityErrorRoot struct {
+	Error string
+}
+
 func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
-	//defer close(opsCh)
+	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
+		//fmt.Printf("parity data: %v\n", string(data))
 		var elem vm.StructLog
 		json.Unmarshal(data, &elem)
 		// If the output cannot be marshalled, all fields will be blanks.
@@ -76,11 +91,18 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 		// for any actual opcode
 		if elem.Depth == 0 {
 			/*  Most likely one of these:
-			{"stateRoot":"0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
+			{"error":"State root mismatch (got: 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134, expected: 0x0000000000000000000000000000000000000000000000000000000000000000)","gasUsed":"0x2dc6c0","time":146}
 			*/
-			fmt.Printf("parity non-op, line is:\n\t%v\n\tErr: %v\n", string(data), scanner.Err())
+			if stateRoot.StateRoot == ("") {
+				var p parityErrorRoot
+				json.Unmarshal(data, &p)
 
-			// For now, just ignore these
+				prefix := `State root mismatch (got: `
+				if strings.HasPrefix(p.Error, prefix) {
+					root := []byte(strings.TrimPrefix(p.Error, prefix))
+					stateRoot.StateRoot = string(root[:66])
+				}
+			}
 			continue
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
@@ -91,6 +113,11 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 		//fmt.Printf("parity: %v\n", string(data))
 		jsondata, _ := json.Marshal(elem)
 		out.Write(jsondata)
+		out.Write([]byte("\n"))
+	}
+	if stateRoot.StateRoot != ("") {
+		root, _ := json.Marshal(stateRoot)
+		out.Write(root)
 		out.Write([]byte("\n"))
 	}
 }

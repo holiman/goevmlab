@@ -127,11 +127,12 @@ type stIndex struct {
 //go:generate gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go
 
 type stEnv struct {
-	Coinbase   common.Address `json:"currentCoinbase"   gencodec:"required"`
-	Difficulty *big.Int       `json:"currentDifficulty" gencodec:"required"`
-	GasLimit   uint64         `json:"currentGasLimit"   gencodec:"required"`
-	Number     uint64         `json:"currentNumber"     gencodec:"required"`
-	Timestamp  uint64         `json:"currentTimestamp"  gencodec:"required"`
+	Coinbase     common.Address `json:"currentCoinbase"   gencodec:"required"`
+	Difficulty   *big.Int       `json:"currentDifficulty" gencodec:"required"`
+	GasLimit     uint64         `json:"currentGasLimit"   gencodec:"required"`
+	Number       uint64         `json:"currentNumber"     gencodec:"required"`
+	Timestamp    uint64         `json:"currentTimestamp"  gencodec:"required"`
+	PreviousHash common.Hash    `json:"previousHash"`
 }
 
 type stEnvMarshaling struct {

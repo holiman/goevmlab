@@ -21,6 +21,7 @@ func (s stEnv) MarshalJSON() ([]byte, error) {
 		GasLimit   math.HexOrDecimal64      `json:"currentGasLimit"   gencodec:"required"`
 		Number     math.HexOrDecimal64      `json:"currentNumber"     gencodec:"required"`
 		Timestamp  math.HexOrDecimal64      `json:"currentTimestamp"  gencodec:"required"`
+		PreviousHash common.Hash    `json:"previousHash"`
 	}
 	var enc stEnv
 	enc.Coinbase = common.UnprefixedAddress(s.Coinbase)

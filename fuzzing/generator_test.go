@@ -17,6 +17,7 @@
 package fuzzing
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,32 +50,26 @@ func TestBlakeGenerator(t *testing.T) {
 	fmt.Printf(string(data))
 
 }
-func testCompare(a, b evms.Evm, testfile string) (int, int, error) {
-	chA, err := a.StartStateTest(testfile)
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		os.Exit(1)
-	}
-	chB, err := b.StartStateTest(testfile)
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		os.Exit(1)
-	}
-	c := &evms.Comparer{}
-	outCh := c.CompareVms(chA, chB)
-	errors := 0
+func testCompare(a, b evms.Evm, testfile string) error {
 
-	for outp := range outCh {
-		fmt.Printf("Output: %v\n", outp)
-		errors++
+	wa := bytes.NewBuffer(nil)
+	if err := a.RunStateTest(testfile, wa); err != nil {
+		fmt.Printf("error: %v\n", err)
+		os.Exit(1)
 	}
-	if errors > 0 {
-		return c.Steps, c.MaxDepth, fmt.Errorf("%d diffs encountered", errors)
+	wb := bytes.NewBuffer(nil)
+	if err := b.RunStateTest(testfile, wb); err != nil {
+		fmt.Printf("error: %v\n", err)
+		os.Exit(1)
 	}
-	return c.Steps, c.MaxDepth, nil
+	eq := evms.CompareFiles(wa, wb)
+	if !eq {
+		return fmt.Errorf("diffs encountered")
+	}
+	return nil
 }
 
-func testFuzzing(t *testing.T) (int, int, error) {
+func testFuzzing(t *testing.T) error {
 	testName := "some_rando_test"
 	fileName := fmt.Sprintf("%v.json", testName)
 	p := path.Join(os.TempDir(), fileName)
@@ -127,17 +122,17 @@ func TestFuzzing(t *testing.T) {
 	testFuzzing(t)
 }
 
-func TestFuzzingCoverage(t *testing.T) {
-	tot := 0
-	totDepth := 0
-	for i := 0; i < 100; i++ {
-		numSteps, maxdepth, _ := testFuzzing(t)
-		tot += numSteps
-		fmt.Printf("numSteps %d maxDepth: %d\n", numSteps, maxdepth)
-		totDepth += (maxdepth - 1)
-	}
-	fmt.Printf("total steps (100 tests): %d, total depth %d\n", tot, totDepth)
-}
+//func TestFuzzingCoverage(t *testing.T) {
+//	tot := 0
+//	totDepth := 0
+//	for i := 0; i < 100; i++ {
+//		numSteps, maxdepth, _ := testFuzzing(t)
+//		tot += numSteps
+//		fmt.Printf("numSteps %d maxDepth: %d\n", numSteps, maxdepth)
+//		totDepth += (maxdepth - 1)
+//	}
+//	fmt.Printf("total steps (100 tests): %d, total depth %d\n", tot, totDepth)
+//}
 
 /*
 BenchmarkGenerator-6   	  500000	      2419 ns/op

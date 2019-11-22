@@ -17,8 +17,6 @@
 package common
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -41,14 +39,24 @@ import (
 
 var (
 	GethFlag = cli.StringFlag{
-		Name:     "geth",
-		Usage:    "Location of go-ethereum 'evm' binary",
-		Required: true,
+		Name:  "geth",
+		Usage: "Location of go-ethereum 'evm' binary",
+		//Required: true,
 	}
 	ParityFlag = cli.StringFlag{
-		Name:     "parity",
-		Usage:    "Location of go-ethereum 'parity-vm' binary",
-		Required: true,
+		Name:  "parity",
+		Usage: "Location of go-ethereum 'parity-vm' binary",
+		//Required: true,
+	}
+	NethermindFlag = cli.StringFlag{
+		Name:  "nethermind",
+		Usage: "Location of nethermind 'nethtest' binary",
+		//Required: true,
+	}
+	AlethFlag = cli.StringFlag{
+		Name:  "testeth",
+		Usage: "Location of aleth 'testeth' binary",
+		//Required: true,
 	}
 	ThreadFlag = cli.IntFlag{
 		Name:  "paralell",
@@ -77,10 +85,16 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	var (
 		gethBin    = c.GlobalString(GethFlag.Name)
 		parityBin  = c.GlobalString(ParityFlag.Name)
+		nethBin    = c.GlobalString(NethermindFlag.Name)
+		alethBin   = c.GlobalString(AlethFlag.Name)
 		numThreads = c.GlobalInt(ThreadFlag.Name)
 		location   = c.GlobalString(LocationFlag.Name)
 		numTests   uint64
 	)
+	if gethBin == "" {
+		return fmt.Errorf("need at least geth to participate")
+	}
+
 	fmt.Printf("numThreads: %d\n", numThreads)
 	var wg sync.WaitGroup
 	// The channel where we'll deliver tests
@@ -124,9 +138,15 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	}
 	executors := int64(0)
 
-	evms := []evms.Evm{
-		evms.NewGethEVM(gethBin),
-		evms.NewParityVM(parityBin),
+	vms := []evms.Evm{evms.NewGethEVM(gethBin)}
+	if parityBin != "" {
+		vms = append(vms, evms.NewParityVM(parityBin))
+	}
+	if nethBin != "" {
+		vms = append(vms, evms.NewNethermindVM(nethBin))
+	}
+	if alethBin != "" {
+		vms = append(vms, evms.NewAlethVM(alethBin))
 	}
 
 	for i := 0; i < numThreads/2; i++ {
@@ -147,7 +167,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				}
 			}()
 			// Open/create outputs for writing
-			for _, evm := range evms {
+			for _, evm := range vms {
 				out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755)
 				if err != nil {
 					fmt.Printf("failed opening file %v", err)
@@ -158,31 +178,39 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 			fmt.Printf("Fuzzing started \n")
 
 			for file := range testCh {
+				if atomic.LoadInt64(&abort) == 1 {
+					// Continue to drain the testch
+					continue
+				}
 				// Zero out the output files
 				for _, f := range outputs {
 					f.Truncate(0)
 				}
 				// Kick off the binaries
 				var wg sync.WaitGroup
-				wg.Add(len(evms))
-				for i, evm := range evms {
-					go func(out io.Writer) {
+				wg.Add(len(vms))
+				for i, vm := range vms {
+					go func(evm evms.Evm, out io.Writer) {
+						t0 := time.Now()
 						evm.RunStateTest(file, out)
+						fmt.Printf("%10v done in %v\n", evm.Name(), time.Since(t0))
 						wg.Done()
-					}(outputs[i])
+					}(vm, outputs[i])
 				}
 				wg.Wait()
+				var readers []io.Reader
 				// Seet to beginning
 				for _, f := range outputs {
 					f.Seek(0, 0)
+					readers = append(readers, f)
 				}
 				atomic.AddUint64(&numTests, 1)
 				// Compare outputs
-				eq := compareFiles(outputs[0], outputs[1])
+				eq := evms.CompareFiles(vms, readers)
 				if !eq {
 					atomic.StoreInt64(&abort, 1)
+					fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
 					consensusCh <- file
-					return
 				} else {
 					removeCh <- file
 				}
@@ -243,20 +271,6 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	cancel()
 	wg.Wait()
 	return nil
-}
-
-func compareFiles(sf, df io.Reader) bool {
-	sscan := bufio.NewScanner(sf)
-	dscan := bufio.NewScanner(df)
-
-	for sscan.Scan() {
-		dscan.Scan()
-		if !bytes.Equal(sscan.Bytes(), dscan.Bytes()) {
-			fmt.Printf("diff: \nG: %v\nP: %v\n", string(sscan.Bytes()), string(dscan.Bytes()))
-			return false
-		}
-	}
-	return true
 }
 
 // storeTest saves a testcase to disk
