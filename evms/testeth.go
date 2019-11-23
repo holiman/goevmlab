@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os/exec"
-	"regexp"
 )
 
 // AlethVM is s Evm-interface wrapper around the `testeth` binary, based on Aleth.
@@ -76,14 +75,6 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
-
-		// aleth has 'depth' as a string
-		{
-			depthRe := regexp.MustCompile(`depth":"(\d+)"`)
-			pcRe := regexp.MustCompile(`pc":"(\d+)"`)
-			data = depthRe.ReplaceAll(data, []byte(`depth":$1`))
-			data = pcRe.ReplaceAll(data, []byte(`pc":$1`))
-		}
 		var elem vm.StructLog
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
@@ -101,8 +92,8 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 			if stateRoot.StateRoot == "" {
 				json.Unmarshal(data, &stateRoot)
 				// Aleth doesn't prefix stateroot
-				if r := stateRoot.StateRoot; r != ""{
-					stateRoot.StateRoot = fmt.Sprintf("0x%v",r )
+				if r := stateRoot.StateRoot; r != "" {
+					stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
 				}
 
 			}

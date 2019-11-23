@@ -18,6 +18,7 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -49,6 +50,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer) error {
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return err
 	}
+	fmt.Printf("nethermind cmd: %v\n", cmd.String())
 	if err = cmd.Start(); err != nil {
 		return err
 	}
@@ -75,6 +77,12 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		data := scanner.Bytes()
 		var elem vm.StructLog
 
+		// Nethermind sometimes report a negative refund
+		if i:= bytes.Index(data,[]byte(`"refund":-`)); i > 0{
+			// we can just make it positive, it will be zeroed later
+			data[i+9]=byte(' ')
+			fmt.Sprintf("new data: %v\n", string(data))
+		}
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
 			fmt.Printf("nethermind err: %v, line\n\t%v\n", err, string(data))
