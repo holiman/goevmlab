@@ -78,21 +78,84 @@ var (
 	}
 )
 
+func initVMs(c *cli.Context) []evms.Evm {
+	var (
+		gethBin   = c.GlobalString(GethFlag.Name)
+		parityBin = c.GlobalString(ParityFlag.Name)
+		nethBin   = c.GlobalString(NethermindFlag.Name)
+		alethBin  = c.GlobalString(AlethFlag.Name)
+	)
+	vms := []evms.Evm{evms.NewGethEVM(gethBin)}
+	if parityBin != "" {
+		vms = append(vms, evms.NewParityVM(parityBin))
+	}
+	if nethBin != "" {
+		vms = append(vms, evms.NewNethermindVM(nethBin))
+	}
+	if alethBin != "" {
+		vms = append(vms, evms.NewAlethVM(alethBin))
+	}
+	return vms
+
+}
+
+func RunOneTest(path string, c *cli.Context) error {
+	var (
+		vms     = initVMs(c)
+		outputs []*os.File
+		readers []io.Reader
+	)
+	if len(vms) < 1 {
+		return fmt.Errorf("No vms specified!")
+	}
+	// Open/create outputs for writing
+	for _, evm := range vms {
+		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_CREATE|os.O_RDWR, 0755)
+		if err != nil {
+			return fmt.Errorf("failed opening file %v", err)
+		}
+		outputs = append(outputs, out)
+	}
+	// Kick off the binaries
+	var wg sync.WaitGroup
+	wg.Add(len(vms))
+	for i, vm := range vms {
+		go func(evm evms.Evm, out io.Writer) {
+			t0 := time.Now()
+			evm.RunStateTest(path, out)
+			execTime := time.Since(t0)
+			fmt.Printf("%10v done in %v\n", evm.Name(), execTime)
+			wg.Done()
+		}(vm, outputs[i])
+	}
+	wg.Wait()
+	// Seek to beginning
+	for _, f := range outputs {
+		f.Seek(0, 0)
+		readers = append(readers, f)
+	}
+	// Compare outputs
+	if eq := evms.CompareFiles(vms, readers); !eq {
+		fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
+		return fmt.Errorf("Consensus error")
+	}
+	fmt.Printf("all agree!")
+	return nil
+}
+
 type GeneratorFn func() *fuzzing.GstMaker
 
 func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 
 	var (
-		gethBin    = c.GlobalString(GethFlag.Name)
-		parityBin  = c.GlobalString(ParityFlag.Name)
-		nethBin    = c.GlobalString(NethermindFlag.Name)
-		alethBin   = c.GlobalString(AlethFlag.Name)
+		vms        = initVMs(c)
 		numThreads = c.GlobalInt(ThreadFlag.Name)
 		location   = c.GlobalString(LocationFlag.Name)
 		numTests   uint64
 	)
-	if gethBin == "" {
-		return fmt.Errorf("need at least geth to participate")
+
+	if len(vms) == 0 {
+		return fmt.Errorf("need at least onee vm to participate")
 	}
 
 	fmt.Printf("numThreads: %d\n", numThreads)
@@ -137,18 +200,6 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		}(i)
 	}
 	executors := int64(0)
-
-	vms := []evms.Evm{evms.NewGethEVM(gethBin)}
-	if parityBin != "" {
-		vms = append(vms, evms.NewParityVM(parityBin))
-	}
-	if nethBin != "" {
-		vms = append(vms, evms.NewNethermindVM(nethBin))
-	}
-	if alethBin != "" {
-		vms = append(vms, evms.NewAlethVM(alethBin))
-	}
-
 	for i := 0; i < numThreads/2; i++ {
 		// Thread that executes the tests and compares the outputs
 		wg.Add(1)
@@ -166,6 +217,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					f.Close()
 				}
 			}()
+			fmt.Printf("Fuzzing started \n")
 			// Open/create outputs for writing
 			for _, evm := range vms {
 				out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755)
@@ -175,8 +227,6 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				}
 				outputs = append(outputs, out)
 			}
-			fmt.Printf("Fuzzing started \n")
-
 			for file := range testCh {
 				if atomic.LoadInt64(&abort) == 1 {
 					// Continue to drain the testch
@@ -186,6 +236,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				for _, f := range outputs {
 					f.Truncate(0)
 				}
+				var slowTest uint32
 				// Kick off the binaries
 				var wg sync.WaitGroup
 				wg.Add(len(vms))
@@ -193,7 +244,12 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					go func(evm evms.Evm, out io.Writer) {
 						t0 := time.Now()
 						evm.RunStateTest(file, out)
-						fmt.Printf("%10v done in %v\n", evm.Name(), time.Since(t0))
+						execTime := time.Since(t0)
+						fmt.Printf("%10v done in %v\n", evm.Name(), execTime)
+						if execTime > 5*time.Second {
+							// Flag test as slow
+							atomic.StoreUint32(&slowTest, 1)
+						}
 						wg.Done()
 					}(vm, outputs[i])
 				}
@@ -211,8 +267,12 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					atomic.StoreInt64(&abort, 1)
 					fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
 					consensusCh <- file
+				} else if slowTest != 0 {
+					// TODO, send to slowchannel
+					removeCh <- file
 				} else {
 					removeCh <- file
+
 				}
 			}
 		}(i)

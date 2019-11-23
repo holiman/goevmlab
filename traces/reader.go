@@ -99,6 +99,15 @@ func (t *TraceLine) Depth() int {
 	return t.log.Depth
 }
 
+func (t *TraceLine) Equals(other *TraceLine) bool {
+	return t.Op() == other.Op() &&
+		t.log.Pc == other.log.Pc &&
+		t.log.Depth == other.log.Depth &&
+		len(t.log.Stack) == len(other.log.Stack) &&
+		t.log.Gas == other.log.Gas
+		//t.Get("depth") == other.Get("pc")
+}
+
 func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
 	log := &vm.StructLog{}
 	ok := false

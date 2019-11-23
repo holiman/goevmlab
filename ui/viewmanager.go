@@ -40,6 +40,71 @@ type viewManager struct {
 	root      *tview.Grid
 }
 
+func NewDiffviewManager(traces []*traces.Traces) {
+	root := tview.NewGrid().
+		SetRows(10, 0, 10, 10).
+		//SetColumns(10,0,0,0).
+		SetBorders(false)
+
+	var managers []*viewManager
+	for i, trace := range traces {
+		opView := tview.NewForm()
+		opView.SetTitle("Op").SetBorder(true)
+		ops := tview.NewTable()
+		ops.SetTitle("Operations").SetBorder(true)
+		stack := tview.NewTable()
+		stack.SetTitle("Stack").SetBorder(true)
+		mem := tview.NewTable()
+		mem.SetTitle("Memory").SetBorder(true)
+		root.
+			AddItem(opView, 0, i, 1, 1, 0, 50, false).
+			AddItem(ops, 1, i, 1, 1, 0, 50, false).
+			AddItem(stack, 2, i, 1, 1, 0, 50, false).
+			AddItem(mem, 3, i, 1, 1, 0, 50, false)
+		mgr := viewManager{
+			trace:     trace,
+			traceView: ops,
+			opView:    opView,
+			stackView: stack,
+			memView:   mem,
+			root:      root,
+		}
+		mgr.init(trace)
+		managers = append(managers, &mgr)
+	}
+	// Multiplex input to all managers
+	root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		for _, manager := range managers {
+			h := manager.traceView.InputHandler()
+			h(event, nil)
+		}
+		return nil
+	})
+	// Display diffs
+	ref := managers[0].trace
+	for _, manager := range managers[1:] {
+		ops := manager.trace.Ops
+		for i, step := range ref.Ops{
+			eq := true
+			if i >= len(ops){
+				break
+			}else{
+				other := ops[i]
+				eq = step.Equals(other)
+			}
+			if !eq{
+				manager.traceView.GetCell(i+1,0).SetBackgroundColor(tcell.ColorRed)
+			}
+		}
+	}
+
+
+	if err := tview.NewApplication().SetRoot(root, true).Run(); err != nil {
+		panic(err)
+	}
+}
+
+// NewViewManager create a viewmanager for the single-trace view
 func NewViewManager(trace *traces.Traces) *viewManager {
 
 	newPrimitive := func(text string) tview.Primitive {
@@ -78,29 +143,12 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 
 	mgr.init(trace)
 
-	//focus := 0
-	//focusOrder := [ops, opView, stack, mem]
-
-	// Layout for screens narrower than 100 cells (menu and side bar are hidden).
-	//grid.AddItem(menu, 0, 0, 0, 0, 0, 0, false).
-	//	AddItem(main, 1, 0, 1, 3, 0, 0, false).
-	//	AddItem(sideBar, 0, 0, 0, 0, 0, 0, false)
-
 	// Layout for screens wider than 100 cells.
 	root.
 		AddItem(opView, 1, 1, 1, 1, 0, 50, false).
 		AddItem(stack, 2, 0, 1, 1, 0, 50, false).
 		AddItem(mem, 2, 1, 1, 1, 0, 50, false).
 		AddItem(ops, 1, 0, 1, 1, 0, 50, true)
-
-	//grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-	//	if event.Key() == tcell.KeyRight{
-	//		grid.
-	//		focus ++
-	//		focus %= len(focusOrder)
-	//		ops.GetFocusable()
-	//	}
-	//})
 
 	return &mgr
 }
@@ -207,9 +255,6 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 				data := elem.Get(title)
 				table.SetCell(row, col, tview.NewTableCell(data))
 			}
-			//if i == 100 {
-			//	break
-			//}
 		}
 	}
 	{ // Stack
