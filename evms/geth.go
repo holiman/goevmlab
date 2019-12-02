@@ -37,29 +37,28 @@ func NewGethEVM(path string) *GethEVM {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethEVM) RunStateTest(path string, out io.Writer) error {
+func (evm *GethEVM) RunStateTest(path string, out io.Writer) (string, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
 	)
 	cmd := exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	if err = cmd.Start(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources
 	cmd.Wait()
-	return nil
+	return cmd.String(), nil
 }
 
-func (evm *GethEVM) Name() string{
+func (evm *GethEVM) Name() string {
 	return "geth"
 }
-
 
 func (vm *GethEVM) Close() {
 }
@@ -85,8 +84,8 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 			if stateRoot.StateRoot == "" {
 				json.Unmarshal(data, &stateRoot)
 				// geth doesn't 0x-prefix stateroot
-				if r := stateRoot.StateRoot; r != ""{
-					stateRoot.StateRoot = fmt.Sprintf("0x%v",r )
+				if r := stateRoot.StateRoot; r != "" {
+					stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
 				}
 			}
 

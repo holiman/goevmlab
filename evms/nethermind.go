@@ -38,7 +38,7 @@ func NewNethermindVM(path string) *NethermindVM {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindVM) RunStateTest(path string, out io.Writer) error {
+func (evm *NethermindVM) RunStateTest(path string, out io.Writer) (string, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
@@ -48,17 +48,16 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer) error {
 		"--trace",
 		"-m") // -m excludes memory
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return err
+		return cmd.String(), err
 	}
-	fmt.Printf("nethermind cmd: %v\n", cmd.String())
 	if err = cmd.Start(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources
 	cmd.Wait()
-	return nil
+	return cmd.String(), nil
 }
 
 func (evm *NethermindVM) Name() string {
@@ -78,9 +77,9 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		var elem vm.StructLog
 
 		// Nethermind sometimes report a negative refund
-		if i:= bytes.Index(data,[]byte(`"refund":-`)); i > 0{
+		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
 			// we can just make it positive, it will be zeroed later
-			data[i+9]=byte(' ')
+			data[i+9] = byte(' ')
 			fmt.Sprintf("new data: %v\n", string(data))
 		}
 		err := json.Unmarshal(data, &elem)

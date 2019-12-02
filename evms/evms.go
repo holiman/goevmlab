@@ -29,7 +29,7 @@ import (
 type Evm interface {
 	// RunStateTest runs the statetest on the underlying EVM, and writes
 	// the output to the given writer
-	RunStateTest(path string, writer io.Writer) error
+	RunStateTest(path string, writer io.Writer) (string, error)
 
 	// Copy takes the 'raw' output from the VM, and writes the
 	// canonical output to the given writer

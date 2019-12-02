@@ -41,7 +41,7 @@ func (evm *ParityVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *ParityVM) RunStateTest(path string, out io.Writer) error {
+func (evm *ParityVM) RunStateTest(path string, out io.Writer) (string, error) {
 	var (
 		stderr io.ReadCloser
 		stdout io.ReadCloser
@@ -49,15 +49,15 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer) error {
 	)
 	cmd := exec.Command(evm.path, "--std-json", "state-test", path)
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	// Parity, when there's an error on state root, spits out the error on
 	// stdout. So we need to read that aswell
 	if stdout, err = cmd.StdoutPipe(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	if err = cmd.Start(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -66,7 +66,7 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer) error {
 	evm.Copy(out, stdout)
 	// release resources
 	cmd.Wait()
-	return nil
+	return cmd.String(), nil
 }
 
 func (evm *ParityVM) Close() {

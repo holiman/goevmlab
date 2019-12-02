@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"sync"
@@ -166,6 +167,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	removeCh := make(chan string, 10)
 	// channel for signalling consensus errors
 	consensusCh := make(chan string, 10)
+	// channel for signalling slow tests
+	slowCh := make(chan string, 10)
 
 	// Cancel ability
 	sigs := make(chan os.Signal, 1)
@@ -210,6 +213,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 			defer func() {
 				if f := atomic.AddInt64(&executors, -1); f == 0 {
 					close(removeCh)
+					close(slowCh)
 				}
 			}()
 			defer func() {
@@ -243,10 +247,10 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				for i, vm := range vms {
 					go func(evm evms.Evm, out io.Writer) {
 						t0 := time.Now()
-						evm.RunStateTest(file, out)
+						cmd, _ := evm.RunStateTest(file, out)
 						execTime := time.Since(t0)
-						fmt.Printf("%10v done in %v\n", evm.Name(), execTime)
-						if execTime > 5*time.Second {
+						if execTime > 20*time.Second {
+							fmt.Printf("%10v done in %v (slow!). Cmd: %v\n", evm.Name(), execTime, cmd)
 							// Flag test as slow
 							atomic.StoreUint32(&slowTest, 1)
 						}
@@ -257,7 +261,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				var readers []io.Reader
 				// Seet to beginning
 				for _, f := range outputs {
-					f.Seek(0, 0)
+					f.Sync()
 					readers = append(readers, f)
 				}
 				atomic.AddUint64(&numTests, 1)
@@ -268,8 +272,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
 					consensusCh <- file
 				} else if slowTest != 0 {
-					// TODO, send to slowchannel
-					removeCh <- file
+					slowCh <- file
 				} else {
 					removeCh <- file
 
@@ -282,7 +285,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	go func() {
 		defer wg.Done()
 		tStart := time.Now()
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(60 * time.Second)
 		testCount := uint64(0)
 		defer ticker.Stop()
 		for {
@@ -320,7 +323,20 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 			}
 		}
 	}()
-
+	// One to handle slow tests
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for path := range slowCh {
+			fName := filepath.Base(path)
+			fDir := filepath.Dir(path)
+			newName := fmt.Sprintf("slowtest-%v", fName)
+			newPath := filepath.Join(fdir,   fName)
+			if err := Copy(path, newPath); err != nil {
+				fmt.Fprintf(os.Stderr, "Error copying file file %v, : %v\n", path, err)
+			}
+		}
+	}()
 	select {
 	case <-sigs:
 	case path := <-consensusCh:
@@ -350,4 +366,26 @@ func storeTest(location string, test *fuzzing.GeneralStateTest, testName string)
 		return fullPath, err
 	}
 	return fullPath, nil
+}
+
+// Copy the src file to dst. Any existing file will be overwritten and will not
+// copy file attributes.
+func Copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }

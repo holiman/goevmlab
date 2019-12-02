@@ -37,7 +37,7 @@ func NewAlethVM(path string) *AlethVM {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *AlethVM) RunStateTest(path string, out io.Writer) error {
+func (evm *AlethVM) RunStateTest(path string, out io.Writer) (string, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
@@ -47,16 +47,16 @@ func (evm *AlethVM) RunStateTest(path string, out io.Writer) error {
 		"--", "--testfile", path, "--jsontrace", "{\"disableMemory\":true}")
 
 	if stderr, err = cmd.StdoutPipe(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	if err = cmd.Start(); err != nil {
-		return err
+		return cmd.String(), err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources
 	cmd.Wait()
-	return nil
+	return cmd.String(), nil
 }
 
 func (evm *AlethVM) Name() string {
