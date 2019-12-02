@@ -328,10 +328,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	go func() {
 		defer wg.Done()
 		for path := range slowCh {
-			fName := filepath.Base(path)
-			fDir := filepath.Dir(path)
-			newName := fmt.Sprintf("slowtest-%v", fName)
-			newPath := filepath.Join(fdir,   fName)
+			newPath := filepath.Join(filepath.Dir(path),
+				fmt.Sprintf("slowtest-%v", filepath.Base(path)))
 			if err := Copy(path, newPath); err != nil {
 				fmt.Fprintf(os.Stderr, "Error copying file file %v, : %v\n", path, err)
 			}
