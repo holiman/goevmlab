@@ -37,12 +37,17 @@ func NewGethEVM(path string) *GethEVM {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethEVM) RunStateTest(path string, out io.Writer) (string, error) {
+func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
+		cmd    *exec.Cmd
 	)
-	cmd := exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
+	if speedTest {
+		cmd = exec.Command(evm.path, "--nomemory", "--nostack", "statetest", path)
+	} else {
+		cmd = exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
+	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
 	}

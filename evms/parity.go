@@ -41,13 +41,18 @@ func (evm *ParityVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *ParityVM) RunStateTest(path string, out io.Writer) (string, error) {
+func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
 		stderr io.ReadCloser
 		stdout io.ReadCloser
 		err    error
+		cmd    *exec.Cmd
 	)
-	cmd := exec.Command(evm.path, "--std-json", "state-test", path)
+	if speedTest {
+		cmd = exec.Command(evm.path, "state-test", path)
+	} else {
+		cmd = exec.Command(evm.path, "--std-json", "state-test", path)
+	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
 	}

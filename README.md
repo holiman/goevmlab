@@ -19,3 +19,21 @@ So far, it only contains
 See [examples/calltree](the calltree example) to get an idea of how to use this
 thing, along with an [analysis](examples/calltree/README.md) done using 
 this framework. 
+
+# Utilities
+
+There are a few different utilities in this repo, based on this library. 
+
+
+## Tracediff
+
+Tracediff allows you to load evm (jsonl) files and find differences. 
+
+![tracediff](docs/tracediff.png)
+![tracediff](docs/tracediff2.png)
+
+## Traceview
+
+Traceview allows you to analyse an evm trace file
+
+![traceview](docs/traceview.png)

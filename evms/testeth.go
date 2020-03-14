@@ -37,15 +37,20 @@ func NewAlethVM(path string) *AlethVM {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *AlethVM) RunStateTest(path string, out io.Writer) (string, error) {
+func (evm *AlethVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
+		cmd    *exec.Cmd
 	)
 	// ../../testeth -t GeneralStateTests --  --testfile ./statetest1.json --jsontrace {} 2> statetest1_testeth_stderr.jsonl
-	cmd := exec.Command(evm.path, "-t", "GeneralStateTests",
-		"--", "--testfile", path, "--jsontrace", "{\"disableMemory\":true}")
-
+	if speedTest {
+		cmd = exec.Command(evm.path, "-t", "GeneralStateTests",
+			"--", "--testfile", path)
+	} else {
+		cmd = exec.Command(evm.path, "-t", "GeneralStateTests",
+			"--", "--testfile", path, "--jsontrace", "{\"disableMemory\":true}")
+	}
 	if stderr, err = cmd.StdoutPipe(); err != nil {
 		return cmd.String(), err
 	}

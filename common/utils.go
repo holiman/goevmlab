@@ -123,7 +123,7 @@ func RunOneTest(path string, c *cli.Context) error {
 	for i, vm := range vms {
 		go func(evm evms.Evm, out io.Writer) {
 			t0 := time.Now()
-			evm.RunStateTest(path, out)
+			evm.RunStateTest(path, out, false)
 			execTime := time.Since(t0)
 			fmt.Printf("%10v done in %v\n", evm.Name(), execTime)
 			wg.Done()
@@ -142,6 +142,39 @@ func RunOneTest(path string, c *cli.Context) error {
 	}
 	fmt.Printf("all agree!")
 	return nil
+}
+
+type noopWriter struct{}
+
+func (noopWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func TestSpeed(path string, c *cli.Context) (bool, error ){
+	var (
+		vms     = initVMs(c)
+	)
+	if len(vms) < 1 {
+		return false, fmt.Errorf("No vms specified!")
+	}
+	// Kick off the binaries
+	var wg sync.WaitGroup
+	var slowTest uint32
+	wg.Add(len(vms))
+	for _, vm := range vms {
+		go func(evm evms.Evm) {
+			t0 := time.Now()
+			evm.RunStateTest(path, noopWriter{}, true)
+			execTime := time.Since(t0)
+			if execTime > 2 * time.Second{
+				fmt.Printf("%v: %10v done in %v\n", path, evm.Name(), execTime)
+				atomic.StoreUint32(&slowTest, 1)
+			}
+			wg.Done()
+		}(vm)
+	}
+	wg.Wait()
+	return slowTest != 0, nil
 }
 
 type GeneratorFn func() *fuzzing.GstMaker
@@ -247,7 +280,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				for i, vm := range vms {
 					go func(evm evms.Evm, out io.Writer) {
 						t0 := time.Now()
-						cmd, _ := evm.RunStateTest(file, out)
+						cmd, _ := evm.RunStateTest(file, out, false)
 						execTime := time.Since(t0)
 						if execTime > 20*time.Second {
 							fmt.Printf("%10v done in %v (slow!). Cmd: %v\n", evm.Name(), execTime, cmd)

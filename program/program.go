@@ -137,6 +137,13 @@ func (p *Program) Jump(loc interface{}) {
 	p.Op(ops.JUMP)
 }
 
+// Jump pushes the destination and adds a JUMP
+func (p *Program) JumpIf(loc interface{}, condition interface{}) {
+	p.Push(condition)
+	p.Push(loc)
+	p.Op(ops.JUMPI)
+}
+
 func (p *Program) Size() int {
 	return len(p.code)
 }

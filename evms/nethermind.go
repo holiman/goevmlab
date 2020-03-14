@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
@@ -38,11 +39,14 @@ func NewNethermindVM(path string) *NethermindVM {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindVM) RunStateTest(path string, out io.Writer) (string, error) {
+func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
 		stderr io.ReadCloser
 		err    error
 	)
+	if speedTest {
+		return "", errors.New("nethermind does not support disabling json")
+	}
 	// nethtest  --input statetest1.json --trace 1> statetest1_nethermind_stdout.jsonl
 	cmd := exec.Command(evm.path, "--input", path,
 		"--trace",
