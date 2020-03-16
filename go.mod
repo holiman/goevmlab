@@ -22,4 +22,4 @@ require (
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 
-replace github.com/ethereum/go-ethereum => /home/user/go/src/github.com/ethereum/go-ethereum
+//replace github.com/ethereum/go-ethereum => /home/user/go/src/github.com/ethereum/go-ethereum

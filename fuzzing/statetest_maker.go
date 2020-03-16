@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 	"io"
 	"math/big"
 	"math/rand"
@@ -67,12 +66,8 @@ var allAddresses []common.Address
 var usedOpCodes []ops.OpCode
 
 func init() {
-	for _, a := range randomAddresses {
-		allAddresses = append(allAddresses, a)
-	}
-	for _, a := range precompiles {
-		allAddresses = append(allAddresses, a)
-	}
+	allAddresses = append(allAddresses, randomAddresses...)
+	allAddresses = append(allAddresses, precompiles...)
 	usedOpCodes = ops.ValidOpcodes
 	for _, op := range ops.ValidOpcodes {
 		if op > ops.PUSH2 || op <= ops.PUSH19 {
@@ -85,50 +80,48 @@ func init() {
 	}
 }
 
-// randCall creates a random call-type
-func randCall(p *program.Program, op ops.OpCode) {
-	addrGen := addressRandomizer(allAddresses)
-	memGen := randInt(0x70, 0xef)
-
-	p.Push(memGen()) //mem out size
-	p.Push(memGen()) // mem out start
-	p.Push(memGen()) //mem in size
-	p.Push(memGen()) // mem in start
-
-	switch op {
-	case ops.CALL, ops.CALLCODE:
-		p.Push(rand.Intn(256)) //value
-	}
-	addr := addrGen()
-	p.Push(addr)
-	p.Op(ops.GAS)
-	p.Op(op)
-}
-
-// randProgram creates a random program
-func randProgram(maxSize int) []byte {
-	var p = program.NewProgram()
-	stack := 0
-	var numOps = len(usedOpCodes)
-	for {
-		op := usedOpCodes[rand.Intn(numOps)]
-		if op.IsCall() {
-			randCall(p, op)
-			stack += 1
-		} else {
-			if stack-len(op.Pops()) < 0 {
-				continue
-			}
-			stack -= len(op.Pops())
-			stack += len(op.Pushes())
-			p.Op(op)
-		}
-		if p.Size() > maxSize {
-			break
-		}
-	}
-	return p.Bytecode()
-}
+//// randCall creates a random call-type
+//func randCall(p *program.Program, op ops.OpCode) {
+//	addrGen := addressRandomizer(allAddresses)
+//	memGen := randInt(0x70, 0xef)
+//
+//	p.Push(memGen()) //mem out size
+//	p.Push(memGen()) // mem out start
+//	p.Push(memGen()) //mem in size
+//	p.Push(memGen()) // mem in start
+//	switch op {
+//	case ops.CALL, ops.CALLCODE:
+//		p.Push(rand.Intn(256)) //value
+//	}
+//	addr := addrGen()
+//	p.Push(addr)
+//	p.Op(ops.GAS)
+//	p.Op(op)
+//}
+//// randProgram creates a random program
+//func randProgram(maxSize int) []byte {
+//	var p = program.NewProgram()
+//	stack := 0
+//	var numOps = len(usedOpCodes)
+//	for {
+//		op := usedOpCodes[rand.Intn(numOps)]
+//		if op.IsCall() {
+//			randCall(p, op)
+//			stack += 1
+//		} else {
+//			if stack-len(op.Pops()) < 0 {
+//				continue
+//			}
+//			stack -= len(op.Pops())
+//			stack += len(op.Pushes())
+//			p.Op(op)
+//		}
+//		if p.Size() > maxSize {
+//			break
+//		}
+//	}
+//	return p.Bytecode()
+//}
 
 // GstMaker is a construct to generate General State Tests
 type GstMaker struct {
@@ -281,7 +274,6 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	g.SetResult(root, logs)
 	return nil
 }
-
 
 func basicStateTest() *GstMaker {
 	gst := NewGstMaker()

@@ -84,20 +84,16 @@ func NewDiffviewManager(traces []*traces.Traces) {
 	ref := managers[0].trace
 	for _, manager := range managers[1:] {
 		ops := manager.trace.Ops
-		for i, step := range ref.Ops{
-			eq := true
-			if i >= len(ops){
+		for i, step := range ref.Ops {
+			if i >= len(ops) {
 				break
-			}else{
-				other := ops[i]
-				eq = step.Equals(other)
 			}
-			if !eq{
-				manager.traceView.GetCell(i+1,0).SetBackgroundColor(tcell.ColorRed)
+			other := ops[i]
+			if !step.Equals(other) {
+				manager.traceView.GetCell(i+1, 0).SetBackgroundColor(tcell.ColorRed)
 			}
 		}
 	}
-
 
 	if err := tview.NewApplication().SetRoot(root, true).Run(); err != nil {
 		panic(err)

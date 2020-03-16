@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 )
 
@@ -43,13 +42,6 @@ type stateRoot struct {
 	StateRoot string `json:"stateRoot"`
 }
 
-// logString provides a human friendly string
-func logString(log *vm.StructLog) string {
-	return fmt.Sprintf("pc: %3d op: %18v depth: %2v gas: %5d stack size %d",
-		log.Pc, log.Op, log.Depth, log.Gas, len(log.Stack))
-
-}
-
 func CompareFiles(vms []Evm, readers []io.Reader) bool {
 	var scanners []*bufio.Scanner
 	for _, r := range readers {
@@ -58,7 +50,6 @@ func CompareFiles(vms []Evm, readers []io.Reader) bool {
 	refOut := scanners[0]
 	refVm := vms[0]
 	for refOut.Scan() {
-		//fmt.Printf("ref: %v\n", string(refOut.Bytes()))
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {

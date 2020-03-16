@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -59,8 +60,8 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
-	// release resources
-	cmd.Wait()
+	// release resources, handle error but ignore non-zero exit codes
+	_ = cmd.Wait()
 	return cmd.String(), nil
 }
 
@@ -81,10 +82,10 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		var elem vm.StructLog
 
 		// Nethermind sometimes report a negative refund
+		// TODO(@holiman): they may have fixed this, if so, delete this code
 		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
 			// we can just make it positive, it will be zeroed later
 			data[i+9] = byte(' ')
-			fmt.Sprintf("new data: %v\n", string(data))
 		}
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
@@ -100,7 +101,7 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				json.Unmarshal(data, &stateRoot)
+				_ = json.Unmarshal(data, &stateRoot)
 			}
 			//fmt.Printf("%v\n", string(data))
 			// For now, just ignore these
@@ -116,10 +117,14 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		elem.MemorySize = 0
 		elem.RefundCounter = 0
 		jsondata, _ := json.Marshal(elem)
-		out.Write(jsondata)
-		out.Write([]byte("\n"))
+		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return
+		}
 	}
 	root, _ := json.Marshal(stateRoot)
-	out.Write(root)
-	out.Write([]byte("\n"))
+	if _, err := out.Write(append(root, '\n')); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		return
+	}
 }

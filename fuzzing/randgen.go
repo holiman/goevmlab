@@ -71,13 +71,13 @@ func addressRandomizer(addrs []common.Address) valFunc {
 	}
 }
 
-func valueRandomizer() valFunc {
+func ValueRandomizer() valFunc {
 	// every 16th is zero
 	// Most are small, but every 16th is unbounded
 	return randInt(0x0f, 0xef)
 }
 
-func memRandomizer() memFunc {
+func MemRandomizer() memFunc {
 	// half are zero
 	// most are small
 	v := randInt(0x70, 0xef)
@@ -86,7 +86,7 @@ func memRandomizer() memFunc {
 	}
 	return memFn
 }
-func gasRandomizer() valFunc {
+func GasRandomizer() valFunc {
 	// Very few are zero,
 	// 1/16th are small,
 	// most are huge
@@ -177,7 +177,7 @@ func RandCallBlake() []byte {
 	addrGen := func() interface{} {
 		return 9
 	}
-	p2 := RandCall(gasRandomizer(), addrGen, valueRandomizer(), memInFn, memOutFn)
+	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
 	p.AddAll(p2)
 	// pop the ret value
 	p.Op(ops.POP)

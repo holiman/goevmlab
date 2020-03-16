@@ -178,10 +178,6 @@ func (p *Program) MemToStorage(memStart, memSize, startSlot int) {
 	// We need to store it in chunks of 32 bytes
 	for idx := memStart; idx < (memStart + memSize); idx += 32 {
 		dataStart := idx
-		dataEnd := idx + 32
-		if dataEnd > (memStart + memSize) {
-			dataEnd = (memStart + memSize)
-		}
 		// Mload the chunk
 		p.Push(dataStart)
 		p.Op(ops.MLOAD)
