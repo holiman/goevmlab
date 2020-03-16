@@ -67,7 +67,7 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (s
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// copy everything to the given writer -- this means that the
-	// stderr output will come _after_ all stderr data. Which is good.
+	// stdout output will come _after_ all stderr data. Which is good.
 	evm.Copy(out, stdout)
 	// release resources
 	cmd.Wait()

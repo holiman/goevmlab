@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/evms"
+	"io"
 	"os"
 	"path"
 	"testing"
@@ -53,16 +54,16 @@ func TestBlakeGenerator(t *testing.T) {
 func testCompare(a, b evms.Evm, testfile string) error {
 
 	wa := bytes.NewBuffer(nil)
-	if err := a.RunStateTest(testfile, wa); err != nil {
+	if _, err := a.RunStateTest(testfile, wa, false); err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
 	}
 	wb := bytes.NewBuffer(nil)
-	if err := b.RunStateTest(testfile, wb); err != nil {
+	if _, err := b.RunStateTest(testfile, wb, false); err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
 	}
-	eq := evms.CompareFiles(wa, wb)
+	eq := evms.CompareFiles([]evms.Evm{a, b}, []io.Reader{wa, wb})
 	if !eq {
 		return fmt.Errorf("diffs encountered")
 	}

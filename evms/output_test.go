@@ -28,27 +28,35 @@ import (
 // not produce any differences
 func TestVMsOutput(t *testing.T) {
 
+	// Some vms (Parity) require both stdout and stderr (since the stateroot
+	// and the actual opcodes go to different outputs).
 	type testCase struct {
-		vm   Evm
-		file string
+		vm    Evm
+		file1 string
+		file2 string
 	}
 	var cases = []testCase{
-		{NewGethEVM(""), "testdata/statetest1_geth_stderr.jsonl"},
-		{NewParityVM(""), "testdata/statetest1_parity_stderr.jsonl"},
-		{NewNethermindVM(""), "testdata/statetest1_nethermind_stderr.jsonl"},
-		{NewAlethVM(""), "testdata/statetest1_testeth_stdout.jsonl"},
+		{NewGethEVM(""), "testdata/statetest1_geth_stderr.jsonl", ""},
+		{NewParityVM(""), "testdata/statetest1_parity_stderr.jsonl", "testdata/statetest1_parity_stdout.jsonl"},
+		{NewNethermindVM(""), "testdata/statetest1_nethermind_stderr.jsonl", ""},
+		{NewAlethVM(""), "testdata/statetest1_testeth_stdout.jsonl", ""},
 	}
 	var readers []io.Reader
 	var vms []Evm
 	for _, vm := range cases {
-		rawOutput, err := os.Open(vm.file)
-		if err != nil {
-			t.Fatal(err)
+		parsedOutput := bytes.NewBuffer(nil)
+		for _, f := range []string{vm.file1, vm.file2} {
+			if len(f) == 0 {
+				break
+			}
+			rawOutput, err := os.Open(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rawOutput.Close()
+			vm.vm.Copy(parsedOutput, rawOutput)
 		}
-		defer rawOutput.Close()
-		canonOutput := bytes.NewBuffer(nil)
-		vm.vm.Copy(canonOutput, rawOutput)
-		readers = append(readers, bytes.NewReader(canonOutput.Bytes()))
+		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
 		vms = append(vms, vm.vm)
 	}
 	eq := CompareFiles(vms, readers)
