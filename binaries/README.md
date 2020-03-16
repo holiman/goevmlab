@@ -55,8 +55,14 @@ sudo apt-get update && sudo apt-get install libsnappy-dev libc6-dev libc6
 
 ## Parity (`parity-evm`)
 
-TODO
+Assuming you have a rust toolchain, then: 
 
-## Aleth (`testeth)
+```
+cargo build --release -p evmbin
+```
+Should spit out the binary into `target/release/parity-evm`
+
+
+## Aleth (`testeth`)
 
 TODO
