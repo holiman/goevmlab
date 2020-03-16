@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -60,7 +61,7 @@ func (evm *AlethVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources
-	cmd.Wait()
+	_ = cmd.Wait()
 	return cmd.String(), nil
 }
 
@@ -81,8 +82,7 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
 		var elem vm.StructLog
-		err := json.Unmarshal(data, &elem)
-		if err != nil {
+		if err := json.Unmarshal(data, &elem); err != nil {
 			//fmt.Printf("aleth err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
@@ -94,13 +94,13 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
+			// Don't overwrite stateroot if we already have it
 			if stateRoot.StateRoot == "" {
-				json.Unmarshal(data, &stateRoot)
-				// Aleth doesn't prefix stateroot
-				if r := stateRoot.StateRoot; r != "" {
-					stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
+				_ = json.Unmarshal(data, &stateRoot)
+				if stateRoot.StateRoot != "" {
+					// Aleth doesn't prefix stateroot
+					stateRoot.StateRoot = fmt.Sprintf("0x%v", stateRoot.StateRoot)
 				}
-
 			}
 			// For now, just ignore these
 			continue
@@ -115,10 +115,14 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 		elem.MemorySize = 0
 		elem.RefundCounter = 0
 		jsondata, _ := json.Marshal(elem)
-		out.Write(jsondata)
-		out.Write([]byte("\n"))
+		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return
+		}
 	}
 	root, _ := json.Marshal(stateRoot)
-	out.Write(root)
-	out.Write([]byte("\n"))
+	if _, err := out.Write(append(root, '\n')); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		return
+	}
 }

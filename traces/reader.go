@@ -124,16 +124,16 @@ func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
 		case "gas":
 			var b hexutil.Uint64
 			if err := b.UnmarshalText([]byte(v.(string))); err != nil {
-				log.Gas = uint64(b)
-			} else {
 				fmt.Fprintf(os.Stderr, "error (%v): %v\n", k, err)
+			} else {
+				log.Gas = uint64(b)
 			}
 		case "gasCost":
 			var b hexutil.Uint64
 			if err := b.UnmarshalText([]byte(v.(string))); err != nil {
-				log.GasCost = uint64(b)
-			} else {
 				fmt.Fprintf(os.Stderr, "error (%v): %v\n", k, err)
+			} else {
+				log.GasCost = uint64(b)
 			}
 		case "depth":
 			log.Depth = int(v.(float64))

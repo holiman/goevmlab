@@ -46,9 +46,9 @@ func TestReaderBasics(t *testing.T) {
 			if err != nil {
 				t.Errorf("err reading %v: %v", p, err)
 			}
-			fmt.Printf("read %v\n", p)
+			//fmt.Printf("read %v\n", p)
 		} else {
-			fmt.Printf("skipped %v\n", f.Name())
+			t.Logf("skipped %v\n", f.Name())
 		}
 	}
 }

@@ -50,7 +50,6 @@ func CompareFiles(vms []Evm, readers []io.Reader) bool {
 	refOut := scanners[0]
 	refVm := vms[0]
 	for refOut.Scan() {
-		//fmt.Printf("ref: %v\n", string(refOut.Bytes()))
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {

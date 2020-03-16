@@ -17,6 +17,7 @@
 package fuzzing
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -25,27 +26,79 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 )
 
 func TestGenerator(t *testing.T) {
 	st := GenerateStateTest("randoTest")
 
-	data, err := json.MarshalIndent(st, "", " ")
+	_, err := json.MarshalIndent(st, "", " ")
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("data: %v\n", string(data))
 }
 
 func TestBlakeGenerator(t *testing.T) {
 	st := GenerateBlakeTest("randoTest")
 
-	data, err := json.MarshalIndent(st, "", " ")
+	_, err := json.MarshalIndent(st, "", " ")
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("data: %v\n", string(data))
+}
+
+var binMu sync.Mutex
+
+// We need to decompress the evm binaries prior to execution
+func setupBinaries(t *testing.T) {
+	binMu.Lock()
+	defer binMu.Unlock()
+
+	err := filepath.Walk("../binaries", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(path, ".zip") {
+			// ignore
+			return nil
+		}
+		destPath := strings.TrimSuffix(path, ".zip")
+		if _, err := os.Stat(destPath); err == nil {
+			// Already exists, skip
+			return nil
+		}
+		var src io.Reader
+		fmt.Printf("Uncompressing %v into %v \n", path, destPath)
+		{ // Decompress
+			zr, err := zip.OpenReader(path)
+			if err != nil {
+				return fmt.Errorf("failed opening reader: %v", err)
+			}
+			f, err := zr.File[0].Open()
+			if err != nil {
+				return fmt.Errorf("failed opening file inside archive: %v", err)
+			}
+			defer f.Close()
+			src = f
+		}
+		dest, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY, 0777)
+		if err != nil {
+			return err
+		}
+		defer dest.Close()
+		size, err := io.Copy(dest, src)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Uncompressed %v OK (%d bytes)\n", path, size)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("error constructing evm binaries: %v", err)
+	}
 }
 
 func testCompare(a, b evms.Evm, testfile string) error {
@@ -53,12 +106,12 @@ func testCompare(a, b evms.Evm, testfile string) error {
 	wa := bytes.NewBuffer(nil)
 	if _, err := a.RunStateTest(testfile, wa, false); err != nil {
 		fmt.Printf("error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	wb := bytes.NewBuffer(nil)
 	if _, err := b.RunStateTest(testfile, wb, false); err != nil {
 		fmt.Printf("error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	eq := evms.CompareFiles([]evms.Evm{a, b}, []io.Reader{wa, wb})
 	if !eq {
@@ -68,6 +121,8 @@ func testCompare(a, b evms.Evm, testfile string) error {
 }
 
 func testFuzzing(t *testing.T) error {
+	setupBinaries(t)
+
 	testName := "some_rando_test"
 	fileName := fmt.Sprintf("%v.json", testName)
 	p := path.Join(os.TempDir(), fileName)
@@ -84,14 +139,15 @@ func testFuzzing(t *testing.T) error {
 	}
 	f.Close()
 
-	geth := evms.NewGethEVM("/home/user/go/src/github.com/ethereum/go-ethereum/build/bin/evm")
-	parity := evms.NewParityVM("/home/user/go/src/github.com/holiman/goevmlab/parity-evm")
+	geth := evms.NewGethEVM("../binaries/evm")
+	parity := evms.NewParityVM("../binaries/parity-evm")
 
 	return testCompare(geth, parity, p)
 
 }
 
 func TestBlake(t *testing.T) {
+	setupBinaries(t)
 	testName := "blake_test"
 	fileName := fmt.Sprintf("%v.json", testName)
 	p := path.Join(os.TempDir(), fileName)
@@ -108,16 +164,18 @@ func TestBlake(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.Close()
+	geth := evms.NewGethEVM("../binaries/evm")
+	parity := evms.NewParityVM("../binaries/parity-evm")
 
-	geth := evms.NewGethEVM("/home/user/go/src/github.com/ethereum/go-ethereum/build/bin/evm")
-	parity := evms.NewParityVM("/home/user/go/src/github.com/holiman/goevmlab/parity-evm")
-
-	testCompare(geth, parity, p)
-
+	if err := testCompare(geth, parity, p); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestFuzzing(t *testing.T) {
-	testFuzzing(t)
+	if err := testFuzzing(t); err != nil {
+		t.Fatal(err)
+	}
 }
 
 //func TestFuzzingCoverage(t *testing.T) {

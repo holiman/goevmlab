@@ -116,21 +116,13 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		elem.MemorySize = 0
 		elem.RefundCounter = 0
 		jsondata, _ := json.Marshal(elem)
-		if _, err := out.Write(jsondata); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
+		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return
 		}
 	}
 	root, _ := json.Marshal(stateRoot)
-	if _, err := out.Write(root); err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-		return
-	}
-	if _, err := out.Write([]byte("\n")); err != nil {
+	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		return
 	}

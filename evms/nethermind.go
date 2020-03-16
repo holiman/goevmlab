@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -100,9 +101,7 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				if err := json.Unmarshal(data, &stateRoot); err == nil {
-					json.Unmarshal(data, &stateRoot)
-				}
+				_ = json.Unmarshal(data, &stateRoot)
 			}
 			//fmt.Printf("%v\n", string(data))
 			// For now, just ignore these
@@ -118,10 +117,14 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		elem.MemorySize = 0
 		elem.RefundCounter = 0
 		jsondata, _ := json.Marshal(elem)
-		out.Write(jsondata)
-		out.Write([]byte("\n"))
+		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return
+		}
 	}
 	root, _ := json.Marshal(stateRoot)
-	out.Write(root)
-	out.Write([]byte("\n"))
+	if _, err := out.Write(append(root, '\n')); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		return
+	}
 }

@@ -67,6 +67,9 @@ func startTests(c *cli.Context) error {
 		if !strings.HasSuffix(path, "json") {
 			return nil
 		}
+		if err != nil {
+			return err
+		}
 		slow, err := common.TestSpeed(path, c)
 		if err != nil {
 			return err
