@@ -59,8 +59,8 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
-	// release resources
-	cmd.Wait()
+	// release resources, handle error but ignore non-zero exit codes
+	_ = cmd.Wait()
 	return cmd.String(), nil
 }
 
@@ -81,10 +81,10 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		var elem vm.StructLog
 
 		// Nethermind sometimes report a negative refund
+		// TODO(@holiman): they may have fixed this, if so, delete this code
 		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
 			// we can just make it positive, it will be zeroed later
 			data[i+9] = byte(' ')
-			fmt.Sprintf("new data: %v\n", string(data))
 		}
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
@@ -100,7 +100,9 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				json.Unmarshal(data, &stateRoot)
+				if err := json.Unmarshal(data, &stateRoot); err == nil {
+					json.Unmarshal(data, &stateRoot)
+				}
 			}
 			//fmt.Printf("%v\n", string(data))
 			// For now, just ignore these

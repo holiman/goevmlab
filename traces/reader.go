@@ -29,6 +29,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/big"
+	"os"
 	"strings"
 )
 
@@ -105,7 +106,7 @@ func (t *TraceLine) Equals(other *TraceLine) bool {
 		t.log.Depth == other.log.Depth &&
 		len(t.log.Stack) == len(other.log.Stack) &&
 		t.log.Gas == other.log.Gas
-		//t.Get("depth") == other.Get("pc")
+	//t.Get("depth") == other.Get("pc")
 }
 
 func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
@@ -122,13 +123,18 @@ func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
 			ok = true
 		case "gas":
 			var b hexutil.Uint64
-			b.UnmarshalText([]byte(v.(string)))
-			log.Gas = uint64(b)
+			if err := b.UnmarshalText([]byte(v.(string))); err != nil {
+				log.Gas = uint64(b)
+			} else {
+				fmt.Fprintf(os.Stderr, "error (%v): %v\n", k, err)
+			}
 		case "gasCost":
 			var b hexutil.Uint64
-			b.UnmarshalText([]byte(v.(string)))
-			log.GasCost = uint64(b)
-			//log.GasCost = hexutil.Uint64()
+			if err := b.UnmarshalText([]byte(v.(string))); err != nil {
+				log.GasCost = uint64(b)
+			} else {
+				fmt.Fprintf(os.Stderr, "error (%v): %v\n", k, err)
+			}
 		case "depth":
 			log.Depth = int(v.(float64))
 		case "refund":

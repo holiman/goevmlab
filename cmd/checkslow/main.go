@@ -63,7 +63,7 @@ func startTests(c *cli.Context) error {
 	if !finfo.IsDir() {
 		return fmt.Errorf("%v is not a directory", dir)
 	}
-	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(path, "json") {
 			return nil
 		}
@@ -78,5 +78,4 @@ func startTests(c *cli.Context) error {
 		return nil
 
 	})
-	return nil
 }

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -57,8 +58,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources
-	cmd.Wait()
-	return cmd.String(), nil
+	return cmd.String(), cmd.Wait()
 }
 
 func (evm *GethEVM) Name() string {
@@ -87,10 +87,11 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		// for any actual opcode
 		if elem.Depth == 0 {
 			if stateRoot.StateRoot == "" {
-				json.Unmarshal(data, &stateRoot)
-				// geth doesn't 0x-prefix stateroot
-				if r := stateRoot.StateRoot; r != "" {
-					stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
+				if err := json.Unmarshal(data, &stateRoot); err == nil {
+					// geth doesn't 0x-prefix stateroot
+					if r := stateRoot.StateRoot; len(r) > 0 {
+						stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
+					}
 				}
 			}
 
@@ -115,25 +116,22 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		elem.MemorySize = 0
 		elem.RefundCounter = 0
 		jsondata, _ := json.Marshal(elem)
-		out.Write(jsondata)
-		out.Write([]byte("\n"))
+		if _, err := out.Write(jsondata); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return
+		}
+		if _, err := out.Write([]byte("\n")); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return
+		}
 	}
 	root, _ := json.Marshal(stateRoot)
-	out.Write(root)
-	out.Write([]byte("\n"))
-}
-
-func has0xPrefix(input string) bool {
-	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
-}
-
-// addPrefix prefixes hexStr with 0x, if needed
-func addPrefix(hexStr string) string {
-	if len(hexStr) >= 2 && hexStr[1] != 'x' {
-		enc := make([]byte, len(hexStr)+2)
-		copy(enc, "0x")
-		copy(enc[2:], hexStr)
-		return string(enc)
+	if _, err := out.Write(root); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		return
 	}
-	return hexStr
+	if _, err := out.Write([]byte("\n")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		return
+	}
 }

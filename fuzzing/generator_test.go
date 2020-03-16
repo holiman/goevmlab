@@ -35,9 +35,7 @@ func TestGenerator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("data: \n")
-	fmt.Printf(string(data))
-
+	fmt.Printf("data: %v\n", string(data))
 }
 
 func TestBlakeGenerator(t *testing.T) {
@@ -47,10 +45,9 @@ func TestBlakeGenerator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("data: \n")
-	fmt.Printf(string(data))
-
+	fmt.Printf("data: %v\n", string(data))
 }
+
 func testCompare(a, b evms.Evm, testfile string) error {
 
 	wa := bytes.NewBuffer(nil)
@@ -173,6 +170,8 @@ func BenchmarkGeneratorWithMarshalling(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		st := GenerateStateTest("randoTest")
-		json.Marshal(st)
+		if _, err := json.Marshal(st); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

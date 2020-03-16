@@ -122,17 +122,20 @@ func RunOneTest(path string, c *cli.Context) error {
 	wg.Add(len(vms))
 	for i, vm := range vms {
 		go func(evm evms.Evm, out io.Writer) {
+			defer wg.Done()
 			t0 := time.Now()
-			evm.RunStateTest(path, out, false)
+			if _, err := evm.RunStateTest(path, out, false); err != nil {
+				fmt.Fprintf(os.Stderr, "error running test: %v\n", err)
+				return
+			}
 			execTime := time.Since(t0)
 			fmt.Printf("%10v done in %v\n", evm.Name(), execTime)
-			wg.Done()
 		}(vm, outputs[i])
 	}
 	wg.Wait()
 	// Seek to beginning
 	for _, f := range outputs {
-		f.Seek(0, 0)
+		_, _ = f.Seek(0, 0)
 		readers = append(readers, f)
 	}
 	// Compare outputs
@@ -150,9 +153,9 @@ func (noopWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func TestSpeed(path string, c *cli.Context) (bool, error ){
+func TestSpeed(path string, c *cli.Context) (bool, error) {
 	var (
-		vms     = initVMs(c)
+		vms = initVMs(c)
 	)
 	if len(vms) < 1 {
 		return false, fmt.Errorf("No vms specified!")
@@ -163,14 +166,17 @@ func TestSpeed(path string, c *cli.Context) (bool, error ){
 	wg.Add(len(vms))
 	for _, vm := range vms {
 		go func(evm evms.Evm) {
+			defer wg.Done()
 			t0 := time.Now()
-			evm.RunStateTest(path, noopWriter{}, true)
+			if _, err := evm.RunStateTest(path, noopWriter{}, true); err != nil {
+				fmt.Fprintf(os.Stderr, "error running test: %v\n", err)
+				return
+			}
 			execTime := time.Since(t0)
-			if execTime > 2 * time.Second{
+			if execTime > 2*time.Second {
 				fmt.Printf("%v: %10v done in %v\n", path, evm.Name(), execTime)
 				atomic.StoreUint32(&slowTest, 1)
 			}
-			wg.Done()
 		}(vm)
 	}
 	wg.Wait()
@@ -271,7 +277,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				}
 				// Zero out the output files
 				for _, f := range outputs {
-					f.Truncate(0)
+					_ = f.Truncate(0)
 				}
 				var slowTest uint32
 				// Kick off the binaries
@@ -294,7 +300,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				var readers []io.Reader
 				// Seet to beginning
 				for _, f := range outputs {
-					f.Sync()
+					_ = f.Sync()
 					readers = append(readers, f)
 				}
 				atomic.AddUint64(&numTests, 1)
@@ -339,7 +345,9 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				}
 				globalCount += testsSinceLastUpdate
 
-				ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755)
+				if err := ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755); err != nil {
+					fmt.Fprintf(os.Stderr, "error saving progress: %v\n", err)
+				}
 			case <-ctx.Done():
 				return
 			}

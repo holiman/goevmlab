@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 )
 
@@ -41,13 +40,6 @@ type Evm interface {
 
 type stateRoot struct {
 	StateRoot string `json:"stateRoot"`
-}
-
-// logString provides a human friendly string
-func logString(log *vm.StructLog) string {
-	return fmt.Sprintf("pc: %3d op: %18v depth: %2v gas: %5d stack size %d",
-		log.Pc, log.Op, log.Depth, log.Gas, len(log.Stack))
-
 }
 
 func CompareFiles(vms []Evm, readers []io.Reader) bool {

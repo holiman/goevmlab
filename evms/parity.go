@@ -19,7 +19,6 @@ package evms
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os/exec"
@@ -69,8 +68,8 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (s
 	// copy everything to the given writer -- this means that the
 	// stdout output will come _after_ all stderr data. Which is good.
 	evm.Copy(out, stdout)
-	// release resources
-	cmd.Wait()
+	// release resources, handle error but ignore non-zero exit codes
+	_ = cmd.Wait()
 	return cmd.String(), nil
 }
 
@@ -100,12 +99,12 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 			*/
 			if stateRoot.StateRoot == ("") {
 				var p parityErrorRoot
-				json.Unmarshal(data, &p)
-
-				prefix := `State root mismatch (got: `
-				if strings.HasPrefix(p.Error, prefix) {
-					root := []byte(strings.TrimPrefix(p.Error, prefix))
-					stateRoot.StateRoot = string(root[:66])
+				if err := json.Unmarshal(data, &p); err == nil {
+					prefix := `State root mismatch (got: `
+					if strings.HasPrefix(p.Error, prefix) {
+						root := []byte(strings.TrimPrefix(p.Error, prefix))
+						stateRoot.StateRoot = string(root[:66])
+					}
 				}
 			}
 			continue
@@ -124,37 +123,5 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 		root, _ := json.Marshal(stateRoot)
 		out.Write(root)
 		out.Write([]byte("\n"))
-	}
-}
-
-// feed reads from the reader, does some parity-specific filtering and
-// outputs items onto the channel
-func (evm *ParityVM) feed(input io.Reader, opsCh chan (*vm.StructLog)) {
-	defer close(opsCh)
-	scanner := bufio.NewScanner(input)
-	for scanner.Scan() {
-		// Calling bytes means that bytes in 'l' will be overwritten
-		// in the next loop. Fine for now though, we immediately marshal it
-		data := scanner.Bytes()
-		var elem vm.StructLog
-		json.Unmarshal(data, &elem)
-		// If the output cannot be marshalled, all fields will be blanks.
-		// We can detect that through 'depth', which should never be less than 1
-		// for any actual opcode
-		if elem.Depth == 0 {
-			/*  Most likely one of these:
-			{"stateRoot":"0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-			*/
-			fmt.Printf("parity non-op, line is:\n\t%v\n", string(data))
-			// For now, just ignore these
-			continue
-		}
-		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
-		// In order to handle that, we need to drop all STOP opcodes.
-		if elem.Op == 0x0 {
-			continue
-		}
-		//fmt.Printf("parity: %v\n", string(data))
-		opsCh <- &elem
 	}
 }
