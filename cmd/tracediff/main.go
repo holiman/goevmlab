@@ -39,6 +39,8 @@ func main() {
 	testTraces := []string{
 		"./testdata/geth.00005448.trace",
 		"./testdata/parity.00005448.trace",
+		"./testdata/canon-block_0xda0a98dd-85-0x5d5e7126-105174309.jsonl",
+		"./testdata/snapshot-block_0xda0a98dd-85-0x5d5e7126-752792432.jsonl",
 	}
 
 	flag.Parse()

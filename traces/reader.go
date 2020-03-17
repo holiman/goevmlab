@@ -101,11 +101,20 @@ func (t *TraceLine) Depth() int {
 }
 
 func (t *TraceLine) Equals(other *TraceLine) bool {
-	return t.Op() == other.Op() &&
-		t.log.Pc == other.log.Pc &&
-		t.log.Depth == other.log.Depth &&
-		len(t.log.Stack) == len(other.log.Stack) &&
-		t.log.Gas == other.log.Gas
+	if t.Op() != other.Op() ||
+		t.log.Pc != other.log.Pc ||
+		t.log.Depth != other.log.Depth ||
+		len(t.log.Stack) != len(other.log.Stack) ||
+		t.log.Gas != other.log.Gas {
+		return false
+	}
+	// Also inspect stack
+	for i, elem := range t.log.Stack {
+		if elem.Cmp(other.log.Stack[i]) != 0 {
+			return false
+		}
+	}
+	return true
 	//t.Get("depth") == other.Get("pc")
 }
 
