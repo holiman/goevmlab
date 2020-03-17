@@ -123,7 +123,7 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 
 	root := tview.NewGrid().
 		SetRows(3, 0, 15, 3).
-		SetColumns(0, 80).
+		SetColumns(0, 120).
 		SetBorders(true).
 		AddItem(newPrimitive("Header"), 0, 0, 1, 2, 0, 0, false).
 		AddItem(newPrimitive("Footer"), 3, 0, 1, 2, 0, 0, false)
@@ -141,7 +141,7 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 
 	// Layout for screens wider than 100 cells.
 	root.
-		AddItem(opView, 1, 1, 1, 1, 0, 50, false).
+		AddItem(opView, 1, 1, 1, 1, 0, 80, false).
 		AddItem(stack, 2, 0, 1, 1, 0, 50, false).
 		AddItem(mem, 2, 1, 1, 1, 0, 50, false).
 		AddItem(ops, 1, 0, 1, 1, 0, 50, true)
@@ -183,6 +183,13 @@ func (mgr *viewManager) onStepSelected(line *traces.TraceLine) {
 
 		for _, l := range []string{"pc", "opcode", "opName", "gasCost", "gas", "memSize", "addr"} {
 			add(l, line.Get(l))
+		}
+		// Add the call stack info
+		cs := line.CallStack()
+		for i := len(cs) - 1; i >= 0; i-- {
+			info := cs[i]
+			add(fmt.Sprintf("call %d ", i), info.String())
+
 		}
 		op := ops.OpCode(line.Op())
 		add("Pops", strings.Join(op.Pops(), ","))

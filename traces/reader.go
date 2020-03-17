@@ -34,9 +34,10 @@ import (
 )
 
 type TraceLine struct {
-	step    uint64
-	address *common.Address
-	log     *vm.StructLog
+	step      uint64
+	address   *common.Address
+	callStack []*callInfo
+	log       *vm.StructLog
 }
 
 type Traces struct {
@@ -98,6 +99,10 @@ func (t *TraceLine) Step() uint64 {
 
 func (t *TraceLine) Depth() int {
 	return t.log.Depth
+}
+
+func (t *TraceLine) CallStack() []*callInfo {
+	return t.callStack
 }
 
 func (t *TraceLine) Equals(other *TraceLine) bool {

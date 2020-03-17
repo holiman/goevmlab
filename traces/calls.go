@@ -17,23 +17,47 @@
 package traces
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
+type callInfo struct {
+	Ctx  *common.Address
+	Dest *common.Address
+	Kind string
+}
+
+func (info *callInfo) String() string {
+	var (
+		cur  = "NA"
+		dest = "NA"
+	)
+	if info.Ctx != nil {
+		cur = fmt.Sprintf("0x%x...", info.Ctx[:8])
+	}
+	if info.Dest != nil {
+		dest = fmt.Sprintf("0x%x...", info.Dest[:8])
+	}
+	if dest == cur {
+		return fmt.Sprintf("%s to %v", info.Kind, dest)
+	}
+	return fmt.Sprintf("%s to %v (ctx: %v)", info.Kind, dest, cur)
+}
+
 // stack is an object for basic stack operations.
 type stack struct {
-	data []*common.Address
+	data []*callInfo
 }
 
 func newStack() *stack {
-	return &stack{data: make([]*common.Address, 0, 5)}
+	return &stack{data: make([]*callInfo, 0, 5)}
 }
 
-func (st *stack) push(a *common.Address) {
-	st.data = append(st.data, a)
+func (st *stack) push(info *callInfo) {
+	st.data = append(st.data, info)
 }
-func (st *stack) pop() (ret *common.Address) {
+func (st *stack) pop() (ret *callInfo) {
 	if len(st.data) == 0 {
 		return nil
 	}
@@ -53,36 +77,72 @@ func AnalyzeCalls(trace *Traces) {
 			curDepth, prevDepth := line.Depth(), prevLine.Depth()
 			if curDepth > prevDepth {
 				// A call or create was made here
-				newAddress := determineDestination(prevLine.log, currentAddress)
-				callStack.push(currentAddress)
+				newAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
+				callStack.push(&callInfo{
+					Ctx:  newAddress,
+					Dest: callDest,
+					Kind: callName,
+				})
 				currentAddress = newAddress
 			} else if curDepth < prevDepth {
 				// We backed out
-				currentAddress = callStack.pop()
+				callInfo := callStack.pop()
+				currentAddress = callInfo.Ctx
 			}
 			line.address = currentAddress
+			line.callStack = make([]*callInfo, len(callStack.data))
+			copy(line.callStack, callStack.data)
 		}
 		prevLine = line
 	}
 }
 
 // determineDestination looks at the stack args and determines what the call
-// address is
-func determineDestination(log *vm.StructLog, current *common.Address) *common.Address {
-
+// address is. Returns:
+// contextAddr -- the execution context
+// callDest    -- the call destination
+// name        -- type of call
+func determineDestination(log *vm.StructLog, current *common.Address) (contextAddr, callDest *common.Address, name string) {
 	switch log.Op {
-	case vm.CALL, vm.STATICCALL:
+	case vm.CALL:
+		name = "CALL"
 		if len(log.Stack) > 1 {
 			a := common.BigToAddress(log.Stack[1])
-			return &a
+			callDest = &a
+			contextAddr = &a
 		}
-	case vm.DELEGATECALL, vm.CALLCODE:
+	case vm.STATICCALL:
+		name = "SCALL"
+		if len(log.Stack) > 1 {
+			a := common.BigToAddress(log.Stack[1])
+			callDest = &a
+			contextAddr = &a
+		}
+	case vm.DELEGATECALL:
 		// The stack index is 1, but the actual execution context remains the same
-		return current
-	case vm.CREATE, vm.CREATE2:
+		name = "DCALL"
+		if len(log.Stack) > 1 {
+			a := common.BigToAddress(log.Stack[1])
+			callDest = &a
+			contextAddr = current
+		}
+	case vm.CALLCODE:
+		// The stack index is 1, but the actual execution context remains the same
+		name = "CCALL"
+		if len(log.Stack) > 1 {
+			a := common.BigToAddress(log.Stack[1])
+			callDest = &a
+			contextAddr = current
+		}
+	case vm.CREATE:
 		// In order to figure this out, we would need both nonce and current address
 		// while we _may_ have the address, we don't have the nonce
-		return nil
+		name = "CREATE"
+	case vm.CREATE2:
+		// In order to figure this out, we needs salt, initcode and current address
+		// while we _may_ theoretically be able to sort it out, by inspecting the
+		// memory, it would be pretty flaky
+		name = "CREATE2"
 	}
-	return nil
+	return contextAddr, callDest, name
 }
