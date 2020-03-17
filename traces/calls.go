@@ -54,6 +54,12 @@ func newStack() *stack {
 	return &stack{data: make([]*callInfo, 0, 5)}
 }
 
+func (st *stack) copy() *stack {
+	cpy := &stack{data: make([]*callInfo, len(st.data))}
+	copy(cpy.data, st.data)
+	return cpy
+}
+
 func (st *stack) push(info *callInfo) {
 	st.data = append(st.data, info)
 }
@@ -66,6 +72,13 @@ func (st *stack) pop() (ret *callInfo) {
 	return
 }
 
+func (st *stack) peek() (ret *callInfo) {
+	if len(st.data) == 0 {
+		return nil
+	}
+	return st.data[len(st.data)-1]
+}
+
 // AnalyzeCalls scans through the ops, and assigns context-addresses to the
 // lines.
 func AnalyzeCalls(trace *Traces) {
@@ -74,24 +87,31 @@ func AnalyzeCalls(trace *Traces) {
 	var prevLine *TraceLine
 	for _, line := range trace.Ops {
 		if prevLine != nil {
-			curDepth, prevDepth := line.Depth(), prevLine.Depth()
-			if curDepth > prevDepth {
-				// A call or create was made here
-				newAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
-				callStack.push(&callInfo{
-					Ctx:  newAddress,
-					Dest: callDest,
-					Kind: callName,
-				})
-				currentAddress = newAddress
-			} else if curDepth < prevDepth {
-				// We backed out
-				callInfo := callStack.pop()
-				currentAddress = callInfo.Ctx
+			if cDepth, pDepth := line.Depth(), prevLine.Depth(); cDepth != pDepth {
+				// Make a new callstack
+				callStack = callStack.copy()
+				if cDepth > pDepth {
+					// A call or create was made here
+					newAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
+					currentAddress = newAddress
+					callStack.push(&callInfo{
+						Ctx:  newAddress,
+						Dest: callDest,
+						Kind: callName,
+					})
+				} else {
+					// We backed out
+					callStack.pop()
+					info := callStack.peek()
+					if info != nil {
+						currentAddress = info.Ctx
+					} else {
+						currentAddress = nil
+					}
+				}
 			}
 			line.address = currentAddress
-			line.callStack = make([]*callInfo, len(callStack.data))
-			copy(line.callStack, callStack.data)
+			line.callStack = callStack.data
 		}
 		prevLine = line
 	}
