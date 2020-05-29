@@ -68,31 +68,34 @@ func GenerateBLS() *GstMaker {
 
 func RandCallBLS() []byte {
 	p := program.NewProgram()
-	precompile := rand.Int31n(int32(len(precompilesBLS)))
-	sizeIn := inputSizes[precompile]
-	if sizeIn == 160 || sizeIn == 288 || sizeIn == 384 {
-		sizeIn = sizeIn * rand.Intn(1000)
+	offset := 0
+	for precompile := range precompilesBLS {
+		sizeIn := inputSizes[precompile]
+		if sizeIn == 160 || sizeIn == 288 || sizeIn == 384 {
+			sizeIn = sizeIn * rand.Intn(1000)
+		}
+		data := randomBLSArgs(sizeIn)
+		p.Mstore(data, 0)
+		memInFn := func() (offset, size interface{}) {
+			offset, size = 0, sizeIn
+			return
+		}
+		sizeOut := ouputSizes[precompile]
+		memOutFn := func() (offset, size interface{}) {
+			offset, size = 0, sizeOut
+			return
+		}
+		addrGen := func() interface{} {
+			return precompilesBLS[precompile]
+		}
+		p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
+		p.AddAll(p2)
+		// pop the ret value
+		p.Op(ops.POP)
+		// Store the output in some slot, to make sure the stateroot changes
+		p.MemToStorage(0, sizeOut, offset)
+		offset += sizeOut
 	}
-	data := randomBLSArgs(sizeIn)
-	p.Mstore(data, 0)
-	memInFn := func() (offset, size interface{}) {
-		offset, size = 0, sizeIn
-		return
-	}
-	sizeOut := ouputSizes[precompile]
-	memOutFn := func() (offset, size interface{}) {
-		offset, size = 0, sizeOut
-		return
-	}
-	addrGen := func() interface{} {
-		return precompilesBLS[precompile]
-	}
-	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
-	p.AddAll(p2)
-	// pop the ret value
-	p.Op(ops.POP)
-	// Store the output in some slot, to make sure the stateroot changes
-	p.MemToStorage(0, sizeOut, 0)
 	return p.Bytecode()
 }
 
