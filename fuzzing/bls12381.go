@@ -39,7 +39,7 @@ var ouputSizes = []int{
 }
 
 func GenerateBLS() *GstMaker {
-	gst := basicStateTest()
+	gst := basicStateTest("Yolo-Ephnet-1")
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{
