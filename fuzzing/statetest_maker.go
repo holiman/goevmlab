@@ -27,7 +27,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
+<<<<<<< HEAD
 	"github.com/holiman/goevmlab/program"
+=======
+>>>>>>> d585a1b... cmd: added bls-generate command
 )
 
 // The sender

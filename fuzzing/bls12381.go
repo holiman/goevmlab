@@ -17,6 +17,8 @@
 package fuzzing
 
 import (
+	"fmt"
+	"io/ioutil"
 	"math/big"
 	"math/rand"
 
@@ -41,7 +43,7 @@ var ouputSizes = []int{
 func GenerateBLS() *GstMaker {
 	gst := basicStateTest("Yolo-Ephnet-1")
 	// Add a contract which calls BLS
-	dest := common.HexToAddress("0x0000ca1100b1a7e")
+	dest := common.HexToAddress("0x00ca110b15012381")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    RandCallBLS(),
 		Balance: new(big.Int),
@@ -95,7 +97,35 @@ func RandCallBLS() []byte {
 }
 
 func randomBLSArgs(inputSize int) []byte {
+	if len(BLSCorpus) != 0 {
+		for i := 0; i < 100; i++ {
+			index := rand.Intn(len(BLSCorpus))
+			if len(BLSCorpus[index]) == inputSize {
+				return BLSCorpus[index]
+			}
+		}
+		fmt.Println("No suitable corpus element found, falling back to random")
+	}
 	data := make([]byte, inputSize)
 	rand.Read(data)
 	return data
+}
+
+var BLSCorpus [][]byte
+
+func ReadBLSCorpus() error {
+	dir, err := ioutil.ReadDir("corpus")
+	if err != nil {
+		return err
+	}
+	BLSCorpus = make([][]byte, len(dir))
+	for i, info := range dir {
+		name := info.Name()
+		input, err := ioutil.ReadFile("corpus/" + name)
+		if err != nil {
+			return err
+		}
+		BLSCorpus[i] = input
+	}
+	return nil
 }
