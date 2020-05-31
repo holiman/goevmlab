@@ -23,6 +23,7 @@ import (
 	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"os"
+	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -123,7 +124,7 @@ func runit() error {
 	fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()),nil)
 		sender     = common.BytesToAddress([]byte("sender"))
 	)
 	for addr, acc := range alloc {
@@ -155,19 +156,37 @@ func runit() error {
 			PetersburgBlock:     new(big.Int),
 			IstanbulBlock:       new(big.Int),
 		},
-		//EVMConfig: vm.Config{
-		//	Debug:  true,
-		//	Tracer: &dumbTracer{},
-		//},
+		EVMConfig: vm.Config{
+			Debug:  true,
+			Tracer: &dumbTracer{},
+		},
 	}
 	// Diagnose it
 	t0 := time.Now()
 	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 	fmt.Printf("Time elapsed: %v\n", t1)
-	t0 = time.Now()
-	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
-	t1 = time.Since(t0)
-	fmt.Printf("Time elapsed: %v\n", t1)
+	runtimeConfig.EVMConfig = vm.Config{}
+	// master
+	// 10         109817115 ns/op
+	// 125086682 B/op    326386 allocs/op
+	// 12         118370054 ns/op
+	// 125086288 B/op    326384 allocs/op
+
+
+	// fixedbig_v4
+	// 9         123924400 ns/op
+	// 464174638 B/op    222486 allocs/op
+	// 9         122593510 ns/op
+	// 464174659 B/op    222484 allocs/op
+
+	benchmarkRes := testing.Benchmark(func(b *testing.B){
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++{
+			_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
+		}
+	})
+	fmt.Println(benchmarkRes.String())
+	fmt.Println(benchmarkRes.MemString())
 	return err
 }
