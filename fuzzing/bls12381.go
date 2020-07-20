@@ -38,15 +38,15 @@ type blsPrec struct {
 }
 
 var precompilesBLS = []blsPrec{
-	{10, NewG1Add, 0},   // G1Add
-	{11, NewG1Mul, 0},   // G1Mul
-	{12, NewG1Exp, 0},   // G1MultiExp
-	{13, NewG2Add, 0},   // G2Add
-	{14, NewG2Mul, 0},   // G2Mul
-	{15, NewG2Exp, 0},   // G2MultiExp
-	{16, NewPairing, 0}, // Pairing
-	{17, NewFPtoG1, 0},  // FP to G1
-	{17, NewFP2toG2, 0}, // FP2 to G2
+	{10, NewG1Add, 128},   // G1Add
+	{11, NewG1Mul, 128},   // G1Mul
+	{12, NewG1Exp, 128},   // G1MultiExp
+	{13, NewG2Add, 256},   // G2Add
+	{14, NewG2Mul, 256},   // G2Mul
+	{15, NewG2Exp, 256},   // G2MultiExp
+	{16, NewPairing, 32},  // Pairing
+	{17, NewFPtoG1, 128},  // FP to G1
+	{17, NewFP2toG2, 256}, // FP2 to G2
 }
 
 func GenerateBLS() *GstMaker {
