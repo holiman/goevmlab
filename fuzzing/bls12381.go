@@ -38,11 +38,15 @@ type blsPrec struct {
 }
 
 var precompilesBLS = []blsPrec{
-	blsPrec{10, NewG1Add, 0}, // G1Add
-	blsPrec{11, NewG1Mul, 0}, // G1Mul
-	blsPrec{12, NewG1Exp, 0}, // G1Exp
-	blsPrec{13, NewG2Add, 0}, // G2Add
-	blsPrec{14, NewG2Mul, 0}, // G2Add
+	{10, NewG1Add, 0},   // G1Add
+	{11, NewG1Mul, 0},   // G1Mul
+	{12, NewG1Exp, 0},   // G1MultiExp
+	{13, NewG2Add, 0},   // G2Add
+	{14, NewG2Mul, 0},   // G2Mul
+	{15, NewG2Exp, 0},   // G2MultiExp
+	{16, NewPairing, 0}, // Pairing
+	{17, NewFPtoG1, 0},  // FP to G1
+	{17, NewFP2toG2, 0}, // FP2 to G2
 }
 
 func GenerateBLS() *GstMaker {
@@ -78,13 +82,9 @@ func RandCallBLS() []byte {
 	config := new(MutationConfig)
 	for _, precompile := range precompilesBLS {
 		data := precompile.newData(iv, *config)
-		sizeIn := len(data)
-		if sizeIn == 160 || sizeIn == 288 || sizeIn == 384 {
-			sizeIn = sizeIn * rand.Intn(1000)
-		}
 		p.Mstore(data, 0)
 		memInFn := func() (offset, size interface{}) {
-			offset, size = 0, sizeIn
+			offset, size = 0, len(data)
 			return
 		}
 		sizeOut := precompile.outsize
@@ -174,6 +174,38 @@ func NewG2Mul(iv []byte, config MutationConfig) []byte {
 	mul := make([]byte, 32)
 	rand.Read(mul)
 	return append(a, mul...)
+}
+
+func NewG2Exp(iv []byte, config MutationConfig) []byte {
+	i := rand.Int31n(140)
+	var res []byte
+	for k := 0; k < int(i); k++ {
+		input := NewG2Mul(iv, config)
+		res = append(res, input...)
+	}
+	return res
+}
+
+func NewFPtoG1(iv []byte, config MutationConfig) []byte {
+	return NewFieldElement(iv, config)
+}
+
+func NewFP2toG2(iv []byte, config MutationConfig) []byte {
+	a := NewFieldElement(iv, config)
+	b := NewFieldElement(iv, config)
+	return append(a, b...)
+}
+
+func NewPairing(iv []byte, config MutationConfig) []byte {
+	i := rand.Int31n(140)
+	var res []byte
+	for k := 0; k < int(i); k++ {
+		a := NewG1Point(iv, config)
+		b := NewG2Point(iv, config)
+		in := append(a, b...)
+		res = append(res, in...)
+	}
+	return res
 }
 
 // sanitizeMutate maps arbitrary input to a valid field element on the curve
