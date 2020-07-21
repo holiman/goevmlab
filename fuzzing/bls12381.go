@@ -17,8 +17,7 @@
 package fuzzing
 
 import (
-	"fmt"
-	"io/ioutil"
+	crypto "crypto/rand"
 	"math/big"
 	"math/rand"
 
@@ -33,7 +32,7 @@ var modulo, _ = big.NewInt(0).SetString("0x1a0111ea397fe69a4b1ba7b6434bacd764774
 
 type blsPrec struct {
 	addr    int
-	newData func(iv []byte, config MutationConfig) []byte
+	newData func() []byte
 	outsize int
 }
 
@@ -49,12 +48,13 @@ var precompilesBLS = []blsPrec{
 	{17, NewFP2toG2, 256}, // FP2 to G2
 }
 
-func GenerateBLS() *GstMaker {
+func GenerateBLS() (*GstMaker, []byte) {
 	gst := basicStateTest("Yolo-Ephnet-1")
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca110b15012381")
+	code := RandCallBLS()
 	gst.AddAccount(dest, GenesisAccount{
-		Code:    RandCallBLS(),
+		Code:    code,
 		Balance: new(big.Int),
 		Storage: make(map[common.Hash]common.Hash),
 	})
@@ -72,16 +72,14 @@ func GenerateBLS() *GstMaker {
 		}
 		gst.SetTx(tx)
 	}
-	return gst
+	return gst, code
 }
 
 func RandCallBLS() []byte {
 	p := program.NewProgram()
 	offset := 0
-	var iv []byte
-	config := new(MutationConfig)
 	for _, precompile := range precompilesBLS {
-		data := precompile.newData(iv, *config)
+		data := precompile.newData()
 		p.Mstore(data, 0)
 		memInFn := func() (offset, size interface{}) {
 			offset, size = 0, len(data)
@@ -106,145 +104,130 @@ func RandCallBLS() []byte {
 	return p.Bytecode()
 }
 
-func randomBLSArgs(inputSize int) []byte {
-	if len(BLSCorpus) != 0 {
-		for i := 0; i < 100; i++ {
-			index := rand.Intn(len(BLSCorpus))
-			if len(BLSCorpus[index]) == inputSize {
-				return BLSCorpus[index]
-			}
-		}
-		fmt.Println("No suitable corpus element found, falling back to random")
-	}
-	data := make([]byte, inputSize)
-	rand.Read(data)
-	return data
+func NewG1Add() []byte {
+	a := NewG1Point()
+	b := NewG1Point()
+	return append(a, b...)
 }
 
-var BLSCorpus [][]byte
+func NewG1Mul() []byte {
+	a := NewG1Point()
+	mul := make([]byte, 32)
+	rand.Read(mul)
+	return append(a, mul...)
+}
 
-func ReadBLSCorpus() error {
-	dir, err := ioutil.ReadDir("corpus")
+func NewG1Exp() []byte {
+	i := rand.Int31n(140)
+	var res []byte
+	for k := 0; k < int(i); k++ {
+		input := NewG1Mul()
+		res = append(res, input...)
+	}
+	return res
+}
+
+func NewG2Add() []byte {
+	a := NewG2Point()
+	b := NewG2Point()
+	return append(a, b...)
+}
+
+func NewG2Mul() []byte {
+	a := NewG2Point()
+	mul := make([]byte, 32)
+	rand.Read(mul)
+	return append(a, mul...)
+}
+
+func NewG2Exp() []byte {
+	i := rand.Int31n(140)
+	var res []byte
+	for k := 0; k < int(i); k++ {
+		input := NewG2Mul()
+		res = append(res, input...)
+	}
+	return res
+}
+
+func NewFPtoG1() []byte {
+	return NewFieldElement()
+}
+
+func NewFP2toG2() []byte {
+	a := NewFieldElement()
+	b := NewFieldElement()
+	return append(a, b...)
+}
+
+var (
+	// Initialize G1
+	g1 = bls12381.NewG1()
+	// Initialize G2
+	g2 = bls12381.NewG2()
+	// Initialize pairing engine
+	bls = bls12381.NewPairingEngine()
+	// Initialize rand reader
+	reader = rand.New(rand.NewSource(1234))
+)
+
+// NewPairing creates a new valid pairing.
+// We create the following pairing:
+// e(aMul1 * G1, bMul1 * G2) * e(aMul2 * G1, bMul2 * G2) * ... * e(aMuln * G1, bMuln * G2) == e(G1, G2) ^ s
+// with s = sum(x: 1 -> n: (aMulx * bMulx))
+func NewPairing() []byte {
+	pairs := rand.Int31n(150)
+	var res []byte
+	target := new(big.Int)
+	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
+	for k := 0; k < int(pairs); k++ {
+		a, b := g1.One(), g2.One()
+		aMul := new(big.Int).SetBytes(NewFieldElement())
+		bMul := new(big.Int).SetBytes(NewFieldElement())
+		a = g1.MulScalar(a, a, aMul)
+		b = g2.MulScalar(b, b, bMul)
+		res = append(res, g1.EncodePoint(a)...)
+		res = append(res, g2.EncodePoint(b)...)
+		// Add to s
+		target = target.Add(target, aMul.Mul(aMul, bMul))
+	}
+	// RHS: e(G1, G2) ^ s
+	ta, tb := g1.One(), g2.One()
+	g1.MulScalar(ta, ta, target)
+	g1.Neg(ta, ta)
+	res = append(res, g1.EncodePoint(ta)...)
+	res = append(res, g2.EncodePoint(tb)...)
+	return res
+}
+
+func NewFieldElement() []byte {
+	ret, err := crypto.Int(reader, modulo)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	BLSCorpus = make([][]byte, len(dir))
-	for i, info := range dir {
-		name := info.Name()
-		input, err := ioutil.ReadFile("corpus/" + name)
-		if err != nil {
-			return err
-		}
-		BLSCorpus[i] = input
-	}
-	return nil
-}
-
-func NewG1Add(iv []byte, config MutationConfig) []byte {
-	a := NewG1Point(iv, config)
-	b := NewG1Point(iv, config)
-	return append(a, b...)
-}
-
-func NewG1Mul(iv []byte, config MutationConfig) []byte {
-	a := NewG1Point(iv, config)
-	mul := make([]byte, 32)
-	rand.Read(mul)
-	return append(a, mul...)
-}
-
-func NewG1Exp(iv []byte, config MutationConfig) []byte {
-	i := rand.Int31n(140)
-	var res []byte
-	for k := 0; k < int(i); k++ {
-		input := NewG1Mul(iv, config)
-		res = append(res, input...)
-	}
-	return res
-}
-
-func NewG2Add(iv []byte, config MutationConfig) []byte {
-	a := NewG2Point(iv, config)
-	b := NewG2Point(iv, config)
-	return append(a, b...)
-}
-
-func NewG2Mul(iv []byte, config MutationConfig) []byte {
-	a := NewG2Point(iv, config)
-	mul := make([]byte, 32)
-	rand.Read(mul)
-	return append(a, mul...)
-}
-
-func NewG2Exp(iv []byte, config MutationConfig) []byte {
-	i := rand.Int31n(140)
-	var res []byte
-	for k := 0; k < int(i); k++ {
-		input := NewG2Mul(iv, config)
-		res = append(res, input...)
-	}
-	return res
-}
-
-func NewFPtoG1(iv []byte, config MutationConfig) []byte {
-	return NewFieldElement(iv, config)
-}
-
-func NewFP2toG2(iv []byte, config MutationConfig) []byte {
-	a := NewFieldElement(iv, config)
-	b := NewFieldElement(iv, config)
-	return append(a, b...)
-}
-
-func NewPairing(iv []byte, config MutationConfig) []byte {
-	i := rand.Int31n(140)
-	var res []byte
-	for k := 0; k < int(i); k++ {
-		a := NewG1Point(iv, config)
-		b := NewG2Point(iv, config)
-		in := append(a, b...)
-		res = append(res, in...)
-	}
-	return res
-}
-
-// sanitizeMutate maps arbitrary input to a valid field element on the curve
-func sanitizeMutate(data []byte) []byte {
-	fe := big.NewInt(0).SetBytes(data)
-	if fe.Cmp(modulo) == 1 {
-		fe = fe.Mod(fe, modulo)
-	}
+	bytes := ret.Bytes()
 	buf := make([]byte, 48)
-	copy(buf[48-len(fe.Bytes()):], fe.Bytes())
+	copy(buf[48-len(bytes):], bytes)
 	return buf
 }
 
-func NewFieldElement(iv []byte, config MutationConfig) []byte {
-	re := Mutate(iv, config)
-	return sanitizeMutate(re)
-}
-
-func NewG1Point(iv []byte, config MutationConfig) []byte {
-	a := NewFieldElement(iv, config)
-	// Initialize G1
-	g := bls12381.NewG1()
-	b, err := g.MapToCurve(a)
+func NewG1Point() []byte {
+	a := NewFieldElement()
+	b, err := g1.MapToCurve(a)
 	if err != nil {
 		panic(err)
 	}
-	return g.EncodePoint(b)
+	return g1.EncodePoint(b)
 }
 
-func NewG2Point(iv []byte, config MutationConfig) []byte {
-	a := NewFieldElement(iv, config)
-	b := NewFieldElement(a, config)
+func NewG2Point() []byte {
+	a := NewFieldElement()
+	b := NewFieldElement()
 	x := append(a, b...)
-	// Initialize G2
-	g := bls12381.NewG2()
 	// Compute mapping
-	res, err := g.MapToCurve(x)
+	res, err := g2.MapToCurve(x)
 	if err != nil {
 		panic(err)
 	}
-	return g.EncodePoint(res)
+	return g2.EncodePoint(res)
 }

@@ -67,10 +67,7 @@ func main() {
 }
 
 func createTests(location, prefix string, limit int) error {
-	if err := fuzzing.ReadBLSCorpus(); err != nil {
-		return err
-	}
-	base := fuzzing.GenerateBLS()
+	base, _ := fuzzing.GenerateBLS()
 	target := base.GetDestination()
 	fmt.Printf("target: %v\n", target.Hex())
 

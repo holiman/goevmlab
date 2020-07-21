@@ -55,9 +55,9 @@ func main() {
 
 func startFuzzer(c *cli.Context) error {
 	generator := func() *fuzzing.GstMaker {
-		base := fuzzing.GenerateBLS()
+		base, code := fuzzing.GenerateBLS()
 		target := base.GetDestination()
-		base.SetCode(target, fuzzing.RandCallBLS())
+		base.SetCode(target, code)
 		return base
 	}
 	return common.ExecuteFuzzer(c, generator, "blstest")
