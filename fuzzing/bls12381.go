@@ -118,7 +118,7 @@ func NewG1Mul() []byte {
 }
 
 func NewG1Exp() []byte {
-	i := rand.Int31n(140)
+	i := randInt64()
 	var res []byte
 	for k := 0; k < int(i); k++ {
 		input := NewG1Mul()
@@ -141,7 +141,7 @@ func NewG2Mul() []byte {
 }
 
 func NewG2Exp() []byte {
-	i := rand.Int31n(140)
+	i := randInt64()
 	var res []byte
 	for k := 0; k < int(i); k++ {
 		input := NewG2Mul()
@@ -171,12 +171,28 @@ var (
 	reader = rand.New(rand.NewSource(1234))
 )
 
+// randInt64 returns a new random int64
+// With 3% probability it outputs 0
+// With 92% probability it outputs a number [0..30)
+// With 5% probability it outputs a number [0..150)
+func randInt64() int64 {
+	b := rand.Int31n(100)
+	// Zero or not?
+	if b < 3 {
+		return 0
+	}
+	if b < 95 {
+		return rand.Int63n(30)
+	}
+	return rand.Int63n(150)
+}
+
 // NewPairing creates a new valid pairing.
 // We create the following pairing:
 // e(aMul1 * G1, bMul1 * G2) * e(aMul2 * G1, bMul2 * G2) * ... * e(aMuln * G1, bMuln * G2) == e(G1, G2) ^ s
 // with s = sum(x: 1 -> n: (aMulx * bMulx))
 func NewPairing() []byte {
-	pairs := rand.Int31n(150)
+	pairs := randInt64()
 	var res []byte
 	target := new(big.Int)
 	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
