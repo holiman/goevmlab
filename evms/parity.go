@@ -53,7 +53,7 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (s
 	if speedTest {
 		cmd = exec.Command(evm.path, "state-test", path)
 	} else {
-		cmd = exec.Command(evm.path, "--std-json", "state-test", path)
+		cmd = exec.Command(evm.path, "--std-json", "state-test", path, "--chain", "berlin")
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
