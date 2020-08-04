@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
+	"github.com/holiman/goevmlab/program"
 	"io"
 	"math/big"
 	"math/rand"
@@ -267,7 +268,7 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 		cfg.Debug = true
 		cfg.Tracer = vm.NewJSONLogger(&vm.LogConfig{}, traceOutput)
 	}
-	statedb, _ := test.Run(subtest, cfg)
+	_, statedb, _ := test.Run(subtest, cfg, false)
 
 	root := statedb.IntermediateRoot(true)
 	logs := rlpHash(statedb.Logs())
@@ -377,6 +378,85 @@ func Generate2200Test() *GstMaker {
 			Data:       []string{randHex(100)},
 			GasPrice:   big.NewInt(0x01),
 			To:         addrs[0].Hex(),
+			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		}
+		gst.SetTx(tx)
+	}
+	return gst
+}
+
+func GenerateSSToreStatic()  *GstMaker{
+	// P0 static-calls P1 (0xf1)
+	p0 := program.NewProgram()
+	p0.Push(0)
+	p0.Push(0)
+	p0.Push(0)
+	p0.Push(0)
+	p0.Push(0)
+	p0.Push(0xf1)
+	p0.Op(ops.GAS)
+	p0.Op(ops.STATICCALL)
+	p0.Op(ops.STOP)
+
+	// P1 calls P2
+	p1 := program.NewProgram()
+	p1.Push(0)
+	p1.Push(0)
+	p1.Push(0)
+	p1.Push(0)
+	p1.Push(0)
+	p1.Push(0xf2)
+	p1.Op(ops.GAS)
+	p1.Op(ops.CALL)
+	p1.Op(ops.STOP)
+
+	// P2 _should_ get a shallow stack, not static-call violation
+	p2 := program.NewProgram()
+	p2.Push(1)
+	p2.Push(1)
+	p2.Op(ops.CALL)
+
+	gst := basicStateTest()
+
+	var sender = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+
+	gst.AddAccount(sender, GenesisAccount{
+		Nonce:   0,
+		Balance: big.NewInt(0xffffffff),
+		Storage: make(map[common.Hash]common.Hash),
+		Code:    []byte{},
+	})
+	gst.EnableFork("Istanbul")
+
+	// Add the three
+	a := common.HexToAddress("0xf0")
+	gst.AddAccount(a, GenesisAccount{
+		Code:    p0.Bytecode(),
+		Balance: new(big.Int),
+		Storage: make(map[common.Hash]common.Hash),
+	})
+	b := common.HexToAddress("0xf1")
+	gst.AddAccount(b, GenesisAccount{
+		Code:    p1.Bytecode(),
+		Balance: new(big.Int),
+		Storage: make(map[common.Hash]common.Hash),
+	})
+	c := common.HexToAddress("0xf2")
+	gst.AddAccount(c, GenesisAccount{
+		Code:    p2.Bytecode(),
+		Balance: new(big.Int),
+		Storage: make(map[common.Hash]common.Hash),
+	})
+	// The transaction
+	{
+		tx := &stTransaction{
+			// 8M gaslimit
+			GasLimit:   []uint64{8000000},
+			Nonce:      0,
+			Value:      []string{randHex(4)},
+			Data:       []string{randHex(100)},
+			GasPrice:   big.NewInt(0x01),
+			To:         a.Hex(),
 			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		}
 		gst.SetTx(tx)

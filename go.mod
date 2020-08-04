@@ -13,11 +13,11 @@ require (
 	github.com/fjl/gencodec v0.0.0-20180327115531-408615857a2d // indirect
 	github.com/garslo/gogen v0.0.0-20170307003452-d6ebae628c7c // indirect
 	github.com/gdamore/tcell v1.3.0
-	github.com/golang/snappy v0.0.1
+	github.com/golang/snappy v0.0.2-0.20200707131729-196ae77b8a26
 	github.com/olekukonko/tablewriter v0.0.3 // indirect
 	github.com/rivo/tview v0.0.0-20191121195645-2d957c4be01d
 	github.com/rs/cors v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 

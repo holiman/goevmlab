@@ -162,10 +162,10 @@ func runit() error {
 		},
 	}
 	// Diagnose it
-	t0 := time.Now()
-	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
-	t1 := time.Since(t0)
-	fmt.Printf("Time elapsed: %v\n", t1)
+//	t0 := time.Now()
+//	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
+//	t1 := time.Since(t0)
+//	fmt.Printf("Time elapsed: %v\n", t1)
 	runtimeConfig.EVMConfig = vm.Config{}
 	// master
 	// 10         109817115 ns/op

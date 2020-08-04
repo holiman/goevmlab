@@ -103,6 +103,14 @@ func (p *Program) Hex() string {
 	return fmt.Sprintf("%02x", p.Bytecode())
 }
 
+func (p *Program) ExtcodeCopy(address, memOffset, codeOffset, length interface{}) {
+	p.Push(length)
+	p.Push(codeOffset)
+	p.Push(memOffset)
+	p.Push(address)
+	p.Op(ops.EXTCODECOPY)
+}
+
 // Call is a convenience function to make a call
 func (p *Program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset, outSize interface{}) {
 	p.Push(outSize)
