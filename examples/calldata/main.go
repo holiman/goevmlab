@@ -155,5 +155,4 @@ func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, 
 	fmt.Printf("\nCaptureEnd\n")
 	fmt.Printf("Counter: %d\n", d.counter)
 	return nil
-}rn nil
 }
