@@ -48,13 +48,13 @@ func CompareFiles(vms []Evm, readers []io.Reader) bool {
 		scanners = append(scanners, bufio.NewScanner(r))
 	}
 	refOut := scanners[0]
-	refVm := vms[0]
+	refVM := vms[0]
 	for refOut.Scan() {
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
 				fmt.Printf("diff: \n%v: %v\n%v: %v\n",
-					refVm.Name(),
+					refVM.Name(),
 					string(refOut.Bytes()),
 					vms[i+1].Name(),
 					string(scanner.Bytes()))

@@ -53,7 +53,7 @@ And `build_nethermind.sh`:
 sudo apt-get update && sudo apt-get install libsnappy-dev libc6-dev libc6
 ( cd nethermind/src/Nethermind/Nethermind.State.Test.Runner && \
   dotnet publish -r linux-x64 -c Release /p:PublishSingleFile=true && \
-  cp bin/Release/netcoreapp3.0/linux-x64/publish/nethtest ../../../)
+  cp bin/Release/netcoreapp3.1/linux-x64/publish/nethtest ../../../)
 ```
 
 ## Parity (`parity-evm`)

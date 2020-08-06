@@ -115,6 +115,10 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
+		// Parity sets ReturnStack to nil, geth to []
+		if elem.ReturnStack == nil {
+			elem.ReturnStack = make([]uint32, 0)
+		}
 		//fmt.Printf("parity: %v\n", string(data))
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {

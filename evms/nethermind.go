@@ -22,10 +22,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/ethereum/go-ethereum/core/vm"
 )
 
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
@@ -61,8 +62,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources, handle error but ignore non-zero exit codes
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	return cmd.String(), cmd.Wait()
 }
 
 func (evm *NethermindVM) Name() string {

@@ -18,14 +18,16 @@ package fuzzing
 
 import (
 	"encoding/json"
+	"io"
+	"math/big"
+	"math/rand"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
-	"io"
-	"math/big"
-	"math/rand"
+	"github.com/holiman/goevmlab/program"
 )
 
 // The sender
@@ -267,15 +269,17 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 		cfg.Debug = true
 		cfg.Tracer = vm.NewJSONLogger(&vm.LogConfig{}, traceOutput)
 	}
-	statedb, _ := test.Run(subtest, cfg)
+	_, statedb, root, err := test.RunNoVerify(subtest, cfg, false)
+	if err != nil {
+		return err
+	}
 
-	root := statedb.IntermediateRoot(true)
 	logs := rlpHash(statedb.Logs())
 	g.SetResult(root, logs)
 	return nil
 }
 
-func basicStateTest() *GstMaker {
+func basicStateTest(fork string) *GstMaker {
 	gst := NewGstMaker()
 	// Add sender
 	gst.AddAccount(sender, GenesisAccount{
@@ -284,13 +288,13 @@ func basicStateTest() *GstMaker {
 		Storage: make(map[common.Hash]common.Hash),
 		Code:    []byte{},
 	})
-	gst.EnableFork("Istanbul")
+	gst.EnableFork(fork)
 	return gst
 }
 
 // GenerateStateTest generates a random state tests
 func GenerateStateTest(name string) *GeneralStateTest {
-	gst := basicStateTest()
+	gst := basicStateTest("Istanbul")
 	// add some random accounts
 	dest := gst.randomFillGenesisAlloc()
 	// The transaction
@@ -313,7 +317,7 @@ func GenerateStateTest(name string) *GeneralStateTest {
 }
 
 func GenerateBlake() *GstMaker {
-	gst := basicStateTest()
+	gst := basicStateTest("Istanbul")
 	// Add a contract which calls blake
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{
@@ -345,7 +349,7 @@ func GenerateBlakeTest(name string) *GeneralStateTest {
 }
 
 func Generate2200Test() *GstMaker {
-	gst := basicStateTest()
+	gst := basicStateTest("Istanbul")
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),
@@ -382,4 +386,65 @@ func Generate2200Test() *GstMaker {
 		gst.SetTx(tx)
 	}
 	return gst
+}
+
+func GenerateECRecover() (*GstMaker, []byte) {
+	gst := basicStateTest("Istanbul")
+	// Add a contract which calls BLS
+	dest := common.HexToAddress("0x00ca11ec5ec04e5")
+	code := RandCallECRecover()
+	gst.AddAccount(dest, GenesisAccount{
+		Code:    code,
+		Balance: new(big.Int),
+		Storage: make(map[common.Hash]common.Hash),
+	})
+	// The transaction
+	{
+		tx := &stTransaction{
+			// 8M gaslimit
+			GasLimit:   []uint64{8000000},
+			Nonce:      0,
+			Value:      []string{randHex(4)},
+			Data:       []string{randHex(100)},
+			GasPrice:   big.NewInt(0x01),
+			To:         dest.Hex(),
+			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		}
+		gst.SetTx(tx)
+	}
+	return gst, code
+}
+
+func RandCallECRecover() []byte {
+	p := program.NewProgram()
+	offset := 0
+	rounds := rand.Int31n(10000)
+	for i := int32(0); i < rounds; i++ {
+		data := make([]byte, 128)
+		rand.Read(data)
+		p.Mstore(data, 0)
+		memInFn := func() (offset, size interface{}) {
+			offset, size = 0, 128
+			return
+		}
+		// ecrecover outputs 32 bytes
+		memOutFn := func() (offset, size interface{}) {
+			offset, size = 0, 32
+			return
+		}
+		addrGen := func() interface{} {
+			return 7
+		}
+		gasRand := func() interface{} {
+			return big.NewInt(rand.Int63n(100000))
+		}
+		p2 := RandCall(gasRand, addrGen, ValueRandomizer(), memInFn, memOutFn)
+		p.AddAll(p2)
+		// pop the ret value
+		p.Op(ops.POP)
+		// Store the output in some slot, to make sure the stateroot changes
+		p.MemToStorage(0, 32, offset)
+		offset += 32
+	}
+	return p.Bytecode()
 }
