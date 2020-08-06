@@ -237,7 +237,7 @@ func (op OpCode) String() string {
 	if info, ok := opCodeInfo[op]; ok {
 		return info.name
 	}
-	return fmt.Sprintf("Missing opcode 0x%x", int(op))
+	return fmt.Sprintf("opcode 0x%x not defined", int(op))
 }
 
 // stringToOp is a mapping from strings to OpCode

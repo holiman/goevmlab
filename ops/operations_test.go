@@ -17,9 +17,10 @@
 package ops
 
 import (
-	"github.com/ethereum/go-ethereum/core/vm"
 	"strings"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/core/vm"
 )
 
 // TestSanity checks the npops and npushes against the
@@ -44,13 +45,13 @@ func TestSanity(t *testing.T) {
 			}
 		}
 		// Lookup opcode via name
-		if name := ourOp.String(); !strings.HasPrefix(name, "Missing"){
+		if name := ourOp.String(); !strings.HasPrefix(name, "opcode") {
 			our := byte(StringToOp(name))
-			if byte(our) != byte(i){
+			if byte(our) != byte(i) {
 				t.Errorf("name %v, got 0x%x expected 0x%x", name, our, byte(i))
 			}
 			geth := byte(vm.StringToOp(name))
-			if byte(geth) != byte(i){
+			if byte(geth) != byte(i) {
 				t.Errorf("name %v, got 0x%x expected 0x%x", name, geth, byte(i))
 			}
 		}
@@ -63,11 +64,11 @@ func TestSanity(t *testing.T) {
 			// - vm.operation.MaxStack
 			// Was tested on 2019-08-29, oll korrekt
 			/*
-			gotPops := len(ourOp.Pops())
-			geth_instr := vm.IstanbulInstructionSet[gethOp]
-			if gotPops != geth_instr.MinStack{
-				t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, geth_instr.MinStack)
-			}
+				gotPops := len(ourOp.Pops())
+				geth_instr := vm.IstanbulInstructionSet[gethOp]
+				if gotPops != geth_instr.MinStack{
+					t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, geth_instr.MinStack)
+				}
 			*/
 		}
 	}

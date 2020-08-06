@@ -20,10 +20,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/ethereum/go-ethereum/core/vm"
 )
 
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
@@ -110,6 +111,10 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		// In order to handle that, we need to drop all STOP opcodes.
 		if elem.Op == 0x0 {
 			continue
+		}
+		// ReturnStack might not be set in old traces
+		if elem.ReturnStack == nil {
+			elem.ReturnStack = make([]uint32, 0)
 		}
 		// Parity is missing gasCost, memSize and refund
 		elem.GasCost = 0

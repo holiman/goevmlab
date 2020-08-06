@@ -112,6 +112,10 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
+		// ReturnStack might not be set in old traces
+		if elem.ReturnStack == nil {
+			elem.ReturnStack = make([]uint32, 0)
+		}
 		// Parity is missing gasCost, memSize and refund
 		elem.GasCost = 0
 		elem.MemorySize = 0
