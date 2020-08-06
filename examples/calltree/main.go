@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
-
 package main
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"os"
 	"time"
+
+	"github.com/holiman/goevmlab/ops"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -123,7 +123,7 @@ func runit() error {
 	fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		sender     = common.BytesToAddress([]byte("sender"))
 	)
 	for addr, acc := range alloc {

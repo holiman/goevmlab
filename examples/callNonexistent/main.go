@@ -19,12 +19,13 @@ package main
 import (
 	//"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/holiman/goevmlab/ops"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -43,14 +44,14 @@ func main() {
 	}
 }
 
-func staticCallAttack() []byte{
+func staticCallAttack() []byte {
 	// Causes 13928 staticcalls
 	//30          39521949 ns/op // 39 ms
-//  9            112185165 ns/op // 112 ms
+	//  9            112185165 ns/op // 112 ms
 	a := program.NewProgram()
 	dest := a.Jumpdest()
 	reps := 800
-	for i := 0 ; i < reps ; i++{
+	for i := 0; i < reps; i++ {
 		a.Push(0)
 		a.Op(ops.DUP1)
 		a.Op(ops.DUP1)
@@ -63,14 +64,14 @@ func staticCallAttack() []byte{
 	a.Jump(dest)
 	return a.Bytecode()
 }
-func extCodeSizeAttack() []byte{
+func extCodeSizeAttack() []byte {
 	// Causes 14205 EXTCODESIZEs
 	//       63          17686763 ns/op
 
 	a := program.NewProgram()
 	dest := a.Jumpdest()
 	reps := 800
-	for i := 0 ; i < reps ; i++{
+	for i := 0; i < reps; i++ {
 		a.Op(ops.GAS)
 		a.Op(ops.EXTCODESIZE)
 		a.Op(ops.POP)
@@ -81,17 +82,17 @@ func extCodeSizeAttack() []byte{
 
 func runit() error {
 	/*
-	if opcode == "FA":
-	code = "5b%s600056" % (("60008080805a5a%s50"%opcode) * code_repitions)  # JUMPDEST (PUSH 0 DUP1 DUP1 DUP1 GAS GAS STATICCALL POP) * 8'000 PUSH1 0x0 JUMP
-	else:
-	code = "5b%s600056" % (("5a%s50"%opcode) * code_repitions)  # JUMPDEST (GAS BALANCE/EXTCODESIZE/EXTCODEHASH POP) * 8'000 PUSH1 0x0 JUMP
+		if opcode == "FA":
+		code = "5b%s600056" % (("60008080805a5a%s50"%opcode) * code_repitions)  # JUMPDEST (PUSH 0 DUP1 DUP1 DUP1 GAS GAS STATICCALL POP) * 8'000 PUSH1 0x0 JUMP
+		else:
+		code = "5b%s600056" % (("5a%s50"%opcode) * code_repitions)  # JUMPDEST (GAS BALANCE/EXTCODESIZE/EXTCODEHASH POP) * 8'000 PUSH1 0x0 JUMP
 	*/
 
 	aAddr := common.HexToAddress("0xff0a")
 	alloc := make(core.GenesisAlloc)
 	alloc[aAddr] = core.GenesisAccount{
-		Nonce:   0,
-		Code:    staticCallAttack(),
+		Nonce: 0,
+		Code:  staticCallAttack(),
 		//Code:    extCodeSizeAttack(),
 		Balance: big.NewInt(0xffffffff),
 	}
@@ -106,7 +107,7 @@ func runit() error {
 	//fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		sender     = common.BytesToAddress([]byte("sender"))
 	)
 	for addr, acc := range alloc {
@@ -149,7 +150,7 @@ func runit() error {
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	res := testing.Benchmark(func(b *testing.B) {
-		for i := 0; i < b.N ; i++{
+		for i := 0; i < b.N; i++ {
 			_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
 
 		}
@@ -173,18 +174,18 @@ func (d *dumbTracer) CaptureStart(from common.Address, to common.Address, call b
 	return nil
 }
 
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, rData []byte, contract *vm.Contract, depth int, err error) error {
 	//fmt.Printf("pc %d op %v gas %d cost %d\n", pc, op, gas, cost)
 	if op == vm.STATICCALL {
 		d.counter++
 	}
-	if op == vm.EXTCODESIZE{
-		d.counter ++
+	if op == vm.EXTCODESIZE {
+		d.counter++
 	}
 	return nil
 }
 
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, contract *vm.Contract, depth int, err error) error {
 	fmt.Printf("CaptureFault %v\n", err)
 	return nil
 }
