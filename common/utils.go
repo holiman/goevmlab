@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"io"
 	"io/ioutil"
 	"os"
@@ -33,6 +32,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"gopkg.in/urfave/cli.v1"
 
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -60,8 +61,8 @@ var (
 		//Required: true,
 	}
 	ThreadFlag = cli.IntFlag{
-		Name:  "paralell",
-		Usage: "Number of paralell executions to use.",
+		Name:  "parallel",
+		Usage: "Number of parallel executions to use.",
 		Value: runtime.NumCPU(),
 	}
 	LocationFlag = cli.StringFlag{
@@ -275,9 +276,10 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					// Continue to drain the testch
 					continue
 				}
-				// Zero out the output files
+				// Zero out the output files and reset offset
 				for _, f := range outputs {
 					_ = f.Truncate(0)
+					_, _ = f.Seek(0, 0)
 				}
 				var slowTest uint32
 				// Kick off the binaries
@@ -298,9 +300,10 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				}
 				wg.Wait()
 				var readers []io.Reader
-				// Seet to beginning
+				// Flush file and set reset offset
 				for _, f := range outputs {
 					_ = f.Sync()
+					_, _ = f.Seek(0, 0)
 					readers = append(readers, f)
 				}
 				atomic.AddUint64(&numTests, 1)
@@ -308,7 +311,11 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				eq := evms.CompareFiles(vms, readers)
 				if !eq {
 					atomic.StoreInt64(&abort, 1)
-					fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
+					s := "output files: "
+					for _, f := range outputs {
+						s = fmt.Sprintf("%v %v", s, f.Name())
+					}
+					fmt.Println(s)
 					consensusCh <- file
 				} else if slowTest != 0 {
 					slowCh <- file
