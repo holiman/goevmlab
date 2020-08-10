@@ -19,11 +19,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"os"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/holiman/goevmlab/ops"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -45,14 +46,13 @@ func main() {
 func runit() error {
 	a := program.NewProgram()
 
-
 	aAddr := common.HexToAddress("0xff0a")
 	bAddr := common.HexToAddress("0xff0b")
 
 	// Callling contract : call contract B, modify storage, revert
-	a.Call(nil, 0xff0b, 1,0,0,0,0)
+	a.Call(nil, 0xff0b, 1, 0, 0, 0, 0)
 	// Call it again, send 1 wei to signal no revert
-	a.Call(nil, 0xff0b, 0, 0,0,0,0)
+	a.Call(nil, 0xff0b, 0, 0, 0, 0, 0)
 	aBytes := a.Bytecode()
 	fmt.Printf("A: %x\n", aBytes)
 	b := program.NewProgram()
@@ -67,7 +67,7 @@ func runit() error {
 	// Path B
 	label := b.Jumpdest()
 	fmt.Printf("label: %d\n", label)
-	b.Sstore(0,1)
+	b.Sstore(0, 1)
 
 	bBytes := b.Bytecode()
 	bBytes[3] = byte(label)
@@ -78,7 +78,7 @@ func runit() error {
 		Code:    a.Bytecode(),
 		Balance: big.NewInt(0xffffffff),
 	}
-	alloc[bAddr]= core.GenesisAccount{
+	alloc[bAddr] = core.GenesisAccount{
 		Nonce:   0,
 		Code:    bBytes,
 		Balance: big.NewInt(0),
@@ -94,7 +94,7 @@ func runit() error {
 	fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		sender     = common.BytesToAddress([]byte("sender"))
 	)
 	for addr, acc := range alloc {
@@ -154,15 +154,18 @@ func (d *dumbTracer) CaptureStart(from common.Address, to common.Address, call b
 	return nil
 }
 
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
-	fmt.Printf("pc %d op %v gas %d cost %d\n", pc, op, gas, cost)
+func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, rData []byte, contract *vm.Contract, depth int, err error) error {
+	//fmt.Printf("pc %d op %v gas %d cost %d\n", pc, op, gas, cost)
 	if op == vm.STATICCALL {
+		d.counter++
+	}
+	if op == vm.EXTCODESIZE {
 		d.counter++
 	}
 	return nil
 }
 
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, contract *vm.Contract, depth int, err error) error {
 	fmt.Printf("CaptureFault %v\n", err)
 	return nil
 }
