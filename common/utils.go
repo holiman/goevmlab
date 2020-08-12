@@ -86,8 +86,11 @@ func initVMs(c *cli.Context) []evms.Evm {
 		parityBin = c.GlobalString(ParityFlag.Name)
 		nethBin   = c.GlobalString(NethermindFlag.Name)
 		alethBin  = c.GlobalString(AlethFlag.Name)
+		vms       []evms.Evm
 	)
-	vms := []evms.Evm{evms.NewGethEVM(gethBin)}
+	if gethBin != "" {
+		vms = append(vms, evms.NewGethEVM(gethBin))
+	}
 	if parityBin != "" {
 		vms = append(vms, evms.NewParityVM(parityBin))
 	}
@@ -196,7 +199,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	)
 
 	if len(vms) == 0 {
-		return fmt.Errorf("need at least onee vm to participate")
+		return fmt.Errorf("need at least one vm to participate")
 	}
 
 	fmt.Printf("numThreads: %d\n", numThreads)
@@ -287,15 +290,19 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				wg.Add(len(vms))
 				for i, vm := range vms {
 					go func(evm evms.Evm, out io.Writer) {
+						defer wg.Done()
 						t0 := time.Now()
-						cmd, _ := evm.RunStateTest(file, out, false)
+						cmd, err := evm.RunStateTest(file, out, false)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "error starting vm: %v error %v\n", cmd, err)
+							return
+						}
 						execTime := time.Since(t0)
 						if execTime > 20*time.Second {
 							fmt.Printf("%10v done in %v (slow!). Cmd: %v\n", evm.Name(), execTime, cmd)
 							// Flag test as slow
 							atomic.StoreUint32(&slowTest, 1)
 						}
-						wg.Done()
 					}(vm, outputs[i])
 				}
 				wg.Wait()
