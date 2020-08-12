@@ -49,7 +49,7 @@ var precompilesBLS = []blsPrec{
 }
 
 func GenerateBLS() (*GstMaker, []byte) {
-	gst := basicStateTest("Berlin")
+	gst := BasicStateTest("Berlin")
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca110b15012381")
 	code := RandCallBLS()

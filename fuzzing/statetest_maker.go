@@ -279,7 +279,7 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	return nil
 }
 
-func basicStateTest(fork string) *GstMaker {
+func BasicStateTest(fork string) *GstMaker {
 	gst := NewGstMaker()
 	// Add sender
 	gst.AddAccount(sender, GenesisAccount{
@@ -292,9 +292,23 @@ func basicStateTest(fork string) *GstMaker {
 	return gst
 }
 
+func AddTransaction(dest *common.Address, gst *GstMaker) {
+	tx := &stTransaction{
+		// 8M gaslimit
+		To:         dest.Hex(),
+		GasLimit:   []uint64{8000000},
+		Nonce:      0,
+		Value:      []string{"0x01"},
+		Data:       []string{"0x"},
+		GasPrice:   big.NewInt(0x01),
+		PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+	}
+	gst.SetTx(tx)
+}
+
 // GenerateStateTest generates a random state tests
 func GenerateStateTest(name string) *GeneralStateTest {
-	gst := basicStateTest("Istanbul")
+	gst := BasicStateTest("Istanbul")
 	// add some random accounts
 	dest := gst.randomFillGenesisAlloc()
 	// The transaction
@@ -317,7 +331,7 @@ func GenerateStateTest(name string) *GeneralStateTest {
 }
 
 func GenerateBlake() *GstMaker {
-	gst := basicStateTest("Istanbul")
+	gst := BasicStateTest("Istanbul")
 	// Add a contract which calls blake
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{
@@ -349,7 +363,7 @@ func GenerateBlakeTest(name string) *GeneralStateTest {
 }
 
 func Generate2200Test() *GstMaker {
-	gst := basicStateTest("Istanbul")
+	gst := BasicStateTest("Istanbul")
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),
@@ -389,7 +403,7 @@ func Generate2200Test() *GstMaker {
 }
 
 func GenerateECRecover() (*GstMaker, []byte) {
-	gst := basicStateTest("Istanbul")
+	gst := BasicStateTest("Istanbul")
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca11ec5ec04e5")
 	code := RandCallECRecover()
