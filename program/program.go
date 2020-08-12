@@ -119,6 +119,36 @@ func (p *Program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset
 	p.Op(ops.CALL)
 }
 
+// StaticCall is a convenience function to make a staticcall
+func (p *Program) StaticCall(gas *big.Int, address, inOffset, inSize, outOffset, outSize interface{}) {
+	p.Push(outSize)
+	p.Push(outOffset)
+	p.Push(inSize)
+	p.Push(inOffset)
+	p.Push(address)
+	if gas == nil {
+		p.Op(ops.GAS)
+	} else {
+		p.pushBig(gas)
+	}
+	p.Op(ops.STATICCALL)
+}
+
+func (p *Program) CallCode(gas *big.Int, address, value, inOffset, inSize, outOffset, outSize interface{}) {
+	p.Push(outSize)
+	p.Push(outOffset)
+	p.Push(inSize)
+	p.Push(inOffset)
+	p.Push(value)
+	p.Push(address)
+	if gas == nil {
+		p.Op(ops.GAS)
+	} else {
+		p.pushBig(gas)
+	}
+	p.Op(ops.CALLCODE)
+}
+
 // Label returns the PC (of the next instruction)
 func (p *Program) Label() uint64 {
 	return uint64(len(p.code))

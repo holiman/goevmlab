@@ -37,3 +37,12 @@ Tracediff allows you to load evm (jsonl) files and find differences.
 Traceview allows you to analyse an evm trace file
 
 ![traceview](docs/traceview.png)
+
+
+## Trophy list
+
+Bugs found via the fuzzer or via tests generated using go-evmlab in general
+
+- Nethermind erroneous gas in BLS-multiexp: https://github.com/NethermindEth/nethermind/issues/2208
+- Geth error calculating BLS gas: https://github.com/ethereum/go-ethereum/pull/21253
+
