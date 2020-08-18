@@ -19,6 +19,7 @@ package fuzzing
 import (
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"math/big"
 	"math/rand"
 
@@ -235,6 +236,17 @@ func (g *GstMaker) ToGeneralStateTest(name string) *GeneralStateTest {
 	gst := make(GeneralStateTest)
 	gst[name] = g.ToSubTest()
 	return &gst
+}
+
+func FromGeneralStateTest(name string) (*GeneralStateTest, error) {
+
+	data, err := ioutil.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	gst := make(GeneralStateTest)
+	json.Unmarshal(data, &gst)
+	return &gst, nil
 }
 
 func (g *GstMaker) ToStateTest() (tests.StateTest, error) {

@@ -104,6 +104,40 @@ func initVMs(c *cli.Context) []evms.Evm {
 
 }
 
+func RootsEqual(path string, c *cli.Context) (bool, error) {
+	var (
+		vms = initVMs(c)
+		wg  sync.WaitGroup
+	)
+	if len(vms) < 1 {
+		return false, fmt.Errorf("No vms specified!")
+	}
+	roots := make([]string, len(vms))
+	errs := make([]error, len(vms))
+	wg.Add(len(vms))
+	for i, vm := range vms {
+		go func(index int, vm evms.Evm) {
+			root, err := vm.GetStateRoot(path)
+			roots[index] = root
+			errs[index] = err
+			wg.Done()
+		}(i, vm)
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			return false, err
+		}
+	}
+	for _, root := range roots[1:] {
+		if root != roots[0] {
+			// Consensus error
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func RunOneTest(path string, c *cli.Context) error {
 	var (
 		vms     = initVMs(c)

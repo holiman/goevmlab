@@ -328,6 +328,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	CHAINID:     {"CHAINID", nil, []string{"chain id"}},
 	SELFBALANCE: {"SELFBALANCE", nil, []string{"balance at current context"}},
 
+	POP:      {"POP", nil, []string{"value to pop"}},
 	MLOAD:    {"MLOAD", []string{"offset"}, nil},
 	MSTORE:   {"MSTORE", []string{"offset", "value"}, nil},
 	MSTORE8:  {"MSTORE8", []string{"offset", "value"}, nil},
@@ -441,4 +442,8 @@ func (op OpCode) Pushes() []string {
 		return nil
 	}
 	return info.pushes
+}
+
+func (op OpCode) Stackdelta() int {
+	return len(op.Pushes()) - len(op.Pops())
 }

@@ -51,18 +51,17 @@ func (evm *NethermindVM) GetStateRoot(path string) (string, error) {
 	}
 	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
 	marker := `{"stateRoot":"`
-	start := strings.Index(string(data),marker )
-	if start <= 0{
+	start := strings.Index(string(data), marker)
+	if start <= 0 {
 		return "", errors.New("no stateroot found")
 	}
 	end := strings.Index(string(data)[start:], `"}`)
 	if start > 0 && end > 0 {
-		root := string(data[start+len(marker):start+end])
+		root := string(data[start+len(marker) : start+end])
 		return root, nil
 	}
 	return "", errors.New("no stateroot found")
 }
-
 
 // RunStateTest implements the Evm interface
 func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
