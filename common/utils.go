@@ -115,7 +115,7 @@ func RunOneTest(path string, c *cli.Context) error {
 	}
 	// Open/create outputs for writing
 	for _, evm := range vms {
-		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_CREATE|os.O_RDWR, 0755)
+		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
 			return fmt.Errorf("failed opening file %v", err)
 		}
@@ -144,10 +144,17 @@ func RunOneTest(path string, c *cli.Context) error {
 	}
 	// Compare outputs
 	if eq := evms.CompareFiles(vms, readers); !eq {
-		fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
+		fmt.Printf("output files:\n")
+		for _, output := range outputs {
+			fmt.Printf(" - %v\n", output.Name())
+		}
 		return fmt.Errorf("Consensus error")
 	}
-	fmt.Printf("all agree!")
+	for _, f := range outputs {
+		f.Close()
+	}
+
+	fmt.Printf("all agree!\n")
 	return nil
 }
 

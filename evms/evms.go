@@ -29,7 +29,8 @@ type Evm interface {
 	// RunStateTest runs the statetest on the underlying EVM, and writes
 	// the output to the given writer
 	RunStateTest(path string, writer io.Writer, speedTest bool) (string, error)
-
+	// GetStateRoot runs the test and returns the stateroot
+	GetStateRoot(path string) (string, error)
 	// Copy takes the 'raw' output from the VM, and writes the
 	// canonical output to the given writer
 	Copy(out io.Writer, input io.Reader)
