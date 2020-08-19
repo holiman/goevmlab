@@ -94,9 +94,10 @@ func GasRandomizer() valFunc {
 
 }
 
-var callTypes = []ops.OpCode{ops.CALL, ops.CALLCODE, ops.DELEGATECALL, ops.STATICCALL}
+// staticcall disabled due to parity implementation of cheap staticcall-to-precompile
+var callTypes = []ops.OpCode{ops.CALL, ops.CALLCODE, ops.DELEGATECALL} //, ops.STATICCALL}
 
-func randCallType() ops.OpCode{
+func randCallType() ops.OpCode {
 	return callTypes[rand.Intn(len(callTypes))]
 }
 
