@@ -165,8 +165,6 @@ var (
 	g1 = bls12381.NewG1()
 	// Initialize G2
 	g2 = bls12381.NewG2()
-	// Initialize pairing engine
-	bls = bls12381.NewPairingEngine()
 	// Initialize rand reader
 	reader = rand.New(rand.NewSource(1234))
 )

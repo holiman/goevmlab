@@ -102,14 +102,6 @@ func (m *codeMutator) undo() {
 	m.current = m.lastGood
 }
 
-// consensusFail runs one test, and returns
-// - true if consensus failure
-// - false if no consensus failure
-func consensusFail(filePath string, c *cli.Context) bool {
-
-	return common.RunOneTest(filePath, c) != nil
-}
-
 func startFuzzer(c *cli.Context) error {
 
 	if c.NArg() != 1 {
@@ -134,7 +126,7 @@ func startFuzzer(c *cli.Context) error {
 	gst2 := (*gst)
 
 	var testname string
-	for t, _ := range gst2 {
+	for t := range gst2 {
 		testname = t
 		break
 	}
@@ -161,7 +153,9 @@ func startFuzzer(c *cli.Context) error {
 			acc.Code = m.current
 			gst2[testname].Pre[target] = acc
 			data, _ := json.MarshalIndent(gst2, "", "  ")
-			ioutil.WriteFile(out, data, 0777)
+			if err := ioutil.WriteFile(out, data, 0777); err != nil {
+				return err
+			}
 			inConsensus, err := common.RootsEqual(out, c)
 			if err != nil {
 				return err
@@ -170,7 +164,9 @@ func startFuzzer(c *cli.Context) error {
 				fmt.Print("still failing!")
 				i++
 				//good = fmt.Sprintf("%v.good.%v", testPath, "latest")
-				ioutil.WriteFile(good, data, 0777)
+				if err := ioutil.WriteFile(good, data, 0777); err != nil {
+					return err
+				}
 			} else {
 				fmt.Printf("oops, broke it\n")
 				m.undo()

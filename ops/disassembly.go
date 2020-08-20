@@ -30,13 +30,12 @@ func InstructionCount(code []byte) int {
 	return c
 }
 
-// Returns true if there is a next instruction and moves on.
+// Skips num instructions.
 func (it *instructionIterator) Skip(num int) {
 	c := 0
 	for it.Next() && c < num {
 		c++
 	}
-	return
 }
 
 // Returns true if there is a next instruction and moves on.
