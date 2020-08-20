@@ -30,7 +30,7 @@ func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Author = "Martin Holst Swende"
-	app.Usage = "Fuzzer targeting SSTORE and SLOAD"
+	app.Usage = "Fuzzer targeting subroutines (EIP 2315)"
 	app.Flags = []cli.Flag{
 		common.GethFlag,
 		common.ParityFlag,
