@@ -246,8 +246,8 @@ func FromGeneralStateTest(name string) (*GeneralStateTest, error) {
 		return nil, err
 	}
 	gst := make(GeneralStateTest)
-	json.Unmarshal(data, &gst)
-	return &gst, nil
+	err = json.Unmarshal(data, &gst)
+	return &gst, err
 }
 
 func (g *GstMaker) ToStateTest() (tests.StateTest, error) {
