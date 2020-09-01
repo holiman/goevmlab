@@ -19,6 +19,7 @@ package evms
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -68,6 +69,11 @@ func (evm *AlethVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 
 func (evm *AlethVM) Name() string {
 	return "alethvm"
+}
+
+// GetStateRoot runs the test and returns the stateroot
+func (evm *AlethVM) GetStateRoot(path string) (string, error) {
+	return "", errors.New("not implemented for testeth/aleth")
 }
 
 func (vm *AlethVM) Close() {

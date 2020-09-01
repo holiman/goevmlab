@@ -104,6 +104,40 @@ func initVMs(c *cli.Context) []evms.Evm {
 
 }
 
+func RootsEqual(path string, c *cli.Context) (bool, error) {
+	var (
+		vms = initVMs(c)
+		wg  sync.WaitGroup
+	)
+	if len(vms) < 1 {
+		return false, fmt.Errorf("No vms specified!")
+	}
+	roots := make([]string, len(vms))
+	errs := make([]error, len(vms))
+	wg.Add(len(vms))
+	for i, vm := range vms {
+		go func(index int, vm evms.Evm) {
+			root, err := vm.GetStateRoot(path)
+			roots[index] = root
+			errs[index] = err
+			wg.Done()
+		}(i, vm)
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			return false, err
+		}
+	}
+	for _, root := range roots[1:] {
+		if root != roots[0] {
+			// Consensus error
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func RunOneTest(path string, c *cli.Context) error {
 	var (
 		vms     = initVMs(c)
@@ -115,7 +149,7 @@ func RunOneTest(path string, c *cli.Context) error {
 	}
 	// Open/create outputs for writing
 	for _, evm := range vms {
-		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_CREATE|os.O_RDWR, 0755)
+		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
 			return fmt.Errorf("failed opening file %v", err)
 		}
@@ -144,10 +178,17 @@ func RunOneTest(path string, c *cli.Context) error {
 	}
 	// Compare outputs
 	if eq := evms.CompareFiles(vms, readers); !eq {
-		fmt.Printf("output files: %v, %v, %v\n", outputs[0].Name(), outputs[1].Name(), outputs[2].Name())
+		fmt.Printf("output files:\n")
+		for _, output := range outputs {
+			fmt.Printf(" - %v\n", output.Name())
+		}
 		return fmt.Errorf("Consensus error")
 	}
-	fmt.Printf("all agree!")
+	for _, f := range outputs {
+		f.Close()
+	}
+
+	fmt.Printf("all agree!\n")
 	return nil
 }
 

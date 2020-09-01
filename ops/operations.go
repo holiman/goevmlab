@@ -112,18 +112,21 @@ const (
 
 // 0x50 range - 'storage' and execution.
 const (
-	POP      = OpCode(0x50)
-	MLOAD    = OpCode(0x51)
-	MSTORE   = OpCode(0x52)
-	MSTORE8  = OpCode(0x53)
-	SLOAD    = OpCode(0x54)
-	SSTORE   = OpCode(0x55)
-	JUMP     = OpCode(0x56)
-	JUMPI    = OpCode(0x57)
-	PC       = OpCode(0x58)
-	MSIZE    = OpCode(0x59)
-	GAS      = OpCode(0x5A)
-	JUMPDEST = OpCode(0x5B)
+	POP       = OpCode(0x50)
+	MLOAD     = OpCode(0x51)
+	MSTORE    = OpCode(0x52)
+	MSTORE8   = OpCode(0x53)
+	SLOAD     = OpCode(0x54)
+	SSTORE    = OpCode(0x55)
+	JUMP      = OpCode(0x56)
+	JUMPI     = OpCode(0x57)
+	PC        = OpCode(0x58)
+	MSIZE     = OpCode(0x59)
+	GAS       = OpCode(0x5A)
+	JUMPDEST  = OpCode(0x5B)
+	BEGINSUB  = OpCode(0x5c)
+	RETURNSUB = OpCode(0x5d)
+	JUMPSUB   = OpCode(0x5e)
 )
 
 // 0x60 through 0x7F range.
@@ -328,18 +331,21 @@ var opCodeInfo = map[OpCode]opInfo{
 	CHAINID:     {"CHAINID", nil, []string{"chain id"}},
 	SELFBALANCE: {"SELFBALANCE", nil, []string{"balance at current context"}},
 
-	MLOAD:    {"MLOAD", []string{"offset"}, nil},
-	MSTORE:   {"MSTORE", []string{"offset", "value"}, nil},
-	MSTORE8:  {"MSTORE8", []string{"offset", "value"}, nil},
-	SLOAD:    {"SLOAD", []string{"slot"}, nil},
-	SSTORE:   {"SSTORE", []string{"slot", "value"}, nil},
-	JUMP:     {"JUMP", []string{"loc"}, nil},
-	JUMPI:    {"JUMPI", []string{"loc", "cond"}, nil},
-	PC:       {"PC", nil, []string{"current PC"}},
-	MSIZE:    {"MSIZE", nil, []string{"size of memory"}},
-	GAS:      {"GAS", nil, []string{"current gas remaining"}},
-	JUMPDEST: {"JUMPDEST", nil, nil},
-
+	POP:       {"POP", nil, []string{"value to pop"}},
+	MLOAD:     {"MLOAD", []string{"offset"}, nil},
+	MSTORE:    {"MSTORE", []string{"offset", "value"}, nil},
+	MSTORE8:   {"MSTORE8", []string{"offset", "value"}, nil},
+	SLOAD:     {"SLOAD", []string{"slot"}, nil},
+	SSTORE:    {"SSTORE", []string{"slot", "value"}, nil},
+	JUMP:      {"JUMP", []string{"loc"}, nil},
+	JUMPI:     {"JUMPI", []string{"loc", "cond"}, nil},
+	PC:        {"PC", nil, []string{"current PC"}},
+	MSIZE:     {"MSIZE", nil, []string{"size of memory"}},
+	GAS:       {"GAS", nil, []string{"current gas remaining"}},
+	JUMPDEST:  {"JUMPDEST", nil, nil},
+	BEGINSUB:  {"BEGINSUB", nil, nil},
+	RETURNSUB: {"RETURNSUB", nil, nil},
+	JUMPSUB:   {"JUMPSUB", []string{"subroutine destination"}, nil},
 	// 0x60 through 0x7F range - push.
 	PUSH1:  {"PUSH1", nil, []string{"1 byte pushed value"}},
 	PUSH2:  {"PUSH2", nil, []string{"2 bytes pushed value"}},
@@ -441,4 +447,8 @@ func (op OpCode) Pushes() []string {
 		return nil
 	}
 	return info.pushes
+}
+
+func (op OpCode) Stackdelta() int {
+	return len(op.Pushes()) - len(op.Pops())
 }

@@ -64,3 +64,30 @@ func TestVMsOutput(t *testing.T) {
 		t.Errorf("Expected equality, didn't get it")
 	}
 }
+
+// TestStateRootOnly checks if the functionality to extract raw stateroot works
+func TestStateRootOnly(t *testing.T) {
+	vms := []Evm{
+		NewGethEVM("../binaries/evm"),
+		NewNethermindVM("../binaries/nethtest"),
+		NewParityVM("../binaries/openethereum-evm"),
+	}
+	for _, vm := range vms {
+		got, err := vm.GetStateRoot("./testdata/statetest1.json")
+		if err != nil {
+			t.Errorf("got error: %v", err)
+		} else if exp := "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"; got != exp {
+			t.Errorf("Wrong root, got '%v' exp '%v'", got, exp)
+		}
+		// A filled statetest
+		// It would be good to get this working too, but not as important
+		//{
+		//	got, err := g.GetStateRoot("./testdata/statetest_filled.json")
+		//	if err != nil {
+		//		t.Errorf("got error: %v", err)
+		//	}else if exp := "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"; got != exp {
+		//		t.Errorf("Wrong root, got '%v' exp '%v'", got, exp)
+		//	}
+		//}
+	}
+}

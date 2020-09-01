@@ -19,10 +19,12 @@ package evms
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 )
@@ -36,6 +38,26 @@ func NewGethEVM(path string) *GethEVM {
 	return &GethEVM{
 		path: path,
 	}
+}
+
+// GetStateRoot runs the test and returns the stateroot
+// This currently only works for non-filled statetests. TODO: make it work even if the
+// test is filled. Either by getting the whole trace, or adding stateroot to exec std output
+// even in success-case
+func (evm *GethEVM) GetStateRoot(path string) (string, error) {
+	// In this mode, we can run it without tracing
+	cmd := exec.Command(evm.path, "statetest", path)
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	start := strings.Index(string(data), "mismatch: got ")
+	end := strings.Index(string(data), ", want")
+	if start > 0 && end > 0 {
+		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
+		return root, nil
+	}
+	return "", errors.New("no stateroot found")
 }
 
 // RunStateTest implements the Evm interface
@@ -98,12 +120,8 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 
 			/*  Most likely one of these:
 			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-
 			*/
-			//fmt.Printf("%v\n", string(data))
-
 			// For now, just ignore these
 			continue
 		}

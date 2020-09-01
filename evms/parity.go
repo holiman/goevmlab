@@ -19,6 +19,7 @@ package evms
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -41,6 +42,31 @@ func NewParityVM(path string) *ParityVM {
 func (evm *ParityVM) Name() string {
 	return "parity"
 }
+
+
+// GetStateRoot runs the test and returns the stateroot
+func (evm *ParityVM) GetStateRoot(path string) (string, error) {
+	// In this mode, we can run it without tracing
+	cmd := exec.Command(evm.path, "state-test", path)
+	data, err := cmd.Output()
+	if err != nil {
+		//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
+		return "", err
+	}
+	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
+	marker := ` State root mismatch (got: `
+	start := strings.Index(string(data),marker )
+	if start <= 0{
+		return "", errors.New("no stateroot found")
+	}
+	end := strings.Index(string(data)[start:], `, expected`)
+	if start > 0 && end > 0 {
+		root := string(data[start+len(marker):start+end])
+		return root, nil
+	}
+	return "", errors.New("no stateroot found")
+}
+
 
 // RunStateTest implements the Evm interface
 func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
