@@ -21,12 +21,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 )
 
 // GenesisAlloc specifies the initial state that is part of the genesis block.
@@ -107,7 +108,7 @@ func (t *StateTest) UnmarshalJSON(in []byte) error {
 type stJSON struct {
 	Env  stEnv                    `json:"env"`
 	Pre  GenesisAlloc             `json:"pre"`
-	Tx   stTransaction            `json:"transaction"`
+	Tx   StTransaction            `json:"transaction"`
 	Out  hexutil.Bytes            `json:"out"`
 	Post map[string][]stPostState `json:"post"`
 }
@@ -145,7 +146,7 @@ type stEnvMarshaling struct {
 
 //go:generate gencodec -type stTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
 
-type stTransaction struct {
+type StTransaction struct {
 	GasPrice   *big.Int `json:"gasPrice"`
 	Nonce      uint64   `json:"nonce"`
 	To         string   `json:"to"`

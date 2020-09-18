@@ -129,7 +129,7 @@ func init() {
 type GstMaker struct {
 	pre   *GenesisAlloc
 	env   *stEnv
-	tx    stTransaction
+	tx    StTransaction
 	forks []string
 	root  common.Hash
 	logs  common.Hash
@@ -206,7 +206,7 @@ func (g *GstMaker) randomFillGenesisAlloc() *common.Address {
 	return dest
 }
 
-func (g *GstMaker) SetTx(tx *stTransaction) {
+func (g *GstMaker) SetTx(tx *StTransaction) {
 	g.tx = *tx
 }
 
@@ -299,7 +299,7 @@ func GenerateStateTest(name string) *GeneralStateTest {
 	dest := gst.randomFillGenesisAlloc()
 	// The transaction
 	{
-		tx := &stTransaction{
+		tx := &StTransaction{
 			// 8M gaslimit
 			GasLimit:   []uint64{8000000},
 			Nonce:      0,
@@ -327,7 +327,7 @@ func GenerateBlake() *GstMaker {
 	})
 	// The transaction
 	{
-		tx := &stTransaction{
+		tx := &StTransaction{
 			// 8M gaslimit
 			GasLimit:   []uint64{8000000},
 			Nonce:      0,
@@ -373,7 +373,7 @@ func Generate2200Test() *GstMaker {
 	}
 	// The transaction
 	{
-		tx := &stTransaction{
+		tx := &StTransaction{
 			// 8M gaslimit
 			GasLimit:   []uint64{8000000},
 			Nonce:      0,
@@ -400,7 +400,7 @@ func GenerateECRecover() (*GstMaker, []byte) {
 	})
 	// The transaction
 	{
-		tx := &stTransaction{
+		tx := &StTransaction{
 			// 8M gaslimit
 			GasLimit:   []uint64{8000000},
 			Nonce:      0,
