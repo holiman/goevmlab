@@ -444,7 +444,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 }
 
 // storeTest saves a testcase to disk
-func storeTest(location string, test *fuzzing.GeneralStateTest, testName string) (string, error) {
+func StoreTest(location string, test *fuzzing.GeneralStateTest, testName string) (string, error) {
 
 	fileName := fmt.Sprintf("%v.json", testName)
 	fullPath := path.Join(location, fileName)
