@@ -60,7 +60,7 @@ func GenerateBLS() (*GstMaker, []byte) {
 	})
 	// The transaction
 	{
-		tx := &stTransaction{
+		tx := &StTransaction{
 			// 8M gaslimit
 			GasLimit:   []uint64{8000000},
 			Nonce:      0,

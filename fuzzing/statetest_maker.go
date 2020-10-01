@@ -306,7 +306,7 @@ func BasicStateTest(fork string) *GstMaker {
 }
 
 func AddTransaction(dest *common.Address, gst *GstMaker) {
-	tx := &stTransaction{
+	tx := &StTransaction{
 		// 8M gaslimit
 		To:         dest.Hex(),
 		GasLimit:   []uint64{8000000},
@@ -400,7 +400,7 @@ func GenerateSubroutineTest() *GstMaker {
 	}
 	// The transaction
 	{
-		tx := &stTransaction{
+		tx := &StTransaction{
 			// 8M gaslimit
 			GasLimit:   []uint64{8000000},
 			Nonce:      0,
