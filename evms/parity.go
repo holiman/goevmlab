@@ -43,7 +43,6 @@ func (evm *ParityVM) Name() string {
 	return "parity"
 }
 
-
 // GetStateRoot runs the test and returns the stateroot
 func (evm *ParityVM) GetStateRoot(path string) (string, error) {
 	// In this mode, we can run it without tracing
@@ -55,18 +54,17 @@ func (evm *ParityVM) GetStateRoot(path string) (string, error) {
 	}
 	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
 	marker := ` State root mismatch (got: `
-	start := strings.Index(string(data),marker )
-	if start <= 0{
+	start := strings.Index(string(data), marker)
+	if start <= 0 {
 		return "", errors.New("no stateroot found")
 	}
 	end := strings.Index(string(data)[start:], `, expected`)
 	if start > 0 && end > 0 {
-		root := string(data[start+len(marker):start+end])
+		root := string(data[start+len(marker) : start+end])
 		return root, nil
 	}
 	return "", errors.New("no stateroot found")
 }
-
 
 // RunStateTest implements the Evm interface
 func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
@@ -131,6 +129,12 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 					if strings.HasPrefix(p.Error, prefix) {
 						root := []byte(strings.TrimPrefix(p.Error, prefix))
 						stateRoot.StateRoot = string(root[:66])
+					}
+				}
+				// Try to unmarshall the state root
+				if err := json.Unmarshal(data, &stateRoot); err == nil {
+					if r := stateRoot.StateRoot; len(r) > 0 {
+						stateRoot.StateRoot = r
 					}
 				}
 			}

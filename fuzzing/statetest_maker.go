@@ -18,11 +18,12 @@ package fuzzing
 
 import (
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/core/state"
 	"io"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
+
+	"github.com/ethereum/go-ethereum/core/state"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

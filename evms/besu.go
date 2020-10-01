@@ -73,6 +73,10 @@ func (evm *BesuVM) Name() string {
 func (vm *BesuVM) Close() {
 }
 
+func (vm *BesuVM) GetStateRoot(path string) (string, error) {
+	return "", nil
+}
+
 type besuStateRoot struct {
 	StateRoot string `json:"postHash"`
 }
