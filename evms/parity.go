@@ -131,10 +131,8 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 						stateRoot.StateRoot = string(root[:66])
 					}
 				}
-				// Try to unmarshall the state root
-				if err := json.Unmarshal(data, &stateRoot); err == nil {
-					stateRoot.StateRoot = r
-				}
+				// Try to unmarshal the state root
+				json.Unmarshal(data, &stateRoot)
 			}
 			continue
 		}
