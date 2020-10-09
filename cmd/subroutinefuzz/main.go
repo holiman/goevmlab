@@ -31,14 +31,11 @@ func initApp() *cli.App {
 	app.Name = filepath.Base(os.Args[0])
 	app.Author = "Martin Holst Swende"
 	app.Usage = "Fuzzer targeting subroutines (EIP 2315)"
-	app.Flags = []cli.Flag{
-		common.GethFlag,
-		common.ParityFlag,
-		common.NethermindFlag,
-		common.AlethFlag,
+	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags,
 		common.ThreadFlag,
 		common.LocationFlag,
-	}
+	)
 	app.Action = startFuzzer
 	return app
 }

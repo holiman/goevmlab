@@ -43,22 +43,22 @@ var (
 	GethFlag = cli.StringFlag{
 		Name:  "geth",
 		Usage: "Location of go-ethereum 'evm' binary",
-		//Required: true,
 	}
 	ParityFlag = cli.StringFlag{
 		Name:  "parity",
 		Usage: "Location of go-ethereum 'parity-vm' binary",
-		//Required: true,
 	}
 	NethermindFlag = cli.StringFlag{
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
-		//Required: true,
 	}
 	AlethFlag = cli.StringFlag{
 		Name:  "testeth",
 		Usage: "Location of aleth 'testeth' binary",
-		//Required: true,
+	}
+	BesuFlag = cli.StringFlag{
+		Name:  "besu",
+		Usage: "Location of besu vm binary",
 	}
 	ThreadFlag = cli.IntFlag{
 		Name:  "parallel",
@@ -78,6 +78,13 @@ var (
 		Name:  "count",
 		Usage: "number of tests to generate",
 	}
+	VmFlags = []cli.Flag{
+		GethFlag,
+		ParityFlag,
+		NethermindFlag,
+		AlethFlag,
+		BesuFlag,
+	}
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
@@ -86,6 +93,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		parityBin = c.GlobalString(ParityFlag.Name)
 		nethBin   = c.GlobalString(NethermindFlag.Name)
 		alethBin  = c.GlobalString(AlethFlag.Name)
+		besuBin   = c.GlobalString(BesuFlag.Name)
 		vms       []evms.Evm
 	)
 	if gethBin != "" {
@@ -99,6 +107,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	if alethBin != "" {
 		vms = append(vms, evms.NewAlethVM(alethBin))
+	}
+	if besuBin != "" {
+		vms = append(vms, evms.NewBesuVM(besuBin))
 	}
 	return vms
 
@@ -277,7 +288,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				gstMaker := generatorFn()
 				testName := fmt.Sprintf("%08d-%v-%d", i, name, threadId)
 				test := gstMaker.ToGeneralStateTest(testName)
-				fileName, err := storeTest(location, test, testName)
+				fileName, err := StoreTest(location, test, testName)
 				if err != nil {
 					fmt.Printf("Error: %v", err)
 					break
