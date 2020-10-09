@@ -43,7 +43,6 @@ func (evm *ParityVM) Name() string {
 	return "parity"
 }
 
-
 // GetStateRoot runs the test and returns the stateroot
 func (evm *ParityVM) GetStateRoot(path string) (string, error) {
 	// In this mode, we can run it without tracing
@@ -55,18 +54,17 @@ func (evm *ParityVM) GetStateRoot(path string) (string, error) {
 	}
 	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
 	marker := ` State root mismatch (got: `
-	start := strings.Index(string(data),marker )
-	if start <= 0{
+	start := strings.Index(string(data), marker)
+	if start <= 0 {
 		return "", errors.New("no stateroot found")
 	}
 	end := strings.Index(string(data)[start:], `, expected`)
 	if start > 0 && end > 0 {
-		root := string(data[start+len(marker):start+end])
+		root := string(data[start+len(marker) : start+end])
 		return root, nil
 	}
 	return "", errors.New("no stateroot found")
 }
-
 
 // RunStateTest implements the Evm interface
 func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
@@ -110,7 +108,7 @@ type parityErrorRoot struct {
 }
 
 func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
-	var stateRoot stateRoot
+	var sRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
@@ -124,14 +122,21 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 			/*  Most likely one of these:
 			{"error":"State root mismatch (got: 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134, expected: 0x0000000000000000000000000000000000000000000000000000000000000000)","gasUsed":"0x2dc6c0","time":146}
 			*/
-			if stateRoot.StateRoot == "" {
+			if sRoot.StateRoot == "" {
+				// Try to unmarshal an error root
 				var p parityErrorRoot
 				if err := json.Unmarshal(data, &p); err == nil {
 					prefix := `State root mismatch (got: `
 					if strings.HasPrefix(p.Error, prefix) {
 						root := []byte(strings.TrimPrefix(p.Error, prefix))
-						stateRoot.StateRoot = string(root[:66])
+						sRoot.StateRoot = string(root[:66])
+						continue
 					}
+				}
+				// Try to unmarshal the state root if no error occured
+				var tmp stateRoot
+				if err := json.Unmarshal(data, &tmp); err != nil {
+					sRoot.StateRoot = tmp.StateRoot
 				}
 			}
 			continue
@@ -149,8 +154,8 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 			return
 		}
 	}
-	if stateRoot.StateRoot != "" {
-		root, _ := json.Marshal(stateRoot)
+	if sRoot.StateRoot != "" {
+		root, _ := json.Marshal(sRoot)
 		if _, err := out.Write(append(root, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return

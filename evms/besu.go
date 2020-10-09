@@ -18,126 +18,114 @@ package evms
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
-// NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
-type NethermindVM struct {
+// BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
+type BesuVM struct {
 	path string
 }
 
-func NewNethermindVM(path string) *NethermindVM {
-	return &NethermindVM{
+func NewBesuVM(path string) *BesuVM {
+	return &BesuVM{
 		path: path,
 	}
 }
 
-// GetStateRoot runs the test and returns the stateroot
-func (evm *NethermindVM) GetStateRoot(path string) (string, error) {
-	// In this mode, we can run it without tracing
-	cmd := exec.Command(evm.path, "-m", "-s", "-i", path)
-	data, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
-	marker := `{"stateRoot":"`
-	start := strings.Index(string(data), marker)
-	if start <= 0 {
-		return "", errors.New("no stateroot found")
-	}
-	end := strings.Index(string(data)[start:], `"}`)
-	if start > 0 && end > 0 {
-		root := string(data[start+len(marker) : start+end])
-		return root, nil
-	}
-	return "", errors.New("no stateroot found")
-}
-
 // RunStateTest implements the Evm interface
-func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
-		stderr io.ReadCloser
+		stdout io.ReadCloser
 		err    error
+		cmd    *exec.Cmd
 	)
 	if speedTest {
-		return "", errors.New("nethermind does not support disabling json")
+		cmd = exec.Command(evm.path, "--nomemory", "state-test", path)
+	} else {
+		// evm --nomemory --json state-test blaketest.json
+		cmd = exec.Command(evm.path, "--nomemory", "--json", "state-test", path) // exclude memory
 	}
-	// nethtest  --input statetest1.json --trace 1> statetest1_nethermind_stdout.jsonl
-	cmd := exec.Command(evm.path, "--input", path,
-		"--trace",
-		"-m") // -m excludes memory
-	if stderr, err = cmd.StderrPipe(); err != nil {
+
+	if stdout, err = cmd.StdoutPipe(); err != nil {
 		return cmd.String(), err
 	}
 	if err = cmd.Start(); err != nil {
 		return cmd.String(), err
 	}
 	// copy everything to the given writer
-	evm.Copy(out, stderr)
+	evm.Copy(out, stdout)
 	// release resources, handle error but ignore non-zero exit codes
 	_ = cmd.Wait()
 	return cmd.String(), nil
 }
 
-func (evm *NethermindVM) Name() string {
-	return "nethermind"
+func (evm *BesuVM) Name() string {
+	return "besu"
 }
 
-func (vm *NethermindVM) Close() {
+func (vm *BesuVM) Close() {
+}
+
+func (vm *BesuVM) GetStateRoot(path string) (string, error) {
+	return "", nil
+}
+
+type besuStateRoot struct {
+	StateRoot string `json:"postHash"`
 }
 
 // feed reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
-func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
+func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog
-
-		// Nethermind sometimes report a negative refund
-		// TODO(@holiman): they may have fixed this, if so, delete this code
-		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+9] = byte(' ')
-		}
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
-			fmt.Printf("nethermind err: %v, line\n\t%v\n", err, string(data))
+			fmt.Printf("besu err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
+
+		elem.Memory = make([]byte, 0)
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
 		if elem.Depth == 0 {
-			/*  Most likely one of these:
-			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-			*/
 			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
+				var tempRoot besuStateRoot
+				if err := json.Unmarshal(data, &tempRoot); err == nil {
+					// Besu calls state root "rootHash"
+					stateRoot.StateRoot = tempRoot.StateRoot
+				}
 			}
 			//fmt.Printf("%v\n", string(data))
 			// For now, just ignore these
 			continue
+		}
+		if elem.ReturnStack == nil {
+			elem.ReturnStack = make([]uint32, 0)
+		}
+		if elem.Stack == nil {
+			elem.Stack = make([]*big.Int, 0)
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
 		// In order to handle that, we need to drop all STOP opcodes.
 		if elem.Op == 0x0 {
 			continue
 		}
-		RemoveUnsupportedElems(&elem)
-
+		// Parity is missing gasCost, memSize and refund
+		elem.GasCost = 0
+		elem.MemorySize = 0
+		elem.RefundCounter = 0
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
