@@ -29,6 +29,8 @@ type Evm interface {
 	// RunStateTest runs the statetest on the underlying EVM, and writes
 	// the output to the given writer
 	RunStateTest(path string, writer io.Writer, speedTest bool) (string, error)
+	// RunStateTestBatch runs a batch of state tests and returns the results.
+	RunStateTestBatch(paths []string) ([][]byte, error)
 	// GetStateRoot runs the test and returns the stateroot
 	GetStateRoot(path string) (string, error)
 	// Copy takes the 'raw' output from the VM, and writes the
@@ -64,4 +66,19 @@ func CompareFiles(vms []Evm, readers []io.Reader) bool {
 		}
 	}
 	return true
+}
+
+func runStateTestBatch(evm Evm, paths []string) ([][]byte, error) {
+	var (
+		out    = make([][]byte, len(paths))
+		buffer = new(bytes.Buffer)
+	)
+	for i, path := range paths {
+		buffer.Reset()
+		if _, err := evm.RunStateTest(path, buffer, false); err != nil {
+			return out, err
+		}
+		out[i] = buffer.Bytes()
+	}
+	return out, nil
 }

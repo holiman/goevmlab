@@ -150,3 +150,7 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		return
 	}
 }
+
+func (evm *NethermindVM) RunStateTestBatch(paths []string) ([][]byte, error) {
+	return runStateTestBatch(evm, paths)
+}

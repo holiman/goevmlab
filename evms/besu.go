@@ -18,10 +18,10 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"os/exec"
 
@@ -81,7 +81,7 @@ type besuStateRoot struct {
 	StateRoot string `json:"postHash"`
 }
 
-// feed reads from the reader, does some geth-specific filtering and
+// feed reads from the reader, does some besu-specific filtering and
 // outputs items onto the channel
 func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
@@ -111,21 +111,13 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 			// For now, just ignore these
 			continue
 		}
-		if elem.ReturnStack == nil {
-			elem.ReturnStack = make([]uint32, 0)
-		}
-		if elem.Stack == nil {
-			elem.Stack = make([]*big.Int, 0)
-		}
+
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
 		// In order to handle that, we need to drop all STOP opcodes.
 		if elem.Op == 0x0 {
 			continue
 		}
-		// Parity is missing gasCost, memSize and refund
-		elem.GasCost = 0
-		elem.MemorySize = 0
-		elem.RefundCounter = 0
+		RemoveUnsupportedElems(&elem)
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
@@ -137,4 +129,86 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		return
 	}
+}
+
+func (evm *BesuVM) RunStateTestBatch(paths []string) ([][]byte, error) {
+	var (
+		stdout io.ReadCloser
+		err    error
+		cmd    *exec.Cmd
+		out    = make([][]byte, len(paths))
+		buffer bytes.Buffer
+		i      int
+		args   = make([]string, 0, 3)
+	)
+	// Arguments have to be appended this way otherwise variadic doesn't work.
+	args = append(args, "--nomemory")
+	args = append(args, "--json")
+	args = append(args, "state-test")
+	args = append(args, paths...)
+
+	cmd = exec.Command(evm.path, args...) // exclude memory
+
+	if stdout, err = cmd.StdoutPipe(); err != nil {
+		return out, err
+	}
+	if err = cmd.Start(); err != nil {
+		return out, err
+	}
+	// Scan the stdout
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		data := scanner.Bytes()
+		var elem vm.StructLog
+		err := json.Unmarshal(data, &elem)
+		if err != nil {
+			fmt.Printf("besu err: %v, line\n\t%v\n", err, string(data))
+			continue
+		}
+
+		RemoveUnsupportedElems(&elem)
+		elem.Memory = make([]byte, 0)
+		// If the output cannot be marshalled, all fields will be blanks.
+		// We can detect that through 'depth', which should never be less than 1
+		// for any actual opcode
+		if elem.Depth == 0 {
+			var (
+				stateRoot stateRoot
+				tempRoot  besuStateRoot
+			)
+			if err := json.Unmarshal(data, &tempRoot); err == nil {
+				// Besu calls state root "rootHash"
+				stateRoot.StateRoot = tempRoot.StateRoot
+			}
+			root, _ := json.Marshal(stateRoot)
+			if _, err := buffer.Write(append(root, '\n')); err != nil {
+				fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+				return out, err
+			}
+			// The state root is the last we'll read of a test.
+			// Now save the buffer and parse the next test output.
+			out[i] = buffer.Bytes()
+			buffer.Reset()
+			i++
+			// We read enough...
+			if i >= len(paths) {
+				break
+			}
+		}
+
+		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
+		// In order to handle that, we need to drop all STOP opcodes.
+		if elem.Op == 0x0 {
+			continue
+		}
+		jsondata, _ := json.Marshal(elem)
+		if _, err := buffer.Write(append(jsondata, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return out, err
+		}
+	}
+
+	// release resources, handle error but ignore non-zero exit codes
+	_ = cmd.Wait()
+	return out, nil
 }

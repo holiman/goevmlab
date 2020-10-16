@@ -161,3 +161,7 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 		}
 	}
 }
+
+func (evm *ParityVM) RunStateTestBatch(paths []string) ([][]byte, error) {
+	return runStateTestBatch(evm, paths)
+}

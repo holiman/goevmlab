@@ -131,3 +131,7 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 		return
 	}
 }
+
+func (evm *AlethVM) RunStateTestBatch(paths []string) ([][]byte, error) {
+	return runStateTestBatch(evm, paths)
+}

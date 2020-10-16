@@ -32,11 +32,20 @@ import (
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
 type GethEVM struct {
 	path string
+	name string
 }
 
 func NewGethEVM(path string) *GethEVM {
 	return &GethEVM{
 		path: path,
+		name: "geth",
+	}
+}
+
+func NewTurboGethEVM(path string) *GethEVM {
+	return &GethEVM{
+		path: path,
+		name: "turbogeth",
 	}
 }
 
@@ -85,7 +94,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 }
 
 func (evm *GethEVM) Name() string {
-	return "geth"
+	return evm.name
 }
 
 func (vm *GethEVM) Close() {
@@ -103,7 +112,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
 			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))
-			continue
+			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
@@ -143,4 +152,8 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		return
 	}
+}
+
+func (evm *GethEVM) RunStateTestBatch(paths []string) ([][]byte, error) {
+	return runStateTestBatch(evm, paths)
 }
