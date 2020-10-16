@@ -95,7 +95,7 @@ func createTests(location, prefix string, limit int, trace bool) error {
 		}
 
 		// Generate new code
-		base := fuzzing.Generate2200Test()
+		base := fuzzing.Generate2200BerlinTest()
 
 		// Get new state root and logs hash
 		if err := base.Fill(nil); err != nil {
