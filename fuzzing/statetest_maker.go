@@ -416,8 +416,19 @@ func GenerateSubroutineTest() *GstMaker {
 	return gst
 }
 
+func Generate2200BerlinTest() *GstMaker {
+	gst := BasicStateTest("Berlin")
+	create2200Test(gst)
+	return gst
+}
+
 func Generate2200Test() *GstMaker {
 	gst := BasicStateTest("Istanbul")
+	create2200Test(gst)
+	return gst
+}
+
+func create2200Test(gst *GstMaker) {
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),
@@ -453,7 +464,6 @@ func Generate2200Test() *GstMaker {
 		}
 		gst.SetTx(tx)
 	}
-	return gst
 }
 
 func GenerateECRecover() (*GstMaker, []byte) {
