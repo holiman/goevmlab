@@ -51,5 +51,5 @@ func main() {
 
 func startFuzzer(c *cli.Context) error {
 	fmt.Printf("Generator started \n")
-	return common.ExecuteFuzzer(c, fuzzing.Generate2200Test, "storagefuzz")
+	return common.ExecuteFuzzer(c, fuzzing.Generate2200BerlinTest, "storagefuzz")
 }
