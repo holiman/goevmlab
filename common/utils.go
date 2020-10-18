@@ -33,10 +33,9 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/urfave/cli.v1"
-
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
