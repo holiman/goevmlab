@@ -246,156 +246,38 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		vms        = initVMs(c)
 		numThreads = c.GlobalInt(ThreadFlag.Name)
 		location   = c.GlobalString(LocationFlag.Name)
-		numTests   uint64
 	)
-
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")
 	}
-
 	fmt.Printf("numThreads: %d\n", numThreads)
-	var wg sync.WaitGroup
-	// The channel where we'll deliver tests
-	testCh := make(chan string, 10)
-	// The channel for cleanup-taksks
-	removeCh := make(chan string, 10)
-	// channel for signalling consensus errors
-	consensusCh := make(chan string, 10)
-	// channel for signalling slow tests
-	slowCh := make(chan string, 10)
-
-	// Cancel ability
-	sigs := make(chan os.Signal, 1)
-	ctx, cancel := context.WithCancel(context.Background())
-	abort := int64(0)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	// Thread that creates tests, spits out filenames
-	numFactories := numThreads / 2
-	factories := int64(numFactories)
-	for i := 0; i < numFactories; i++ {
-		wg.Add(1)
-		go func(threadId int) {
-			defer wg.Done()
-			defer func() {
-				if f := atomic.AddInt64(&factories, -1); f == 0 {
-					fmt.Printf("closing testCh\n")
-					close(testCh)
-				}
-			}()
-			for i := 0; atomic.LoadInt64(&abort) == 0; i++ {
-				gstMaker := generatorFn()
-				testName := fmt.Sprintf("%08d-%v-%d", i, name, threadId)
-				test := gstMaker.ToGeneralStateTest(testName)
-				fileName, err := StoreTest(location, test, testName)
-				if err != nil {
-					fmt.Printf("Error: %v", err)
-					break
-				}
-				testCh <- fileName
-			}
-		}(i)
+	meta := &testMeta{
+		name:        name,
+		abort:       int64(0),
+		testCh:      make(chan string, 10), // channel where we'll deliver tests
+		removeCh:    make(chan string, 10), // channel for cleanup-taksks
+		consensusCh: make(chan string, 10), // channel for signalling consensus errors
+		slowCh:      make(chan string, 10), // channel for signalling slow tests
+		vms:         vms,
 	}
-	executors := int64(0)
-	for i := 0; i < numThreads/2; i++ {
-		// Thread that executes the tests and compares the outputs
-		wg.Add(1)
-		go func(threadId int) {
-			defer wg.Done()
-			atomic.AddInt64(&executors, 1)
-			var outputs []*os.File
-			defer func() {
-				if f := atomic.AddInt64(&executors, -1); f == 0 {
-					close(removeCh)
-					close(slowCh)
-				}
-			}()
-			defer func() {
-				for _, f := range outputs {
-					f.Close()
-				}
-			}()
-			fmt.Printf("Fuzzing started \n")
-			// Open/create outputs for writing
-			for _, evm := range vms {
-				out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755)
-				if err != nil {
-					fmt.Printf("failed opening file %v", err)
-					return
-				}
-				outputs = append(outputs, out)
-			}
-			for file := range testCh {
-				if atomic.LoadInt64(&abort) == 1 {
-					// Continue to drain the testch
-					continue
-				}
-				// Zero out the output files and reset offset
-				for _, f := range outputs {
-					_ = f.Truncate(0)
-					_, _ = f.Seek(0, 0)
-				}
-				var slowTest uint32
-				// Kick off the binaries
-				var wg sync.WaitGroup
-				wg.Add(len(vms))
-				for i, vm := range vms {
-					go func(evm evms.Evm, out io.Writer) {
-						defer wg.Done()
-						t0 := time.Now()
-						cmd, err := evm.RunStateTest(file, out, false)
-						if err != nil {
-							fmt.Fprintf(os.Stderr, "error starting vm: %v error %v\n", cmd, err)
-							return
-						}
-						execTime := time.Since(t0)
-						if execTime > 20*time.Second {
-							fmt.Printf("%10v done in %v (slow!). Cmd: %v\n", evm.Name(), execTime, cmd)
-							// Flag test as slow
-							atomic.StoreUint32(&slowTest, 1)
-						}
-					}(vm, outputs[i])
-				}
-				wg.Wait()
-				var readers []io.Reader
-				// Flush file and set reset offset
-				for _, f := range outputs {
-					_ = f.Sync()
-					_, _ = f.Seek(0, 0)
-					readers = append(readers, f)
-				}
-				atomic.AddUint64(&numTests, 1)
-				// Compare outputs
-				eq := evms.CompareFiles(vms, readers)
-				if !eq {
-					atomic.StoreInt64(&abort, 1)
-					s := "output files: "
-					for _, f := range outputs {
-						s = fmt.Sprintf("%v %v", s, f.Name())
-					}
-					fmt.Println(s)
-					consensusCh <- file
-				} else if slowTest != 0 {
-					slowCh <- file
-				} else {
-					removeCh <- file
-
-				}
-			}
-		}(i)
-	}
+	// Routines to deliver tests
+	meta.startTestFactories((numThreads+1)/2, generatorFn, location)
+	meta.startTestExecutors((numThreads + 1) / 2)
 	// One goroutine to spit out some statistics
-	wg.Add(1)
+	ctx, cancel := context.WithCancel(context.Background())
+	meta.wg.Add(1)
 	go func() {
-		defer wg.Done()
-		tStart := time.Now()
-		ticker := time.NewTicker(60 * time.Second)
-		testCount := uint64(0)
+		defer meta.wg.Done()
+		var (
+			tStart    = time.Now()
+			ticker    = time.NewTicker(60 * time.Second)
+			testCount = uint64(0)
+		)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				n := atomic.LoadUint64(&numTests)
+				n := atomic.LoadUint64(&meta.numTests)
 				testsSinceLastUpdate := n - testCount
 				testCount = n
 				timeSpent := time.Since(tStart)
@@ -420,20 +302,20 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 
 	}()
 	// One goroutine to clean up after ourselves
-	wg.Add(1)
+	meta.wg.Add(1)
 	go func() {
-		defer wg.Done()
-		for path := range removeCh {
+		defer meta.wg.Done()
+		for path := range meta.removeCh {
 			if err := os.Remove(path); err != nil {
 				fmt.Fprintf(os.Stderr, "Error deleting file %v, : %v\n", path, err)
 			}
 		}
 	}()
 	// One to handle slow tests
-	wg.Add(1)
+	meta.wg.Add(1)
 	go func() {
-		defer wg.Done()
-		for path := range slowCh {
+		defer meta.wg.Done()
+		for path := range meta.slowCh {
 			newPath := filepath.Join(filepath.Dir(path),
 				fmt.Sprintf("slowtest-%v", filepath.Base(path)))
 			if err := Copy(path, newPath); err != nil {
@@ -441,15 +323,19 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 			}
 		}
 	}()
+
+	// Cancel ability
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	select {
 	case <-sigs:
-	case path := <-consensusCh:
+	case path := <-meta.consensusCh:
 		fmt.Printf("Possible consensus error!\nFile: %v\n", path)
 	}
 	fmt.Printf("waiting for procs to exit\n")
-	atomic.StoreInt64(&abort, 1)
+	atomic.StoreInt64(&meta.abort, 1)
 	cancel()
-	wg.Wait()
+	meta.wg.Wait()
 	return nil
 }
 
@@ -492,4 +378,142 @@ func Copy(src, dst string) error {
 		return err
 	}
 	return out.Close()
+}
+
+type testMeta struct {
+	name        string
+	abort       int64
+	testCh      chan string
+	removeCh    chan string
+	consensusCh chan string
+	slowCh      chan string
+	wg          sync.WaitGroup
+	vms         []evms.Evm
+	numTests    uint64
+}
+
+// startTestFactories creates a number of go-routines that write tests to disk, and delivers
+// the paths on the testCh.
+func (meta *testMeta) startTestFactories(numFactories int, generatorFn GeneratorFn, location string) {
+	factories := int64(numFactories)
+	meta.wg.Add(numFactories)
+	factory := func(threadId int) {
+		defer meta.wg.Done()
+		defer func() {
+			if f := atomic.AddInt64(&factories, -1); f == 0 {
+				fmt.Printf("closing testCh\n")
+				close(meta.testCh)
+			}
+		}()
+		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
+			gstMaker := generatorFn()
+			testName := fmt.Sprintf("%08d-%v-%d", i, meta.name, threadId)
+			test := gstMaker.ToGeneralStateTest(testName)
+			fileName, err := StoreTest(location, test, testName)
+			if err != nil {
+				fmt.Printf("Error: %v", err)
+				break
+			}
+			meta.testCh <- fileName
+		}
+	}
+	for i := 0; i < numFactories; i++ {
+		go factory(i)
+	}
+}
+
+func (meta *testMeta) startTestExecutors(numThreads int) {
+	executors := int64(numThreads)
+
+	execute := func(threadId int) {
+		defer meta.wg.Done()
+		defer func() {
+			// clean-up tasks
+			if f := atomic.AddInt64(&executors, -1); f == 0 {
+				close(meta.removeCh)
+				close(meta.slowCh)
+			}
+		}()
+		var outputs []*os.File
+		defer func() {
+			for _, f := range outputs {
+				f.Close()
+			}
+		}()
+		atomic.AddInt64(&executors, 1)
+		fmt.Printf("Fuzzing thread %d started\n", threadId)
+		// Open/create outputs for writing
+		for _, evm := range meta.vms {
+			if out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755); err != nil {
+				fmt.Printf("failed opening file %v", err)
+				return
+			} else {
+				outputs = append(outputs, out)
+			}
+		}
+		for file := range meta.testCh {
+			if atomic.LoadInt64(&meta.abort) == 1 {
+				// Continue to drain the testch
+				continue
+			}
+			// Zero out the output files and reset offset
+			for _, f := range outputs {
+				_ = f.Truncate(0)
+				_, _ = f.Seek(0, 0)
+			}
+			var slowTest uint32
+			// Kick off the binaries, which runs the test on all the vms in parallel
+			var vmWg sync.WaitGroup
+			vmWg.Add(len(meta.vms))
+			for i, vm := range meta.vms {
+				go func(evm evms.Evm, out io.Writer) {
+					defer vmWg.Done()
+					t0 := time.Now()
+					cmd, err := evm.RunStateTest(file, out, false)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "error starting vm: %v error %v\n", cmd, err)
+						return
+					}
+					if execTime := time.Since(t0); execTime > 20*time.Second {
+						fmt.Printf("%10v done in %v (slow!). Cmd: %v\n", evm.Name(), execTime, cmd)
+						// Flag test as slow
+						atomic.StoreUint32(&slowTest, 1)
+					}
+				}(vm, outputs[i])
+			}
+			vmWg.Wait()
+			// All the tests are now executed, and we need to read and compare the outputs
+			var readers []io.Reader
+			// Flush file and set reset offset
+			for _, f := range outputs {
+				_ = f.Sync()
+				_, _ = f.Seek(0, 0)
+				readers = append(readers, f)
+			}
+			atomic.AddUint64(&meta.numTests, 1)
+			// Compare outputs
+			if eq := evms.CompareFiles(meta.vms, readers); !eq {
+				atomic.StoreInt64(&meta.abort, 1)
+				s := "output files: "
+				for _, f := range outputs {
+					s = fmt.Sprintf("%v %v", s, f.Name())
+				}
+				fmt.Println(s)
+				meta.consensusCh <- file // flag as consensus-issue
+			} else if slowTest != 0 {
+				meta.slowCh <- file // flag as slow
+			} else {
+				meta.removeCh <- file // flag for removal
+			}
+		}
+	}
+	for i := 0; i < numThreads/2; i++ {
+		// Thread that executes the tests and compares the outputs
+		meta.wg.Add(1)
+		go execute(i)
+	}
+}
+
+func startStatistics() {
+
 }
