@@ -41,29 +41,14 @@ func NewBesuVM(path string) *BesuVM {
 
 // RunStateTest implements the Evm interface
 func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
-	var (
-		stdout io.ReadCloser
-		err    error
-		cmd    *exec.Cmd
-	)
+	var cmd *exec.Cmd
 	if speedTest {
 		cmd = exec.Command(evm.path, "--nomemory", "state-test", path)
 	} else {
 		// evm --nomemory --json state-test blaketest.json
 		cmd = exec.Command(evm.path, "--nomemory", "--json", "state-test", path) // exclude memory
 	}
-
-	if stdout, err = cmd.StdoutPipe(); err != nil {
-		return cmd.String(), err
-	}
-	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
-	}
-	// copy everything to the given writer
-	evm.Copy(out, stdout)
-	// release resources, handle error but ignore non-zero exit codes
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	return runStateTest(evm, path, out, cmd)
 }
 
 func (evm *BesuVM) Name() string {

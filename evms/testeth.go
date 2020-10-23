@@ -41,11 +41,7 @@ func NewAlethVM(path string) *AlethVM {
 
 // RunStateTest implements the Evm interface
 func (evm *AlethVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
-	var (
-		stderr io.ReadCloser
-		err    error
-		cmd    *exec.Cmd
-	)
+	var cmd *exec.Cmd
 	// ../../testeth -t GeneralStateTests --  --testfile ./statetest1.json --jsontrace {} 2> statetest1_testeth_stderr.jsonl
 	if speedTest {
 		cmd = exec.Command(evm.path, "-t", "GeneralStateTests",
@@ -54,17 +50,7 @@ func (evm *AlethVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 		cmd = exec.Command(evm.path, "-t", "GeneralStateTests",
 			"--", "--testfile", path, "--jsontrace", "{\"disableMemory\":true}")
 	}
-	if stderr, err = cmd.StdoutPipe(); err != nil {
-		return cmd.String(), err
-	}
-	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
-	}
-	// copy everything to the given writer
-	evm.Copy(out, stderr)
-	// release resources
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	return runStateTest(evm, path, out, cmd)
 }
 
 func (evm *AlethVM) Name() string {

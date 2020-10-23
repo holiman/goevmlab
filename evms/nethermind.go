@@ -65,10 +65,6 @@ func (evm *NethermindVM) GetStateRoot(path string) (string, error) {
 
 // RunStateTest implements the Evm interface
 func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
-	var (
-		stderr io.ReadCloser
-		err    error
-	)
 	if speedTest {
 		return "", errors.New("nethermind does not support disabling json")
 	}
@@ -76,17 +72,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	cmd := exec.Command(evm.path, "--input", path,
 		"--trace",
 		"-m") // -m excludes memory
-	if stderr, err = cmd.StderrPipe(); err != nil {
-		return cmd.String(), err
-	}
-	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
-	}
-	// copy everything to the given writer
-	evm.Copy(out, stderr)
-	// release resources, handle error but ignore non-zero exit codes
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	return runStateTest(evm, path, out, cmd)
 }
 
 func (evm *NethermindVM) Name() string {

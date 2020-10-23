@@ -71,26 +71,13 @@ func (evm *GethEVM) GetStateRoot(path string) (string, error) {
 
 // RunStateTest implements the Evm interface
 func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
-	var (
-		stderr io.ReadCloser
-		err    error
-		cmd    *exec.Cmd
-	)
+	var cmd *exec.Cmd
 	if speedTest {
 		cmd = exec.Command(evm.path, "--nomemory", "--nostack", "statetest", path)
 	} else {
 		cmd = exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
 	}
-	if stderr, err = cmd.StderrPipe(); err != nil {
-		return cmd.String(), err
-	}
-	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
-	}
-	// copy everything to the given writer
-	evm.Copy(out, stderr)
-	// release resources
-	return cmd.String(), cmd.Wait()
+	return runStateTest(evm, path, out, cmd)
 }
 
 func (evm *GethEVM) Name() string {

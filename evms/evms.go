@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
 )
 
 // The Evm interface represents external EVM implementations, which can
@@ -81,4 +82,23 @@ func runStateTestBatch(evm Evm, paths []string) ([][]byte, error) {
 		out[i] = buffer.Bytes()
 	}
 	return out, nil
+}
+
+func runStateTest(evm Evm, path string, out io.Writer, cmd *exec.Cmd) (string, error) {
+	var (
+		stdout io.ReadCloser
+		err    error
+	)
+
+	if stdout, err = cmd.StdoutPipe(); err != nil {
+		return cmd.String(), err
+	}
+	if err = cmd.Start(); err != nil {
+		return cmd.String(), err
+	}
+	// copy everything to the given writer
+	evm.Copy(out, stdout)
+	// release resources, handle error but ignore non-zero exit codes
+	_ = cmd.Wait()
+	return cmd.String(), nil
 }
