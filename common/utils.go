@@ -423,7 +423,7 @@ func (meta *testMeta) startTestFactories(numFactories int, generatorFn Generator
 }
 
 func (meta *testMeta) startTestExecutors(numThreads int) {
-	executors := int64(numThreads)
+	executors := int64(0)
 
 	execute := func(threadId int) {
 		defer meta.wg.Done()
@@ -432,6 +432,7 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 			if f := atomic.AddInt64(&executors, -1); f == 0 {
 				close(meta.removeCh)
 				close(meta.slowCh)
+				fmt.Printf("last executor exiting\n")
 			}
 		}()
 		var outputs []*os.File
@@ -507,7 +508,11 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 			}
 		}
 	}
-	for i := 0; i < numThreads/2; i++ {
+	numExecutors :=  numThreads/2
+	if numExecutors == 0{
+		numExecutors = 1
+	}
+	for i := 0; i < numExecutors; i++ {
 		// Thread that executes the tests and compares the outputs
 		meta.wg.Add(1)
 		go execute(i)
