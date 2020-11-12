@@ -77,7 +77,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 	} else {
 		cmd = exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
 	}
-	return runStateTest(evm, path, out, cmd)
+	return runStateTest(evm, path, out, cmd, false)
 }
 
 func (evm *GethEVM) Name() string {

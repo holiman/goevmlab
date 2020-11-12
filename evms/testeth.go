@@ -50,7 +50,7 @@ func (evm *AlethVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 		cmd = exec.Command(evm.path, "-t", "GeneralStateTests",
 			"--", "--testfile", path, "--jsontrace", "{\"disableMemory\":true}")
 	}
-	return runStateTest(evm, path, out, cmd)
+	return runStateTest(evm, path, out, cmd, false)
 }
 
 func (evm *AlethVM) Name() string {

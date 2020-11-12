@@ -72,7 +72,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	cmd := exec.Command(evm.path, "--input", path,
 		"--trace",
 		"-m") // -m excludes memory
-	return runStateTest(evm, path, out, cmd)
+	return runStateTest(evm, path, out, cmd, false)
 }
 
 func (evm *NethermindVM) Name() string {

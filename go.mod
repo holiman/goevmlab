@@ -3,6 +3,7 @@ module github.com/holiman/goevmlab
 go 1.13
 
 require (
+	github.com/MariusVanDerWijden/go-ethereum v1.8.22
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20201012165903-2cb20defcd66 // indirect

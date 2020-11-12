@@ -28,6 +28,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
+var Docker = false
+
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
 	path string
@@ -48,7 +50,20 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 		// evm --nomemory --json state-test blaketest.json
 		cmd = exec.Command(evm.path, "--nomemory", "--json", "state-test", path) // exclude memory
 	}
-	return runStateTest(evm, path, out, cmd)
+	if Docker {
+		args := []string{
+			"run",
+			"-v",
+			"/tmp:/tmp/",
+			"hyperledger/besu-evmtool:develop",
+			"--nomemory",
+			"--json",
+			"state-test",
+			path,
+		}
+		cmd = exec.Command("docker", args...)
+	}
+	return runStateTest(evm, path, out, cmd, true)
 }
 
 func (evm *BesuVM) Name() string {
@@ -124,15 +139,29 @@ func (evm *BesuVM) RunStateTestBatch(paths []string) ([][]byte, error) {
 		out    = make([][]byte, len(paths))
 		buffer bytes.Buffer
 		i      int
-		args   = make([]string, 0, 3)
+		args   []string
 	)
-	// Arguments have to be appended this way otherwise variadic doesn't work.
-	args = append(args, "--nomemory")
-	args = append(args, "--json")
-	args = append(args, "state-test")
-	args = append(args, paths...)
-
-	cmd = exec.Command(evm.path, args...) // exclude memory
+	if Docker {
+		args := []string{
+			"run",
+			"-v",
+			"/tmp:/tmp/",
+			"hyperledger/besu-evmtool:develop",
+			"--nomemory",
+			"--json",
+			"state-test",
+		}
+		args = append(args, paths...)
+		cmd = exec.Command("docker", args...)
+	} else {
+		args = []string{
+			"--nomemory",
+			"--json",
+			"state-test",
+		}
+		args = append(args, paths...)
+		cmd = exec.Command(evm.path, args...) // exclude memory
+	}
 
 	if stdout, err = cmd.StdoutPipe(); err != nil {
 		return out, err
