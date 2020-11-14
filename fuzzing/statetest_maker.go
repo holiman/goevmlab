@@ -154,6 +154,10 @@ func NewGstMaker() *GstMaker {
 	return gst
 }
 
+func (g *GstMaker) SetPre(genesis *GenesisAlloc) {
+	g.pre = genesis
+}
+
 func (g *GstMaker) AddAccount(address common.Address, a GenesisAccount) {
 	alloc := *g.pre
 	alloc[address] = a

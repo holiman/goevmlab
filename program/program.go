@@ -183,6 +183,18 @@ func (p *Program) Size() int {
 	return len(p.code)
 }
 
+// InputToMemory stores the input (calldata) to memory
+func (p *Program) InputAddressToStack(inputOffset uint32) {
+	p.Push(inputOffset)
+	p.Op(ops.CALLDATALOAD)// Loads [n -> n + 32] of input data to stack top
+	mask, ok := big.NewInt(0).SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	if !ok{
+		panic("whoa")
+	}
+	p.Push(mask) // turn into address
+	p.Op(ops.AND)
+}
+
 // MStore stores the provided data (into the memory area starting at memStart)
 func (p *Program) Mstore(data []byte, memStart uint32) {
 	var idx = 0
