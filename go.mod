@@ -18,8 +18,7 @@ require (
 	github.com/rivo/tview v0.0.0-20200712113419-c65badfc3d92
 	github.com/shirou/gopsutil v2.20.7+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/net v0.0.0-20200625001655-4c5254603344
-	golang.org/x/sys v0.0.0-20200806060901-a37d78b92225 // indirect
+	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
