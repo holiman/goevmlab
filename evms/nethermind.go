@@ -77,10 +77,10 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 			"run",
 			"-v",
 			"/tmp:/tmp/",
-			"nethermind/nethermind",
-			"--nomemory",
-			"--json",
-			"state-test",
+			"nethermindeth/nethtest",
+			"-m",
+			"-t",
+			"-i",
 			path,
 		}
 		cmd = exec.Command("docker", args...)
