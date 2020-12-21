@@ -77,6 +77,21 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 	} else {
 		cmd = exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
 	}
+
+	if Docker {
+		args := []string{
+			"run",
+			"-v",
+			"/tmp:/tmp/",
+			"ethereum/client-go:alltools-latest",
+			"evm",
+			"--nomemory",
+			"--json",
+			"state-test",
+			path,
+		}
+		cmd = exec.Command("docker", args...)
+	}
 	return runStateTest(evm, path, out, cmd, false)
 }
 

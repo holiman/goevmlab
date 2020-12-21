@@ -28,8 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
-var Docker = false
-
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
 	path string

@@ -24,6 +24,9 @@ import (
 	"os/exec"
 )
 
+// If Docker is set to true, the tests are run using docker
+var Docker = false
+
 // The Evm interface represents external EVM implementations, which can
 // be e.g. docker instances or binaries
 type Evm interface {

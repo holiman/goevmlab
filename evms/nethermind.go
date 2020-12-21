@@ -72,6 +72,19 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	cmd := exec.Command(evm.path, "--input", path,
 		"--trace",
 		"-m") // -m excludes memory
+	if Docker {
+		args := []string{
+			"run",
+			"-v",
+			"/tmp:/tmp/",
+			"nethermind/nethermind",
+			"--nomemory",
+			"--json",
+			"state-test",
+			path,
+		}
+		cmd = exec.Command("docker", args...)
+	}
 	return runStateTest(evm, path, out, cmd, false)
 }
 
