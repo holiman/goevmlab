@@ -28,9 +28,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
+var Piping bool
+
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
-	path string
+	path   string
+	stdin  io.WriteCloser
+	stdout io.ReadCloser
 }
 
 func NewBesuVM(path string) *BesuVM {
@@ -60,6 +64,10 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 			path,
 		}
 		cmd = exec.Command("docker", args...)
+	}
+
+	if Piping {
+		return evm.pipeStateTest(path, out)
 	}
 	return runStateTest(evm, path, out, cmd, true)
 }
@@ -223,4 +231,33 @@ func (evm *BesuVM) RunStateTestBatch(paths []string) ([][]byte, error) {
 	// release resources, handle error but ignore non-zero exit codes
 	_ = cmd.Wait()
 	return out, nil
+}
+
+func (evm *BesuVM) pipeStateTest(path string, out io.Writer) (string, error) {
+	// Start the command if not already started
+	if evm.stdout == nil || evm.stdin == nil {
+		args := []string{
+			"--nomemory",
+			"--json",
+			"state-test",
+		}
+		cmd := exec.Command(evm.path, args...)
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return cmd.String(), err
+		}
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			return cmd.String(), err
+		}
+		// Start command
+		if err := cmd.Start(); err != nil {
+			return cmd.String(), err
+		}
+		evm.stdin = stdin
+		evm.stdout = stdout
+	}
+	evm.stdin.Write([]byte(path))
+	evm.Copy(out, evm.stdout)
+	return "", nil
 }
