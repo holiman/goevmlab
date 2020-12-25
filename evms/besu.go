@@ -28,7 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
-var Piping bool
+var PipeStrategy bool
 
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
@@ -66,7 +66,7 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 		cmd = exec.Command("docker", args...)
 	}
 
-	if Piping {
+	if PipeStrategy {
 		return evm.pipeStateTest(path, out)
 	}
 	return runStateTest(evm, path, out, cmd, true)
