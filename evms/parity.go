@@ -79,18 +79,22 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (s
 	} else {
 		cmd = exec.Command(evm.path, "--std-json", "state-test", path)
 	}
-	if Docker {
-		args := []string{
-			"run",
-			"-v",
-			"/tmp:/tmp/",
-			"openethereum/openethereum",
-			"--std-json",
-			"state-test",
-			path,
+	/*
+		// TODO enable once OE provides a docker image
+		// see https://github.com/openethereum/openethereum/issues/190
+		if Docker {
+			args := []string{
+				"run",
+				"-v",
+				"/tmp:/tmp/",
+				"openethereum/openethereum",
+				"--std-json",
+				"state-test",
+				path,
+			}
+			cmd = exec.Command("docker", args...)
 		}
-		cmd = exec.Command("docker", args...)
-	}
+	*/
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
 	}
