@@ -87,7 +87,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 			"evm",
 			"--nomemory",
 			"--json",
-			"state-test",
+			"statetest",
 			path,
 		}
 		cmd = exec.Command("docker", args...)
