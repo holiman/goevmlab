@@ -113,6 +113,7 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 				if err := json.Unmarshal(data, &tempRoot); err == nil {
 					// Besu calls state root "rootHash"
 					stateRoot.StateRoot = tempRoot.StateRoot
+					break
 				}
 			}
 			//fmt.Printf("%v\n", string(data))
