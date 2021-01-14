@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -79,10 +80,11 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 	}
 
 	if Docker {
+		dir := filepath.Dir(path)
 		args := []string{
 			"run",
 			"-v",
-			"/tmp:/tmp/",
+			fmt.Sprintf("%v:%v", dir, dir), // "/tmp:/tmp"
 			"ethereum/client-go:alltools-latest",
 			"evm",
 			"--nomemory",

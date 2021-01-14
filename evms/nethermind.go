@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -73,10 +74,11 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		"--trace",
 		"-m") // -m excludes memory
 	if Docker {
+		dir := filepath.Dir(path)
 		args := []string{
 			"run",
 			"-v",
-			"/tmp:/tmp/",
+			fmt.Sprintf("%v:%v", dir, dir), // "/tmp:/tmp"
 			"nethermindeth/nethtest",
 			"-m",
 			"-t",

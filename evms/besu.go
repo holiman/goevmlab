@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 )
@@ -53,10 +54,11 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 		cmd = exec.Command(evm.path, "--nomemory", "--json", "state-test", path) // exclude memory
 	}
 	if Docker {
+		dir := filepath.Dir(path)
 		args := []string{
 			"run",
 			"-v",
-			"/tmp:/tmp/",
+			fmt.Sprintf("%v:%v", dir, dir), // "/tmp:/tmp"
 			"hyperledger/besu-evmtool:develop",
 			"--nomemory",
 			"--json",
@@ -137,6 +139,7 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	}
 }
 
+// All files have to be in the same directory
 func (evm *BesuVM) RunStateTestBatch(paths []string) ([][]byte, error) {
 	var (
 		stdout io.ReadCloser
@@ -146,12 +149,13 @@ func (evm *BesuVM) RunStateTestBatch(paths []string) ([][]byte, error) {
 		buffer bytes.Buffer
 		i      int
 		args   []string
+		dir    = filepath.Dir(paths[0])
 	)
 	if Docker {
 		args := []string{
 			"run",
 			"-v",
-			"/tmp:/tmp/",
+			fmt.Sprintf("%v:%v", dir, dir), // "/tmp:/tmp"
 			"hyperledger/besu-evmtool:develop",
 			"--nomemory",
 			"--json",
