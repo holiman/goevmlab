@@ -36,6 +36,7 @@ func initApp() *cli.App {
 		common.GethFlag,
 		common.ParityFlag,
 		common.NethermindFlag,
+		common.BesuFlag,
 		common.AlethFlag,
 		common.ThreadFlag,
 		common.LocationFlag,

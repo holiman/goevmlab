@@ -55,6 +55,11 @@ var (
 		Usage: "Location of nethermind 'nethtest' binary",
 		//Required: true,
 	}
+	BesuFlag = cli.StringFlag{
+		Name:  "besu",
+		Usage: "Location of besu 'evmtool' script",
+		//Required: true,
+	}
 	AlethFlag = cli.StringFlag{
 		Name:  "testeth",
 		Usage: "Location of aleth 'testeth' binary",
@@ -86,6 +91,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		parityBin = c.GlobalString(ParityFlag.Name)
 		nethBin   = c.GlobalString(NethermindFlag.Name)
 		alethBin  = c.GlobalString(AlethFlag.Name)
+		besuBin   = c.GlobalString(BesuFlag.Name)
 		vms       []evms.Evm
 	)
 	if gethBin != "" {
@@ -99,6 +105,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	if alethBin != "" {
 		vms = append(vms, evms.NewAlethVM(alethBin))
+	}
+	if besuBin != "" {
+		vms = append(vms, evms.NewBesuVM(besuBin))
 	}
 	return vms
 
@@ -277,7 +286,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				gstMaker := generatorFn()
 				testName := fmt.Sprintf("%08d-%v-%d", i, name, threadId)
 				test := gstMaker.ToGeneralStateTest(testName)
-				fileName, err := storeTest(location, test, testName)
+				fileName, err := StoreTest(location, test, testName)
 				if err != nil {
 					fmt.Printf("Error: %v", err)
 					break
