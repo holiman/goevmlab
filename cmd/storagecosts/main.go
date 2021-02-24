@@ -25,7 +25,6 @@ func main() {
 
 func runit() error {
 
-
 	fmt.Println(`## Current (Istanbul) costs
 
 With Istanbul rules, [EIP-2200](testcases): https://eips.ethereum.org/EIPS/eip-2200#test-cases, the following gas usages 
@@ -65,6 +64,11 @@ In partcular, the following cases become more expensive:
 
 For these cases, a better scheme under the no-refund rule would be to use non-zero slots, e.g. 
 '1-2-1' and thus wind up with 3K gas. 
+
+**Note**: In reality, there are never a negative gas cost, since the refund is capped at 0.5 * gasUsed. 
+However, these tables show the negative values, since in a more real-world scenarion would likely spend the 
+extra gas on other operations.notes'
+
 `)
 	return nil
 }
@@ -205,8 +209,6 @@ func showTable2() error {
 	fmt.Printf("| Code | Original | 1st | 2nd | 3rd |  Istanbul | Berlin (cold) | Berlin (hot)| Berlin (hot)+norefund |\n")
 	fmt.Printf("| -- | -- | -- | -- | -- |  -- | -- | -- | -- | \n")
 
-
-
 	// The destructor, caller and sender
 	execAddr := common.HexToAddress("0x000000000000000000000000000000000000c411")
 	sender := common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
@@ -241,7 +243,7 @@ func showTable2() error {
 		for _, val := range tc.changes {
 			caller.Sstore(0, val)
 		}
-		exec := func(berlin, hot bool) *dumbTracer{
+		exec := func(berlin, hot bool) *dumbTracer {
 			tracer := &dumbTracer{}
 			chainConfig := &params.ChainConfig{
 				ChainID:             big.NewInt(1),
@@ -340,13 +342,16 @@ func showTable2() error {
 	return nil
 }
 
-func effectiveGas(gasUsed, refund uint64) uint64 {
+func effectiveGas(gasUsed, refund uint64) int64 {
 	// Apply refund counter, capped to half of the used gas.
-	refundMax := gasUsed / 2
-	if refundMax > refund {
-		return gasUsed - refund
+	if false {
+		refundMax := gasUsed / 2
+		if refundMax > refund {
+			return int64(gasUsed - refund)
+		}
+		return int64(gasUsed - refundMax)
 	}
-	return gasUsed - refundMax
+	return int64(gasUsed - refund)
 }
 
 type dumbTracer struct {
