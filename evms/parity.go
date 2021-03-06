@@ -77,7 +77,7 @@ func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (s
 	if speedTest {
 		cmd = exec.Command(evm.path, "state-test", path)
 	} else {
-		cmd = exec.Command(evm.path, "--std-json", "state-test", path)
+		cmd = exec.Command(evm.path, "--std-json", "--omit-storage-output", "--omit-memory-output", "state-test", path)
 	}
 	/*
 		// TODO enable once OE provides a docker image
