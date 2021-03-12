@@ -126,7 +126,12 @@ type parityErrorRoot struct {
 func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	buffer := make([]byte, 200000)
+	scanner.Buffer(buffer, len(buffer))
 	for scanner.Scan() {
+		if scanner.Err() != nil {
+			fmt.Printf("parity scanner err: %v", scanner.Err())
+		}
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
@@ -151,6 +156,7 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 				if err := json.Unmarshal(data, &stateRoot); err == nil {
 					if r := stateRoot.StateRoot; len(r) > 0 {
 						stateRoot.StateRoot = r
+						break
 					}
 				}
 			}

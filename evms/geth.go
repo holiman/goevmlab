@@ -109,6 +109,8 @@ func (vm *GethEVM) Close() {
 func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	buffer := make([]byte, 200000)
+	scanner.Buffer(buffer, len(buffer))
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		//fmt.Printf("geth: %v\n", string(data))

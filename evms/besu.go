@@ -95,6 +95,9 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
+		if scanner.Err() != nil {
+			fmt.Printf("geth scanner err: %v", scanner.Err())
+		}
 		data := scanner.Bytes()
 		var elem vm.StructLog
 		err := json.Unmarshal(data, &elem)
@@ -182,7 +185,12 @@ func (evm *BesuVM) RunStateTestBatch(paths []string) ([][]byte, error) {
 	}
 	// Scan the stdout
 	scanner := bufio.NewScanner(stdout)
+	bufr := make([]byte, 200000)
+	scanner.Buffer(bufr, len(bufr))
 	for scanner.Scan() {
+		if scanner.Err() != nil {
+			fmt.Printf("besu scanner err: %v", scanner.Err())
+		}
 		data := scanner.Bytes()
 		var elem vm.StructLog
 		err := json.Unmarshal(data, &elem)
@@ -263,6 +271,7 @@ func (evm *BesuVM) pipeStateTest(path string, out io.Writer) (string, error) {
 		evm.stdout = stdout
 	}
 	evm.stdin.Write([]byte(path))
+	fmt.Printf("Path: %v\n", path)
 	evm.Copy(out, evm.stdout)
 	return "", nil
 }

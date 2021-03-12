@@ -102,7 +102,12 @@ func (vm *NethermindVM) Close() {
 func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	bufr := make([]byte, 200000)
+	scanner.Buffer(bufr, len(bufr))
 	for scanner.Scan() {
+		if scanner.Err() != nil {
+			fmt.Printf("nethermind scanner err: %v", scanner.Err())
+		}
 		data := scanner.Bytes()
 		var elem vm.StructLog
 
@@ -140,9 +145,19 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		RemoveUnsupportedElems(&elem)
 
 		jsondata, _ := json.Marshal(elem)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+		jsondata = append(jsondata, '\n')
+
+		l, err := out.Write(jsondata)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return
+		}
+		if l != len(jsondata) {
+			fmt.Println("couldn't write data, will try again")
+			if _, err := out.Write(jsondata[l:]); err != nil {
+				fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+				return
+			}
 		}
 	}
 	root, _ := json.Marshal(stateRoot)

@@ -78,6 +78,7 @@ func runStateTestBatch(evm Evm, paths []string) ([][]byte, error) {
 		buffer = new(bytes.Buffer)
 	)
 	for i, path := range paths {
+		//buffer = new(bytes.Buffer)
 		buffer.Reset()
 		if _, err := evm.RunStateTest(path, buffer, false); err != nil {
 			return out, err
