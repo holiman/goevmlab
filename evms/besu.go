@@ -94,6 +94,8 @@ type besuStateRoot struct {
 func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	bufr := make([]byte, 200000)
+	scanner.Buffer(bufr, len(bufr))
 	for scanner.Scan() {
 		if scanner.Err() != nil {
 			fmt.Printf("geth scanner err: %v", scanner.Err())
@@ -255,6 +257,8 @@ func (evm *BesuVM) pipeStateTest(path string, out io.Writer) (string, error) {
 			"state-test",
 		}
 		cmd := exec.Command(evm.path, args...)
+		//_ = args
+		//cmd := exec.Command("cat")
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			return cmd.String(), err
@@ -270,8 +274,7 @@ func (evm *BesuVM) pipeStateTest(path string, out io.Writer) (string, error) {
 		evm.stdin = stdin
 		evm.stdout = stdout
 	}
-	evm.stdin.Write([]byte(path))
-	fmt.Printf("Path: %v\n", path)
+	io.WriteString(evm.stdin, path+"\n")
 	evm.Copy(out, evm.stdout)
 	return "", nil
 }
