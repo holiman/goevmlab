@@ -37,33 +37,42 @@ apply for the various scenarions below:
 	}
 	fmt.Println(`## Berlin costs
 
-With Berlin, and [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929), the gas costs changes. Note, there is a difference between 'hot' and 'cold' slots. 
-The following table is generated based on the slot in question (0) being 'cold'.`)
+With Berlin, and [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929), the gas costs changes. Note, there is a difference between 'hot' and 'cold' slots.
+This table show the 'hot' values (the difference being a one-time cost of 2000 gas).
+`)
 	fmt.Println("")
 
 	if err := showTable(true, false); err != nil {
 		return err
 	}
-	fmt.Println(`If the slot is already 'warm', this is the corresponding table: `)
-	fmt.Println("")
 
-	if err := showTable(true, true); err != nil {
-		return err
-	}
 	fmt.Println(`## Without refunds 
 
 If refunds were to be removed, this would be the comparative table`)
 
 	showTable2()
 
-	fmt.Println(`
-In partcular, the following cases become more expensive: 
+	fmt.Println(`## With EIP-3403 partial refunds 
 
-- '0-1-0' goes from 10K to 20K, 
-- '0-1-0-1' goes from 21K to 40K,
+If refunds were to be partially removed, as specified [here](https://github.com/ethereum/EIPs/pull/3403/), this would be the comparative table`)
 
-For these cases, a better scheme under the no-refund rule would be to use non-zero slots, e.g. 
-'1-2-1' and thus wind up with 3K gas. 
+	showTable(true, true)
+
+	fmt.Println(`## The mutex usecase
+
+There are two typical ways to implement mutexes: '0-1-0' and '1-2-1. Let's see how they differ
+
+- '0-1-0':
+  - Istanbul: 1612
+  - Berlin: 212
+  - NoRefund: 20112
+  - EIP-3403: 5112
+- '1-2-1':
+  - Istanbul: 1612
+  - Berlin: 212
+  - NoRefund: 3012
+  - EIP-3403: 3012
+
 
 **Note**: In reality, there are never a negative gas cost, since the refund is capped at 0.5 * gasUsed. 
 However, these tables show the negative values, since in a more real-world scenarion would likely spend the 
@@ -73,7 +82,8 @@ extra gas on other operations.notes'
 	return nil
 }
 
-func showTable(berlin, hot bool) error {
+func showTable(berlin, eip3404 bool) error {
+	var hot = true
 	fmt.Printf("| Code | Used Gas | Refund | Original | 1st | 2nd | 3rd | Effective gas (after refund)\n")
 	fmt.Printf("| -- | -- | -- | -- | -- | -- | -- | -- | \n")
 
@@ -90,8 +100,12 @@ func showTable(berlin, hot bool) error {
 		PetersburgBlock:     new(big.Int),
 		IstanbulBlock:       new(big.Int).SetUint64(0),
 	}
+	var extraEips []int
 	if berlin {
-		chainConfig.YoloV3Block = big.NewInt(0)
+		chainConfig.BerlinBlock = big.NewInt(0)
+		if eip3404 {
+			extraEips = []int{3403}
+		}
 	}
 
 	// The destructor, caller and sender
@@ -173,7 +187,8 @@ func showTable(berlin, hot bool) error {
 			EVMConfig: vm.Config{
 				Debug: true,
 				//Tracer: vm.NewMarkdownLogger(nil, os.Stdout),
-				Tracer: tracer,
+				Tracer:    tracer,
+				ExtraEips: extraEips,
 			},
 		}
 		if hot {
@@ -360,20 +375,19 @@ type dumbTracer struct {
 	statedb vm.StateDB
 }
 
+func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
+	return nil
+}
+
 func (d *dumbTracer) CaptureStart(from common.Address, to common.Address, call bool, input []byte, gas uint64, value *big.Int) error {
 	return nil
 }
 
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, rData []byte, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rData []byte, contract *vm.Contract, depth int, err error) error {
 	//if op == vm.SSTORE{
 	//	fmt.Printf("pc %d op %v gas %d cost %d refund %d\n", pc, op, gas, cost,  env.StateDB.GetRefund())
 	//}
 	d.statedb = env.StateDB
-	return nil
-}
-
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, contract *vm.Contract, depth int, err error) error {
-	//fmt.Printf("CaptureFault %v\n", err)
 	return nil
 }
 
