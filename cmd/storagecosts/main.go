@@ -75,8 +75,8 @@ There are two typical ways to implement mutexes: '0-1-0' and '1-2-1. Let's see h
 
 
 **Note**: In reality, there are never a negative gas cost, since the refund is capped at 0.5 * gasUsed. 
-However, these tables show the negative values, since in a more real-world scenarion would likely spend the 
-extra gas on other operations.notes'
+However, these tables show the negative values, since in a more real-world scenario would likely spend the 
+extra gas on other operations.'
 
 `)
 	return nil
