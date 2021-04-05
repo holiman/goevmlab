@@ -46,14 +46,18 @@ sudo apt-get update
 # These need to be updated from time to time
 #sudo apt-get install dotnet-sdk-2.2
 #sudo apt-get -y install dotnet-sdk-3.0
-sudo apt-get -y install dotnet-sdk-3.1
+#sudo apt-get -y install dotnet-sdk-3.1
+sudo apt-get -y install dotnet-sdk-5.0
 ```
 And `build_nethermind.sh`:
 ```
 sudo apt-get update && sudo apt-get install libsnappy-dev libc6-dev libc6
 ( cd nethermind/src/Nethermind/Nethermind.State.Test.Runner && \
-  dotnet publish -r linux-x64 -c Release /p:PublishSingleFile=true && \
-  cp bin/Release/netcoreapp3.1/linux-x64/publish/nethtest ../../../)
+  dotnet publish -r linux-x64 -c Release )
+```
+Winds up in: 
+```
+nethermind/src/Nethermind/Nethermind.State.Test.Runner/bin/Release/net5.0/linux-x64/publish/nethtest
 ```
 
 ## Parity (`parity-evm`)
@@ -66,6 +70,14 @@ cargo build --release -p evmbin
 Should spit out the binary into `target/release/parity-evm`
 
 
-## Aleth (`testeth`)
+## Besu (`besu`)
 
-TODO
+From an up to date repo, do
+
+```
+./gradlew ethereum:evmtool:build
+```
+It should wind up in 
+```
+besu/ethereum/evmtool/build/install/evmtool/bin/evm
+```
