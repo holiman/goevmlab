@@ -142,9 +142,6 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 			// For now, just ignore these
 			continue
 		}
-		if elem.ReturnStack == nil {
-			elem.ReturnStack = make([]uint32, 0)
-		}
 		if elem.Stack == nil {
 			elem.Stack = make([]*big.Int, 0)
 		}

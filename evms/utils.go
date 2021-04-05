@@ -10,8 +10,7 @@ func RemoveUnsupportedElems(elem *vm.StructLog) {
 	elem.GasCost = 0
 	elem.MemorySize = 0
 	elem.RefundCounter = 0
-	// Nethermind is missing returnStack and returnData
-	elem.ReturnStack = make([]uint32, 0)
+	// Nethermind is missing returnData
 	elem.ReturnData = nil
 
 }
