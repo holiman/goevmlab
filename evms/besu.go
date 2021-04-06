@@ -95,8 +95,8 @@ func (vm *BesuVM) GetStateRoot(path string) (string, error) {
 	}
 	start := strings.Index(string(data), `"postHash:":"`)
 	if start > 0 {
-		start = start+len(`"postHash:":"`)
-		root := string(data[start:start+64])
+		start = start + len(`"postHash:":"`)
+		root := string(data[start : start+64])
 		return root, nil
 	}
 	return "", errors.New("no stateroot found")
@@ -111,6 +111,10 @@ type besuStateRoot struct {
 func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	// We use a larger scanner buffer for besu: it does not have a way to
+	// disable 'returndata', which can become larger than fits into a default
+	// scanner buffer
+	scanner.Buffer(make([]byte, 1*1024*1024), 1*1024*1024)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog
@@ -150,10 +154,8 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
-		// Parity is missing gasCost, memSize and refund
-		elem.GasCost = 0
-		elem.MemorySize = 0
-		elem.RefundCounter = 0
+		RemoveUnsupportedElems(&elem)
+
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)

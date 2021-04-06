@@ -68,9 +68,9 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 		cmd    *exec.Cmd
 	)
 	if speedTest {
-		cmd = exec.Command(evm.path, "--nomemory", "--nostack", "statetest", path)
+		cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest", path)
 	} else {
-		cmd = exec.Command(evm.path, "--json", "--nomemory", "statetest", path)
+		cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
