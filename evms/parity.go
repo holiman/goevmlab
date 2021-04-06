@@ -70,34 +70,27 @@ func (evm *ParityVM) GetStateRoot(path string) (string, error) {
 func (evm *ParityVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
 		stderr io.ReadCloser
-		stdout io.ReadCloser
 		err    error
 		cmd    *exec.Cmd
 	)
 	if speedTest {
 		cmd = exec.Command(evm.path, "state-test", path)
 	} else {
-		cmd = exec.Command(evm.path, "--std-json", "state-test", path)
+		cmd = exec.Command(evm.path, "--std-json",
+			"--omit-storage-output",
+			"--omit-memory-output",
+			"--std-err-only",
+			"state-test", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return cmd.String(), err
-	}
-	// Parity, when there's an error on state root, spits out the error on
-	// stdout. So we need to read that aswell
-	if stdout, err = cmd.StdoutPipe(); err != nil {
 		return cmd.String(), err
 	}
 	if err = cmd.Start(); err != nil {
 		return cmd.String(), err
 	}
-	// copy everything to the given writer
+	//copy everything to the given writer
 	evm.Copy(out, stderr)
-	// copy everything to the given writer -- this means that the
-	// stdout output will come _after_ all stderr data. Which is good.
-	evm.Copy(out, stdout)
-	// release resources, handle error but ignore non-zero exit codes
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	return cmd.String(), cmd.Wait()
 }
 
 func (evm *ParityVM) Close() {
@@ -135,7 +128,7 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 				}
 				// Try to unmarshal the state root if no error occured
 				var tmp stateRoot
-				if err := json.Unmarshal(data, &tmp); err != nil {
+				if err := json.Unmarshal(data, &tmp); err == nil {
 					sRoot.StateRoot = tmp.StateRoot
 				}
 			}
