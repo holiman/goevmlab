@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"os/exec"
 	"strings"
@@ -129,8 +128,6 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 			fmt.Printf("besu err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
-
-		elem.Memory = make([]byte, 0)
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
@@ -145,9 +142,6 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 			//fmt.Printf("%v\n", string(data))
 			// For now, just ignore these
 			continue
-		}
-		if elem.Stack == nil {
-			elem.Stack = make([]*big.Int, 0)
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
 		// In order to handle that, we need to drop all STOP opcodes.

@@ -101,6 +101,7 @@ func (vm *NethermindVM) Close() {
 func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	scanner.Buffer(make([]byte, 1*1024*1024), 1*1024*1024)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog
