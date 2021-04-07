@@ -31,12 +31,14 @@ import (
 
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
 type GethEVM struct {
-	path string
+	path   string
+	buffer []byte // read buffer
 }
 
 func NewGethEVM(path string) *GethEVM {
 	return &GethEVM{
-		path: path,
+		path:   path,
+		buffer: make([]byte, 4*1024*1024),
 	}
 }
 
@@ -96,7 +98,7 @@ func (vm *GethEVM) Close() {
 func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	scanner.Buffer(make([]byte, 1*1024*1024), 1*1024*1024)
+	scanner.Buffer(evm.buffer, cap(evm.buffer))
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		//fmt.Printf("geth: %v\n", string(data))
