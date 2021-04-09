@@ -107,31 +107,29 @@ func startFuzzer(c *cli.Context) error {
 	}
 	testPath := c.Args().First()
 
-	consensus, err := common.RootsEqual(testPath, c)
-
-	if err != nil {
+	if consensus, err := common.RootsEqual(testPath, c); err != nil {
 		return err
-	}
-	if consensus {
+	} else if consensus {
 		return errors.New("No consensus failure -- " +
 			"the input statetest needs to be a test which produces differing stateroot")
 	}
-	gst, err := fuzzing.FromGeneralStateTest(testPath)
-	if err != nil {
+	var (
+		gst      fuzzing.GeneralStateTest
+		testname string
+		good     = fmt.Sprintf("%v.min", testPath)
+		out      = fmt.Sprintf("%v.%v", testPath, "tmp")
+	)
+	if gstPtr, err := fuzzing.FromGeneralStateTest(testPath); err != nil {
 		return err
+	} else {
+		gst = (*gstPtr)
+		for t := range gst {
+			testname = t
+			break
+		}
 	}
-	gst2 := (*gst)
-
-	var testname string
-	for t := range gst2 {
-		testname = t
-		break
-	}
-	good := fmt.Sprintf("%v.min", testPath)
-	out := fmt.Sprintf("%v.%v", testPath, "tmp")
-
 	var identicalRoots = func() bool {
-		data, _ := json.MarshalIndent(gst2, "", "  ")
+		data, _ := json.MarshalIndent(gst, "", "  ")
 		if err := ioutil.WriteFile(out, data, 0777); err != nil {
 			panic(err)
 		}
@@ -151,26 +149,26 @@ func startFuzzer(c *cli.Context) error {
 	}
 
 	// Try decreasing gas
-	gas := sort.Search(int(gst2[testname].Tx.GasLimit[0]), func(i int) bool {
-		gst2[testname].Tx.GasLimit[0] = uint64(i)
+	gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
+		gst[testname].Tx.GasLimit[0] = uint64(i)
 		fmt.Printf("Testing gas %d\n", i)
 		return !identicalRoots()
 	})
 	// And restore the gas again
-	gst2[testname].Tx.GasLimit[0] = uint64(gas)
+	gst[testname].Tx.GasLimit[0] = uint64(gas)
 
 	// Try removing accounts
-	for target, acc := range gst2[testname].Pre {
-		delete(gst2[testname].Pre, target)
+	for target, acc := range gst[testname].Pre {
+		delete(gst[testname].Pre, target)
 		fmt.Printf("Testing dropping %x\n", target)
 		if !identicalRoots() {
 			continue
 		}
 		fmt.Printf("oops, broke it, restoring %x\n", target)
-		gst2[testname].Pre[target] = acc
+		gst[testname].Pre[target] = acc
 	}
 	// Try reducing code
-	for target, acc := range gst2[testname].Pre {
+	for target, acc := range gst[testname].Pre {
 		if len(acc.Code) == 0 {
 			continue
 		}
@@ -183,9 +181,9 @@ func startFuzzer(c *cli.Context) error {
 			if exhausted := m.proceed(); exhausted {
 				break
 			}
-			acc := gst2[testname].Pre[target]
+			acc := gst[testname].Pre[target]
 			acc.Code = m.current
-			gst2[testname].Pre[target] = acc
+			gst[testname].Pre[target] = acc
 			if !identicalRoots() {
 				fails = 0
 				continue
@@ -195,7 +193,7 @@ func startFuzzer(c *cli.Context) error {
 				m.undo()
 				// restore it
 				acc.Code = m.current
-				gst2[testname].Pre[target] = acc
+				gst[testname].Pre[target] = acc
 				if fails > 5 {
 					break
 				}
@@ -204,14 +202,14 @@ func startFuzzer(c *cli.Context) error {
 	}
 	fmt.Printf("Reducing slots...\n")
 	// Try removing storage
-	for target, acc := range gst2[testname].Pre {
+	for target, acc := range gst[testname].Pre {
 		for k, v := range acc.Storage {
-			delete(gst2[testname].Pre[target].Storage, k)
+			delete(gst[testname].Pre[target].Storage, k)
 			fmt.Printf("Testing removing slot %x from %x\n", k, target)
 			if !identicalRoots() {
 				continue
 			}
-			gst2[testname].Pre[target].Storage[k] = v
+			gst[testname].Pre[target].Storage[k] = v
 		}
 	}
 
