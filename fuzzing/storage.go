@@ -63,7 +63,7 @@ func RandCall2200(addresses []common.Address) []byte {
 	// 5% return, 5% revert
 	p := program.NewProgram()
 	for {
-		r := rand.Intn(100)
+		r := rand.Intn(101)
 		switch {
 		case r < 30:
 			p.Sstore(rand.Intn(5), rand.Intn(3))
@@ -83,6 +83,9 @@ func RandCall2200(addresses []common.Address) []byte {
 			runtimeCode := RandCall2200(addresses)
 			ctor.ReturnData(runtimeCode)
 			p.CreateAndCall(ctor.Bytecode(), r%2 == 0, randCallType())
+		case r < 95:
+			p.Push(addrGen())
+			p.Op(ops.SELFDESTRUCT)
 		default:
 			p.Push(0)
 			p.Push(0)
@@ -143,13 +146,13 @@ func RandCallSubroutine(addresses []common.Address) []byte {
 			p.Jump(randElem(legitJumps))
 		case 9:
 			// random jump
-			p.Jump(rand.Intn(1+len(p.Bytecode()) * 3 / 2))
+			p.Jump(rand.Intn(1 + len(p.Bytecode())*3/2))
 		case 10, 11:
 			// JUMPSUB (legit)
 			p.JumpSub(randElem(legitSubs))
 		case 12:
 			// JUMPSUB (random)
-			p.JumpSub(rand.Intn(1+len(p.Bytecode()) * 3 / 2))
+			p.JumpSub(rand.Intn(1 + len(p.Bytecode())*3/2))
 		case 13, 14:
 			// CALL
 			// zero value call with no data

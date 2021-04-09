@@ -51,13 +51,9 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 		cmd    *exec.Cmd
 	)
 	if speedTest {
-		cmd = exec.Command(evm.path, "--nomemory",
-			"--Xberlin-enabled", "true",
-			"state-test", path)
+		cmd = exec.Command(evm.path, "--nomemory", "state-test", path)
 	} else {
-		cmd = exec.Command(evm.path, "--nomemory",
-			"--Xberlin-enabled", "true",
-			"--json",
+		cmd = exec.Command(evm.path, "--nomemory", "--json",
 			"state-test", path) // exclude memory
 		// For running this via docker, this is the 'raw' base command
 		//docker run --rm  -i -v ~/yolov2:/yolov2/ hyperledger/besu-evmtool:develop --Xberlin-enabled true state-test  /yolov2/tests/$f
