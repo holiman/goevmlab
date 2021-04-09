@@ -446,10 +446,29 @@ func create2200Test(gst *GstMaker) {
 		common.HexToAddress("0xF9"),
 		common.HexToAddress("0xFA"),
 	}
-	//addrGen := addressRandomizer(addrs)
+	nonGenesisAddresses := []common.Address{
+		common.HexToAddress("0x00"),
+		common.HexToAddress("0x01"),
+		common.HexToAddress("0x02"),
+		common.HexToAddress("0x03"),
+		common.HexToAddress("0x04"),
+		common.HexToAddress("0x05"),
+		common.HexToAddress("0x06"),
+		common.HexToAddress("0x07"),
+		common.HexToAddress("0x08"),
+		common.HexToAddress("0x09"),
+		common.HexToAddress("0x0A"),
+		common.HexToAddress("0x0B"),
+		common.HexToAddress("0x0C"),
+		common.HexToAddress("0x0D"),
+		common.HexToAddress("0x0E"),
+	}
+	var allAddrs []common.Address
+	allAddrs = append(allAddrs, addrs...)
+	allAddrs = append(allAddrs, nonGenesisAddresses...)
 	for _, addr := range addrs {
 		gst.AddAccount(addr, GenesisAccount{
-			Code:    RandCall2200(addrs),
+			Code:    RandCall2200(allAddrs),
 			Balance: new(big.Int),
 			Storage: RandStorage(15, 20),
 		})
