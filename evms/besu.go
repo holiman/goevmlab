@@ -82,7 +82,6 @@ func (vm *BesuVM) Close() {
 func (vm *BesuVM) GetStateRoot(path string) (string, error) {
 	// Run without tracing
 	cmd := exec.Command(vm.path, "--nomemory",
-		"--Xberlin-enabled", "true",
 		"state-test", path)
 
 	/// {"output":"","gasUsed":"0x798765","time":342028058,"test":"00000000-storagefuzz-0","fork":"Berlin","d":0,"g":0,"v":0,"postHash":"0xbaeec41171e943575740bb99cdd8ffd45fa6207bf170f99c1a61425069ffae97","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
