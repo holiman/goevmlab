@@ -54,6 +54,12 @@ func RandStorageOps() *program.Program {
 }
 
 func RandCall2200(addresses []common.Address) []byte {
+	return randCall2200(addresses, 0)
+}
+func randCall2200(addresses []common.Address, depth int) []byte {
+	if depth > 10 {
+		return []byte{}
+	}
 	addrGen := addressRandomizer(addresses)
 
 	// 30% sstore,
@@ -80,7 +86,7 @@ func RandCall2200(addresses []common.Address) []byte {
 			p.Op(ops.POP)
 		case r < 90:
 			ctor := RandStorageOps()
-			runtimeCode := RandCall2200(addresses)
+			runtimeCode := randCall2200(addresses, depth+1)
 			ctor.ReturnData(runtimeCode)
 			p.CreateAndCall(ctor.Bytecode(), r%2 == 0, randCallType())
 		case r < 95:
@@ -96,7 +102,7 @@ func RandCall2200(addresses []common.Address) []byte {
 			}
 			return p.Bytecode()
 		}
-		if len(p.Bytecode()) > 1024 {
+		if len(p.Bytecode()) > 500 {
 			return p.Bytecode()
 		}
 	}

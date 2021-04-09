@@ -59,6 +59,10 @@ var (
 		Name:  "besu",
 		Usage: "Location of besu vm binary",
 	}
+	BesuBatchFlag = cli.StringFlag{
+		Name:  "besubatch",
+		Usage: "Location of besu vm binary",
+	}
 	ThreadFlag = cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -83,17 +87,19 @@ var (
 		NethermindFlag,
 		AlethFlag,
 		BesuFlag,
+		BesuBatchFlag,
 	}
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
-		gethBin   = c.GlobalString(GethFlag.Name)
-		parityBin = c.GlobalString(ParityFlag.Name)
-		nethBin   = c.GlobalString(NethermindFlag.Name)
-		alethBin  = c.GlobalString(AlethFlag.Name)
-		besuBin   = c.GlobalString(BesuFlag.Name)
-		vms       []evms.Evm
+		gethBin      = c.GlobalString(GethFlag.Name)
+		parityBin    = c.GlobalString(ParityFlag.Name)
+		nethBin      = c.GlobalString(NethermindFlag.Name)
+		alethBin     = c.GlobalString(AlethFlag.Name)
+		besuBin      = c.GlobalString(BesuFlag.Name)
+		besuBatchBin = c.GlobalString(BesuBatchFlag.Name)
+		vms          []evms.Evm
 	)
 	if gethBin != "" {
 		vms = append(vms, evms.NewGethEVM(gethBin))
@@ -109,6 +115,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	if besuBin != "" {
 		vms = append(vms, evms.NewBesuVM(besuBin))
+	}
+	if besuBatchBin != "" {
+		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin))
 	}
 	return vms
 
@@ -508,8 +517,8 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 			}
 		}
 	}
-	numExecutors :=  numThreads/2
-	if numExecutors == 0{
+	numExecutors := numThreads / 2
+	if numExecutors == 0 {
 		numExecutors = 1
 	}
 	for i := 0; i < numExecutors; i++ {
