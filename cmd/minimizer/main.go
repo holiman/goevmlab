@@ -25,6 +25,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -48,31 +49,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-type gasMutator struct {
-	current  uint64
-	lastGood uint64
-
-	lowerLimit uint64
-}
-
-func (m *gasMutator) undo() {
-	m.lowerLimit = m.current
-	m.current = m.lastGood
-
-}
-
-func (m *gasMutator) proceed() bool {
-	m.lastGood = m.current
-	// aim for between current and lower limit
-	// this is pretty hacky
-	gas := (m.current + m.lowerLimit) / 2
-	if gas+10 >= m.current {
-		return true
-	}
-	m.current = gas
-	return false
 }
 
 type codeMutator struct {
@@ -153,35 +129,20 @@ func startFuzzer(c *cli.Context) error {
 	}
 	good := fmt.Sprintf("%v.min", testPath)
 	out := fmt.Sprintf("%v.%v", testPath, "tmp")
+
 	// Try decreasing gas
-	gm := gasMutator{
-		lastGood: gst2[testname].Tx.GasLimit[0],
-		current:  gst2[testname].Tx.GasLimit[0],
-	}
-	for {
-		if exhausted := gm.proceed(); exhausted {
-			fmt.Printf("Lowest gas found: %d\n", gm.lastGood)
-		}
-		gst2[testname].Tx.GasLimit[0] = gm.current
+	sort.Search(int(gst2[testname].Tx.GasLimit[0]), func(i int) bool {
+		gst2[testname].Tx.GasLimit[0] = uint64(i)
 		data, _ := json.MarshalIndent(gst2, "", "  ")
-		if err := ioutil.WriteFile(out, data, 0777); err != nil {
-			return err
-		}
-		inConsensus, err := common.RootsEqual(out, c)
-		if err != nil {
-			return err
-		}
+		ioutil.WriteFile(out, data, 0777)
+		inConsensus, _ := common.RootsEqual(out, c)
 		if !inConsensus {
-			fmt.Printf("still failing after reducing gas to %d!\n", gm.current)
-			if err := ioutil.WriteFile(good, data, 0777); err != nil {
-				return err
-			}
-		} else {
-			gm.undo()
-			gst2[testname].Tx.GasLimit[0] = gm.lastGood
-			fmt.Printf("oops, broke it, restoring gas to %d\n", gm.lastGood)
+			fmt.Printf("still failing after reducing gas to %d!\n", i)
+			ioutil.WriteFile(good, data, 0777)
+			return true
 		}
-	}
+		return false
+	})
 
 	// Try removing accounts
 	for target, acc := range gst2[testname].Pre {
