@@ -25,86 +25,86 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
-// BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
-type BesuVM struct {
+// BesuBatchVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
+// The BatchVM spins up one 'master' instance of the VM, and uses that to execute tests
+type BesuBatchVM struct {
 	path   string
-	buffer []byte // read buffer
+	buffer []byte    // read buffer
+	cmd    *exec.Cmd // the 'master' process
+	stdout io.ReadCloser
+	stdin  io.WriteCloser
 }
 
-func NewBesuVM(path string) *BesuVM {
-	return &BesuVM{
+func NewBesuBatchVM(path string) *BesuBatchVM {
+	return &BesuBatchVM{
 		path:   path,
 		buffer: make([]byte, 4*1024*1024),
 	}
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
 	var (
-		stdout io.ReadCloser
 		err    error
 		cmd    *exec.Cmd
+		stdout io.ReadCloser
+		stdin  io.WriteCloser
 	)
-	if speedTest {
-		cmd = exec.Command(evm.path, "--nomemory", "state-test", path)
-	} else {
-		cmd = exec.Command(evm.path, "--nomemory", "--json",
-			"state-test", path) // exclude memory
-		// For running this via docker, this is the 'raw' base command
-		//docker run --rm  -i -v ~/yolov2:/yolov2/ hyperledger/besu-evmtool:develop --Xberlin-enabled true state-test  /yolov2/tests/$f
-
+	if evm.cmd == nil {
+		if speedTest {
+			cmd = exec.Command(evm.path, "--nomemory", "state-test")
+		} else {
+			cmd = exec.Command(evm.path, "--nomemory", "--json", "state-test")
+		}
+		if stdout, err = cmd.StdoutPipe(); err != nil {
+			return cmd.String(), err
+		}
+		if stdin, err = cmd.StdinPipe(); err != nil {
+			return cmd.String(), err
+		}
+		if err = cmd.Start(); err != nil {
+			return cmd.String(), err
+		}
+		evm.cmd = cmd
+		evm.stdout = stdout
+		evm.stdin = stdin
 	}
-	if stdout, err = cmd.StdoutPipe(); err != nil {
-		return cmd.String(), err
-	}
-	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
-	}
-	// copy everything to the given writer
-	evm.Copy(out, stdout)
+	evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	// copy everything for the _current_ statetest to the given writer
+	evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	return evm.cmd.String(), nil
 }
 
-func (evm *BesuVM) Name() string {
-	return "besu"
+func (evm *BesuBatchVM) Name() string {
+	return "besubatch"
 }
 
-func (vm *BesuVM) Close() {
-}
-
-func (vm *BesuVM) GetStateRoot(path string) (string, error) {
-	// Run without tracing
-	cmd := exec.Command(vm.path, "--nomemory",
-		"state-test", path)
-
-	/// {"output":"","gasUsed":"0x798765","time":342028058,"test":"00000000-storagefuzz-0","fork":"Berlin","d":0,"g":0,"v":0,"postHash":"0xbaeec41171e943575740bb99cdd8ffd45fa6207bf170f99c1a61425069ffae97","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
-	data, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
+func (vm *BesuBatchVM) Close() {
+	if vm.stdin != nil {
+		vm.stdin.Close()
 	}
-	start := strings.Index(string(data), `"postHash":"`)
-	if start > 0 {
-		start = start + len(`"postHash":"`)
-		root := string(data[start : start+2+64])
-		return root, nil
+	if vm.cmd != nil {
+		vm.cmd.Wait()
 	}
-	return "", errors.New("no stateroot found")
 }
 
-type besuStateRoot struct {
-	StateRoot string `json:"postHash"`
+func (vm *BesuBatchVM) GetStateRoot(path string) (string, error) {
+	return "", errors.New("Not implemented")
 }
 
-// feed reads from the reader, does some geth-specific filtering and
-// outputs items onto the channel
-func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
+// Copy feed reads from the reader, does some client-specific filtering and
+// outputs BesuBatchVM onto the channel
+func (evm *BesuBatchVM) Copy(out io.Writer, input io.Reader) {
+	evm.copyUntilEnd(out, input)
+}
+
+func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
+
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	// We use a larger scanner buffer for besu: it does not have a way to
@@ -136,9 +136,8 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 					stateRoot.StateRoot = tempRoot.StateRoot
 				}
 			}
-			//fmt.Printf("%v\n", string(data))
-			// For now, just ignore these
-			continue
+			// If we have a stateroot, we're done
+			break
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
 		// In order to handle that, we need to drop all STOP opcodes.
@@ -146,7 +145,6 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 			continue
 		}
 		RemoveUnsupportedElems(&elem)
-
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)

@@ -32,12 +32,14 @@ import (
 
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
 type NethermindVM struct {
-	path string
+	path   string
+	buffer []byte // read buffer
 }
 
 func NewNethermindVM(path string) *NethermindVM {
 	return &NethermindVM{
-		path: path,
+		path:   path,
+		buffer: make([]byte, 4*1024*1024),
 	}
 }
 
@@ -101,6 +103,7 @@ func (vm *NethermindVM) Close() {
 func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	scanner.Buffer(evm.buffer, cap(evm.buffer))
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog

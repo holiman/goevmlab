@@ -54,6 +54,12 @@ func RandStorageOps() *program.Program {
 }
 
 func RandCall2200(addresses []common.Address) []byte {
+	return randCall2200(addresses, 0)
+}
+func randCall2200(addresses []common.Address, depth int) []byte {
+	if depth > 10 {
+		return []byte{}
+	}
 	addrGen := addressRandomizer(addresses)
 
 	// 30% sstore,
@@ -63,7 +69,7 @@ func RandCall2200(addresses []common.Address) []byte {
 	// 5% return, 5% revert
 	p := program.NewProgram()
 	for {
-		r := rand.Intn(100)
+		r := rand.Intn(101)
 		switch {
 		case r < 30:
 			p.Sstore(rand.Intn(5), rand.Intn(3))
@@ -80,9 +86,12 @@ func RandCall2200(addresses []common.Address) []byte {
 			p.Op(ops.POP)
 		case r < 90:
 			ctor := RandStorageOps()
-			runtimeCode := RandCall2200(addresses)
+			runtimeCode := randCall2200(addresses, depth+1)
 			ctor.ReturnData(runtimeCode)
 			p.CreateAndCall(ctor.Bytecode(), r%2 == 0, randCallType())
+		case r < 95:
+			p.Push(addrGen())
+			p.Op(ops.SELFDESTRUCT)
 		default:
 			p.Push(0)
 			p.Push(0)
@@ -93,7 +102,7 @@ func RandCall2200(addresses []common.Address) []byte {
 			}
 			return p.Bytecode()
 		}
-		if len(p.Bytecode()) > 1024 {
+		if len(p.Bytecode()) > 500 {
 			return p.Bytecode()
 		}
 	}
@@ -143,13 +152,13 @@ func RandCallSubroutine(addresses []common.Address) []byte {
 			p.Jump(randElem(legitJumps))
 		case 9:
 			// random jump
-			p.Jump(rand.Intn(1+len(p.Bytecode()) * 3 / 2))
+			p.Jump(rand.Intn(1 + len(p.Bytecode())*3/2))
 		case 10, 11:
 			// JUMPSUB (legit)
 			p.JumpSub(randElem(legitSubs))
 		case 12:
 			// JUMPSUB (random)
-			p.JumpSub(rand.Intn(1+len(p.Bytecode()) * 3 / 2))
+			p.JumpSub(rand.Intn(1 + len(p.Bytecode())*3/2))
 		case 13, 14:
 			// CALL
 			// zero value call with no data

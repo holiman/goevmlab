@@ -30,12 +30,14 @@ import (
 
 // AlethVM is s Evm-interface wrapper around the `testeth` binary, based on Aleth.
 type AlethVM struct {
-	path string
+	path   string
+	buffer []byte // read buffer
 }
 
 func NewAlethVM(path string) *AlethVM {
 	return &AlethVM{
-		path: path,
+		path:   path,
+		buffer: make([]byte, 4*1024*1024),
 	}
 }
 
@@ -84,6 +86,7 @@ func (vm *AlethVM) Close() {
 func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
+	scanner.Buffer(evm.buffer, cap(evm.buffer))
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it

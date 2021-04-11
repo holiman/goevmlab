@@ -25,6 +25,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -56,7 +57,8 @@ type codeMutator struct {
 }
 
 // proceed tells the mutator to continue one mutation
-func (m *codeMutator) proceed() {
+// returns 'true' is the mutator is exhausted
+func (m *codeMutator) proceed() bool {
 	m.lastGood = m.current
 	// Now mutate current
 	var next []byte
@@ -90,6 +92,7 @@ func (m *codeMutator) proceed() {
 	}
 	fmt.Printf("code length: %d (was %d)\n", len(next), len(m.lastGood))
 	m.current = next
+	return len(next) == len(m.lastGood)
 }
 
 // undo tells the mutator to revert the last change
@@ -104,70 +107,111 @@ func startFuzzer(c *cli.Context) error {
 	}
 	testPath := c.Args().First()
 
-	consensus, err := common.RootsEqual(testPath, c)
-
-	if err != nil {
+	if consensus, err := common.RootsEqual(testPath, c); err != nil {
 		return err
-	}
-	if consensus {
+	} else if consensus {
 		return errors.New("No consensus failure -- " +
 			"the input statetest needs to be a test which produces differing stateroot")
-
 	}
-	gst, err := fuzzing.FromGeneralStateTest(testPath)
-	if err != nil {
+	var (
+		gst      fuzzing.GeneralStateTest
+		testname string
+		good     = fmt.Sprintf("%v.min", testPath)
+		out      = fmt.Sprintf("%v.%v", testPath, "tmp")
+	)
+	if gstPtr, err := fuzzing.FromGeneralStateTest(testPath); err != nil {
 		return err
+	} else {
+		gst = (*gstPtr)
+		for t := range gst {
+			testname = t
+			break
+		}
 	}
-	gst2 := (*gst)
-
-	var testname string
-	for t := range gst2 {
-		testname = t
-		break
-	}
-
-	for target, acc := range gst2[testname].Pre {
-		if len(acc.Code) > 0 {
-			fmt.Printf("Target: %x\n", target)
+	var identicalRoots = func() bool {
+		data, _ := json.MarshalIndent(gst, "", "  ")
+		if err := ioutil.WriteFile(out, data, 0777); err != nil {
+			panic(err)
+		}
+		inConsensus, err := common.RootsEqual(out, c)
+		if err != nil {
+			panic(err)
+		}
+		if !inConsensus {
+			fmt.Printf("Still ok! (failing testcase) ...\n")
+			if err := ioutil.WriteFile(good, data, 0777); err != nil {
+				panic(err)
+			}
 		} else {
+			fmt.Printf("Not ok! (clients in consensus)...\n")
+		}
+		return inConsensus
+	}
+
+	// Try decreasing gas
+	gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
+		gst[testname].Tx.GasLimit[0] = uint64(i)
+		fmt.Printf("Testing gas %d\n", i)
+		return !identicalRoots()
+	})
+	// And restore the gas again
+	gst[testname].Tx.GasLimit[0] = uint64(gas)
+
+	// Try removing accounts
+	for target, acc := range gst[testname].Pre {
+		delete(gst[testname].Pre, target)
+		fmt.Printf("Testing dropping %x\n", target)
+		if !identicalRoots() {
 			continue
 		}
-		//target := common2.HexToAddress("0x00000000000000000000000000ca110b15012381")
-		code := acc.Code
-		if err != nil {
-			return err
+		fmt.Printf("oops, broke it, restoring %x\n", target)
+		gst[testname].Pre[target] = acc
+	}
+	// Try reducing code
+	for target, acc := range gst[testname].Pre {
+		if len(acc.Code) == 0 {
+			continue
 		}
+		fmt.Printf("Target: %x\n", target)
+		code := acc.Code
 		m := codeMutator{current: code, lastGood: code}
 		// Alright, we're in business
-		i := 0
-		good := fmt.Sprintf("%v.min", testPath)
+		fails := 0
 		for {
-			out := fmt.Sprintf("%v.%v", testPath, "tmp")
-			m.proceed()
-			acc := gst2[testname].Pre[target]
+			if exhausted := m.proceed(); exhausted {
+				break
+			}
+			acc := gst[testname].Pre[target]
 			acc.Code = m.current
-			gst2[testname].Pre[target] = acc
-			data, _ := json.MarshalIndent(gst2, "", "  ")
-			if err := ioutil.WriteFile(out, data, 0777); err != nil {
-				return err
-			}
-			inConsensus, err := common.RootsEqual(out, c)
-			if err != nil {
-				return err
-			}
-			if !inConsensus {
-				fmt.Print("still failing!")
-				i++
-				//good = fmt.Sprintf("%v.good.%v", testPath, "latest")
-				if err := ioutil.WriteFile(good, data, 0777); err != nil {
-					return err
-				}
+			gst[testname].Pre[target] = acc
+			if !identicalRoots() {
+				fails = 0
+				continue
 			} else {
-				fmt.Printf("oops, broke it\n")
+				fmt.Printf("oops, broke it, restoring\n")
+				fails++
 				m.undo()
+				// restore it
+				acc.Code = m.current
+				gst[testname].Pre[target] = acc
+				if fails > 5 {
+					break
+				}
 			}
 		}
 	}
-	// Find some account with code for minimization
+	fmt.Printf("Reducing slots...\n")
+	// Try removing storage
+	for target, acc := range gst[testname].Pre {
+		for k, v := range acc.Storage {
+			delete(gst[testname].Pre[target].Storage, k)
+			fmt.Printf("Testing removing slot %x from %x\n", k, target)
+			if !identicalRoots() {
+				continue
+			}
+			gst[testname].Pre[target].Storage[k] = v
+		}
+	}
+
 	return nil
 }
