@@ -89,10 +89,10 @@ func (vm *BesuVM) GetStateRoot(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	start := strings.Index(string(data), `"postHash:":"`)
+	start := strings.Index(string(data), `"postHash":"`)
 	if start > 0 {
-		start = start + len(`"postHash:":"`)
-		root := string(data[start : start+64])
+		start = start + len(`"postHash":"`)
+		root := string(data[start : start+2+64])
 		return root, nil
 	}
 	return "", errors.New("no stateroot found")
