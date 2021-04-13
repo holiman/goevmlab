@@ -57,7 +57,7 @@ sudo apt-get update && sudo apt-get install libsnappy-dev libc6-dev libc6
 ```
 Winds up in: 
 ```
-nethermind/src/Nethermind/Nethermind.State.Test.Runner/bin/Release/net5.0/linux-x64/publish/nethtest
+src/Nethermind/Nethermind.State.Test.Runner/bin/Release/net5.0/linux-x64/publish/nethtest
 ```
 
 ## Parity (`parity-evm`)
@@ -75,9 +75,9 @@ Should spit out the binary into `target/release/parity-evm`
 From an up to date repo, do
 
 ```
-./gradlew ethereum:evmtool:build
+/gradlew --parallel ethereum:evmtool:installDist
 ```
 It should wind up in 
 ```
-besu/ethereum/evmtool/build/install/evmtool/bin/evm
+ethereum/evmtool/build/install/evmtool/bin/evm
 ```
