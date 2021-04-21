@@ -32,7 +32,7 @@ apply for the various scenarions below:
 `)
 	fmt.Println("")
 
-	if err := showTable(false, false); err != nil {
+	if err := showTable(false, false, false); err != nil {
 		return err
 	}
 	fmt.Println(`## Berlin costs
@@ -42,21 +42,22 @@ This table show the 'hot' values (the difference being a one-time cost of 2000 g
 `)
 	fmt.Println("")
 
-	if err := showTable(true, false); err != nil {
+	if err := showTable(true, false, false); err != nil {
 		return err
 	}
-
-	fmt.Println(`## Without refunds 
-
-If refunds were to be removed, this would be the comparative table`)
-
-	showTable2()
 
 	fmt.Println(`## With EIP-3403 partial refunds 
 
 If refunds were to be partially removed, as specified [here](https://github.com/ethereum/EIPs/pull/3403/), this would be the comparative table`)
 
-	showTable(true, true)
+	showTable(true, true, false)
+
+	fmt.Println(`## With EIP-XXXX partial refunds take 2 
+
+If refunds were to be partially removed, by changing SSTORE_CLEARS_SCHEDULE from 15000 to 4800 
+(and removing selfdestruct refund) this would be the comparative table`)
+
+	showTable(true, false, true)
 
 	fmt.Println(`## The mutex usecase
 
@@ -65,14 +66,13 @@ There are two typical ways to implement mutexes: '0-1-0' and '1-2-1. Let's see h
 - '0-1-0':
   - Istanbul: 1612
   - Berlin: 212
-  - NoRefund: 20112
-  - EIP-3403: 5112
+  - EIP-3403: 1112
+  - EIP-XXXX: 212
 - '1-2-1':
   - Istanbul: 1612
   - Berlin: 212
-  - NoRefund: 3012
   - EIP-3403: 3012
-
+  - EIP-XXXX: 212
 
 **Note**: In reality, there are never a negative gas cost, since the refund is capped at 0.5 * gasUsed. 
 However, these tables show the negative values, since in a more real-world scenario would likely spend the 
@@ -82,7 +82,7 @@ extra gas on other operations.'
 	return nil
 }
 
-func showTable(berlin, eip3404 bool) error {
+func showTable(berlin, eip3404, eip3999 bool) error {
 	var hot = true
 	fmt.Printf("| Code | Used Gas | Refund | Original | 1st | 2nd | 3rd | Effective gas (after refund)\n")
 	fmt.Printf("| -- | -- | -- | -- | -- | -- | -- | -- | \n")
@@ -105,6 +105,9 @@ func showTable(berlin, eip3404 bool) error {
 		chainConfig.BerlinBlock = big.NewInt(0)
 		if eip3404 {
 			extraEips = []int{3403}
+		}
+		if eip3999 {
+			extraEips = []int{3999}
 		}
 	}
 
@@ -375,25 +378,21 @@ type dumbTracer struct {
 	statedb vm.StateDB
 }
 
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
-	return nil
+func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
 }
 
-func (d *dumbTracer) CaptureStart(from common.Address, to common.Address, call bool, input []byte, gas uint64, value *big.Int) error {
-	return nil
+func (d *dumbTracer) CaptureStart(env *vm.EVM,from common.Address, to common.Address, call bool, input []byte, gas uint64, value *big.Int) {
 }
 
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rData []byte, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	//if op == vm.SSTORE{
 	//	fmt.Printf("pc %d op %v gas %d cost %d refund %d\n", pc, op, gas, cost,  env.StateDB.GetRefund())
 	//}
 	d.statedb = env.StateDB
-	return nil
 }
 
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
 	//fmt.Printf("Used gas %d\n",gasUsed)
 	d.usedGas = gasUsed
 	d.refund = d.statedb.GetRefund()
-	return nil
 }

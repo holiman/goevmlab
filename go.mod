@@ -15,9 +15,8 @@ require (
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/rivo/tview v0.0.0-20200712113419-c65badfc3d92
-	github.com/shirou/gopsutil v2.20.7+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 
-//replace github.com/ethereum/go-ethereum => /home/user/go/src/github.com/ethereum/go-ethereum
+replace github.com/ethereum/go-ethereum => /home/user/go/src/github.com/ethereum/go-ethereum
