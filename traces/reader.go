@@ -21,16 +21,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/golang/snappy"
-	"github.com/holiman/goevmlab/ops"
 	"io"
 	"io/ioutil"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/golang/snappy"
+	"github.com/holiman/goevmlab/ops"
 )
 
 type TraceLine struct {
@@ -124,35 +125,51 @@ func (t *TraceLine) Equals(other *TraceLine) bool {
 }
 
 func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
+	intify := func(value interface{}) int {
+		// Try to convert it
+		if floatVal, ok := value.(float64); ok {
+			return int(floatVal)
+		}
+		var (
+			retval int64
+			err    error
+		)
+
+		// Maybe a hexvalue?
+		if strVal, ok := value.(string); ok {
+			if len(strVal) > 1 && strVal[0:2] == "0x" {
+				retval, err = strconv.ParseInt(strVal[2:], 16, 64)
+			} else {
+				retval, err = strconv.ParseInt(strVal, 10, 64)
+			}
+		} else {
+			err = fmt.Errorf("could not convert %v to int", value)
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
+		return int(retval)
+	}
+
 	log := &vm.StructLog{}
 	ok := false
 	for k, v := range op {
 		switch k {
 		case "pc":
-			log.Pc = uint64(v.(float64))
+			log.Pc = uint64(intify(v))
 		case "memSize":
-			log.MemorySize = int(v.(float64))
+			log.MemorySize = intify(v)
 		case "op":
 			log.Op = vm.OpCode(uint64(v.(float64)))
 			ok = true
 		case "gas":
-			var b hexutil.Uint64
-			if err := b.UnmarshalText([]byte(v.(string))); err != nil {
-				fmt.Fprintf(os.Stderr, "error (%v): %v\n", k, err)
-			} else {
-				log.Gas = uint64(b)
-			}
+			log.Gas = uint64(intify(v))
 		case "gasCost":
-			var b hexutil.Uint64
-			if err := b.UnmarshalText([]byte(v.(string))); err != nil {
-				fmt.Fprintf(os.Stderr, "error (%v): %v\n", k, err)
-			} else {
-				log.GasCost = uint64(b)
-			}
+			log.GasCost = uint64(intify(v))
 		case "depth":
 			log.Depth = int(v.(float64))
 		case "refund":
-			log.RefundCounter = uint64(v.(float64))
+			log.RefundCounter = uint64(intify(v))
 		case "stack":
 			// v is a list of strings
 			stack, err := parseStack(v.([]interface{}))
