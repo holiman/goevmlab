@@ -33,7 +33,6 @@ import (
 // The BatchVM spins up one 'master' instance of the VM, and uses that to execute tests
 type BesuBatchVM struct {
 	path   string
-	buffer []byte    // read buffer
 	cmd    *exec.Cmd // the 'master' process
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
@@ -41,8 +40,7 @@ type BesuBatchVM struct {
 
 func NewBesuBatchVM(path string) *BesuBatchVM {
 	return &BesuBatchVM{
-		path:   path,
-		buffer: make([]byte, 4*1024*1024),
+		path: path,
 	}
 }
 
@@ -110,7 +108,8 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
 	// We use a larger scanner buffer for besu: it does not have a way to
 	// disable 'returndata', which can become larger than fits into a default
 	// scanner buffer
-	scanner.Buffer(evm.buffer, cap(evm.buffer))
+	buf := make([]byte, 4*1024*1024)
+	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog
