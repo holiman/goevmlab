@@ -32,14 +32,12 @@ import (
 
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
-	path   string
-	buffer []byte // read buffer
+	path string
 }
 
 func NewBesuVM(path string) *BesuVM {
 	return &BesuVM{
-		path:   path,
-		buffer: make([]byte, 4*1024*1024),
+		path: path,
 	}
 }
 
@@ -110,7 +108,8 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	// We use a larger scanner buffer for besu: it does not have a way to
 	// disable 'returndata', which can become larger than fits into a default
 	// scanner buffer
-	scanner.Buffer(evm.buffer, cap(evm.buffer))
+	buf := pool.Get().([]byte)
+	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog

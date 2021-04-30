@@ -21,7 +21,15 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sync"
 )
+
+var pool = sync.Pool{
+	New: func() interface{} {
+		buf := make([]byte, 4*1024*1024)
+		return buf
+	},
+}
 
 // The Evm interface represents external EVM implementations, which can
 // be e.g. docker instances or binaries
