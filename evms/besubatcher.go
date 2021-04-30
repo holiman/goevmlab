@@ -108,9 +108,8 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
 	// We use a larger scanner buffer for besu: it does not have a way to
 	// disable 'returndata', which can become larger than fits into a default
 	// scanner buffer
-	buf := pool.Get().([]byte)
+	buf := make([]byte, 4*1024*1024)
 	scanner.Buffer(buf, cap(buf))
-	defer pool.Put(buf)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog

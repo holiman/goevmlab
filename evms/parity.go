@@ -103,9 +103,8 @@ type parityErrorRoot struct {
 func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 	var sRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	buf := pool.Get().([]byte)
+	buf := make([]byte, 4*1024*1024)
 	scanner.Buffer(buf, cap(buf))
-	defer pool.Put(buf)
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
