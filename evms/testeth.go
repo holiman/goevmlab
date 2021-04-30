@@ -86,6 +86,7 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 	scanner := bufio.NewScanner(input)
 	buf := pool.Get().([]byte)
 	scanner.Buffer(buf, cap(buf))
+	defer pool.Put(buf)
 	for scanner.Scan() {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it

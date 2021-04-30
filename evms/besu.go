@@ -110,6 +110,7 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	// scanner buffer
 	buf := pool.Get().([]byte)
 	scanner.Buffer(buf, cap(buf))
+	defer pool.Put(buf)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog

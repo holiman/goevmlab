@@ -103,6 +103,7 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	scanner := bufio.NewScanner(input)
 	buf := pool.Get().([]byte)
 	scanner.Buffer(buf, cap(buf))
+	defer pool.Put(buf)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem vm.StructLog

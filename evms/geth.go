@@ -98,6 +98,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 	scanner := bufio.NewScanner(input)
 	buf := pool.Get().([]byte)
 	scanner.Buffer(buf, cap(buf))
+	defer pool.Put(buf)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		//fmt.Printf("geth: %v\n", string(data))
