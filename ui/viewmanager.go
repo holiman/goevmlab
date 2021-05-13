@@ -101,32 +101,17 @@ func NewDiffviewManager(traces []*traces.Traces) {
 }
 
 // NewViewManager create a viewmanager for the single-trace view
-func NewViewManager(trace *traces.Traces) *viewManager {
-
-	newPrimitive := func(text string) tview.Primitive {
-		return tview.NewTextView().
-			SetTextAlign(tview.AlignCenter).
-			SetText(text)
-	}
+func NewViewManager(trace *traces.Traces) {
+	root := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	ops := tview.NewTable()
 	ops.SetTitle("Operations").SetBorder(true)
-
 	opView := tview.NewForm()
 	opView.SetTitle("Op").SetBorder(true)
-
 	stack := tview.NewTable()
 	stack.SetTitle("Stack").SetBorder(true)
-
 	mem := tview.NewTable()
 	mem.SetTitle("Memory").SetBorder(true)
-
-	root := tview.NewGrid().
-		SetRows(3, 0, 15, 3).
-		SetColumns(0, 120).
-		SetBorders(true).
-		AddItem(newPrimitive("Header"), 0, 0, 1, 2, 0, 0, false).
-		AddItem(newPrimitive("Footer"), 3, 0, 1, 2, 0, 0, false)
 
 	mgr := viewManager{
 		trace:     trace,
@@ -134,29 +119,39 @@ func NewViewManager(trace *traces.Traces) *viewManager {
 		opView:    opView,
 		stackView: stack,
 		memView:   mem,
-		root:      root,
 	}
 
 	mgr.init(trace)
 
-	// Layout for screens wider than 100 cells.
-	root.
-		AddItem(opView, 1, 1, 1, 1, 0, 80, false).
-		AddItem(stack, 2, 0, 1, 1, 0, 50, false).
-		AddItem(mem, 2, 1, 1, 1, 0, 50, false).
-		AddItem(ops, 1, 0, 1, 1, 0, 50, true)
+	// Create flex row for upper view.
+	upper := tview.NewFlex().SetDirection(tview.FlexColumn).
+		AddItem(ops, 0, 3, true).
+		AddItem(opView, 0, 2, false)
 
-	return &mgr
-}
+	// Create flex row for lower view.
+	direction := tview.FlexColumn
+	lower := tview.NewFlex().SetDirection(direction).
+		AddItem(stack, 0, 1, false).
+		AddItem(mem, 0, 1, false)
 
-// Starts the UI compoments
-func (mgr *viewManager) Run() {
-	if err := tview.NewApplication().SetRoot(mgr.root, true).Run(); err != nil {
+	root = root.AddItem(upper, 0, 1, true).AddItem(lower, 0, 1, false)
+
+	capture := func(event *tcell.EventKey) *tcell.EventKey {
+		// Toggle flow direction when 'm' key is pressed.
+		if event.Rune() == rune('m') {
+			direction = (direction + 1) % 2
+			lower.SetDirection(direction)
+		}
+		return event
+	}
+
+	app := tview.NewApplication().SetRoot(root, true).SetInputCapture(capture)
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
 }
-func setHeadings(headings []string, table *tview.Table) {
 
+func setHeadings(headings []string, table *tview.Table) {
 	table.SetFixed(1, 0).SetSelectable(false, false)
 	for col, title := range headings {
 		table.SetCell(0, col,
