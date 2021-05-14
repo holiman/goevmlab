@@ -19,10 +19,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/holiman/goevmlab/traces"
-	"github.com/holiman/goevmlab/ui"
 	"os"
 	"strconv"
+
+	"github.com/holiman/goevmlab/traces"
+	"github.com/holiman/goevmlab/ui"
 )
 
 func init() {
@@ -35,7 +36,6 @@ Reads the given trace-file, and displays the tracing in a nice CLI user interfac
 }
 
 func main() {
-
 	testTraces := []string{
 		"../../traces/testdata/geth_nomemory.jsonl",
 		"../../traces/testdata/geth_memory.jsonl",
@@ -62,6 +62,5 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
-	mgr := ui.NewViewManager(trace)
-	mgr.Run()
+	ui.NewViewManager(trace)
 }
