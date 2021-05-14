@@ -129,7 +129,7 @@ func NewViewManager(trace *traces.Traces) {
 		AddItem(opView, 0, 2, false)
 
 	// Create flex row for lower view.
-	direction := tview.FlexColumn
+	direction := tview.FlexRow
 	lower := tview.NewFlex().SetDirection(direction).
 		AddItem(stack, 0, 1, false).
 		AddItem(mem, 0, 1, false)
