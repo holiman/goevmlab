@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 )
@@ -36,6 +37,7 @@ type BesuBatchVM struct {
 	cmd    *exec.Cmd // the 'master' process
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
+	mu     sync.Mutex
 }
 
 func NewBesuBatchVM(path string) *BesuBatchVM {
@@ -71,6 +73,8 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 		evm.stdout = stdout
 		evm.stdin = stdin
 	}
+	evm.mu.Lock()
+	defer evm.mu.Unlock()
 	evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
