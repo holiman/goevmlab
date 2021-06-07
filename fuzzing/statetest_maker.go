@@ -420,6 +420,12 @@ func GenerateSubroutineTest() *GstMaker {
 	return gst
 }
 
+func Generate2200LondonTest() *GstMaker {
+	gst := BasicStateTest("London")
+	create2200Test(gst)
+	return gst
+}
+
 func Generate2200BerlinTest() *GstMaker {
 	gst := BasicStateTest("Berlin")
 	create2200Test(gst)
