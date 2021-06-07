@@ -63,6 +63,10 @@ var (
 		Name:  "besubatch",
 		Usage: "Location of besu vm binary",
 	}
+	ErigonFlag = cli.StringFlag{
+		Name:  "erigon",
+		Usage: "Location of erigon 'evm' binary",
+	}
 	ThreadFlag = cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -88,6 +92,7 @@ var (
 		AlethFlag,
 		BesuFlag,
 		BesuBatchFlag,
+		ErigonFlag,
 	}
 )
 
@@ -99,6 +104,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		alethBin     = c.GlobalString(AlethFlag.Name)
 		besuBin      = c.GlobalString(BesuFlag.Name)
 		besuBatchBin = c.GlobalString(BesuBatchFlag.Name)
+		erigonBin    = c.GlobalString(ErigonFlag.Name)
 		vms          []evms.Evm
 	)
 	if gethBin != "" {
@@ -118,6 +124,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	if besuBatchBin != "" {
 		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin))
+	}
+	if erigonBin != "" {
+		vms = append(vms, evms.NewErigonVM(erigonBin))
 	}
 	return vms
 
