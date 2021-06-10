@@ -14,7 +14,7 @@ var _ = (*stTransactionMarshaling)(nil)
 
 // MarshalJSON marshals as JSON.
 func (s StTransaction) MarshalJSON() ([]byte, error) {
-	type stTransaction struct {
+	type StTransaction struct {
 		GasPrice   *math.HexOrDecimal256 `json:"gasPrice"`
 		Nonce      math.HexOrDecimal64   `json:"nonce"`
 		To         string                `json:"to"`
@@ -23,7 +23,7 @@ func (s StTransaction) MarshalJSON() ([]byte, error) {
 		Value      []string              `json:"value"`
 		PrivateKey hexutil.Bytes         `json:"secretKey"`
 	}
-	var enc stTransaction
+	var enc StTransaction
 	enc.GasPrice = (*math.HexOrDecimal256)(s.GasPrice)
 	enc.Nonce = math.HexOrDecimal64(s.Nonce)
 	enc.To = s.To
@@ -41,7 +41,7 @@ func (s StTransaction) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals from JSON.
 func (s *StTransaction) UnmarshalJSON(input []byte) error {
-	type stTransaction struct {
+	type StTransaction struct {
 		GasPrice   *math.HexOrDecimal256 `json:"gasPrice"`
 		Nonce      *math.HexOrDecimal64  `json:"nonce"`
 		To         *string               `json:"to"`
@@ -50,7 +50,7 @@ func (s *StTransaction) UnmarshalJSON(input []byte) error {
 		Value      []string              `json:"value"`
 		PrivateKey *hexutil.Bytes        `json:"secretKey"`
 	}
-	var dec stTransaction
+	var dec StTransaction
 	if err := json.Unmarshal(input, &dec); err != nil {
 		return err
 	}
