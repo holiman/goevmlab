@@ -134,6 +134,7 @@ type stEnv struct {
 	Number       uint64         `json:"currentNumber"     gencodec:"required"`
 	Timestamp    uint64         `json:"currentTimestamp"  gencodec:"required"`
 	PreviousHash common.Hash    `json:"previousHash"`
+	BaseFee      *big.Int       `json:"currentBaseFee"`
 }
 
 type stEnvMarshaling struct {
@@ -142,9 +143,10 @@ type stEnvMarshaling struct {
 	GasLimit   math.HexOrDecimal64
 	Number     math.HexOrDecimal64
 	Timestamp  math.HexOrDecimal64
+	BaseFee    *math.HexOrDecimal256
 }
 
-//go:generate gencodec -type stTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
+//go:generate gencodec -type StTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
 
 type StTransaction struct {
 	GasPrice   *big.Int `json:"gasPrice"`

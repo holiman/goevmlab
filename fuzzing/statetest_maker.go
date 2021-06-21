@@ -148,6 +148,7 @@ func NewGstMaker() *GstMaker {
 			Difficulty: big.NewInt(0x20000),
 			Coinbase:   common.HexToAddress("b94f5374fce5edbc8e2a8697c15331677e6ebf0b"),
 			Timestamp:  0x03e8,
+			BaseFee:    big.NewInt(0x10),
 		},
 		pre: &alloc,
 	}
@@ -302,7 +303,7 @@ func BasicStateTest(fork string) *GstMaker {
 	// Add sender
 	gst.AddAccount(sender, GenesisAccount{
 		Nonce:   0,
-		Balance: big.NewInt(0xffffffff),
+		Balance: big.NewInt(0xffffffffff),
 		Storage: make(map[common.Hash]common.Hash),
 		Code:    []byte{},
 	})
@@ -420,6 +421,12 @@ func GenerateSubroutineTest() *GstMaker {
 	return gst
 }
 
+func Generate2200LondonTest() *GstMaker {
+	gst := BasicStateTest("London")
+	create2200Test(gst)
+	return gst
+}
+
 func Generate2200BerlinTest() *GstMaker {
 	gst := BasicStateTest("Berlin")
 	create2200Test(gst)
@@ -481,7 +488,7 @@ func create2200Test(gst *GstMaker) {
 			Nonce:      0,
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x01),
+			GasPrice:   big.NewInt(0x10),
 			To:         addrs[0].Hex(),
 			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		}
