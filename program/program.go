@@ -103,6 +103,14 @@ func (p *Program) Hex() string {
 	return fmt.Sprintf("%02x", p.Bytecode())
 }
 
+func (p *Program) ExtcodeCopy(address, memOffset, codeOffset, length interface{}) {
+	p.Push(length)
+	p.Push(codeOffset)
+	p.Push(memOffset)
+	p.Push(address)
+	p.Op(ops.EXTCODECOPY)
+}
+
 // Call is a convenience function to make a call
 func (p *Program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset, outSize interface{}) {
 	p.Push(outSize)
@@ -167,7 +175,7 @@ func (p *Program) Jump(loc interface{}) {
 	p.Op(ops.JUMP)
 }
 
-func (p *Program) JumpSub(loc interface{}){
+func (p *Program) JumpSub(loc interface{}) {
 	p.Push(loc)
 	p.Op(ops.JUMPSUB)
 }
@@ -186,9 +194,9 @@ func (p *Program) Size() int {
 // InputToMemory stores the input (calldata) to memory
 func (p *Program) InputAddressToStack(inputOffset uint32) {
 	p.Push(inputOffset)
-	p.Op(ops.CALLDATALOAD)// Loads [n -> n + 32] of input data to stack top
+	p.Op(ops.CALLDATALOAD) // Loads [n -> n + 32] of input data to stack top
 	mask, ok := big.NewInt(0).SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
-	if !ok{
+	if !ok {
 		panic("whoa")
 	}
 	p.Push(mask) // turn into address

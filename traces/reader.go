@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/golang/snappy"
 	"github.com/holiman/goevmlab/ops"
+	"github.com/holiman/uint256"
 )
 
 type TraceLine struct {
@@ -83,7 +84,7 @@ func (t *TraceLine) Get(title string) string {
 	return "NA"
 }
 
-func (t *TraceLine) Stack() []*big.Int {
+func (t *TraceLine) Stack() []uint256.Int {
 	return t.log.Stack
 }
 
@@ -116,7 +117,7 @@ func (t *TraceLine) Equals(other *TraceLine) bool {
 	}
 	// Also inspect stack
 	for i, elem := range t.log.Stack {
-		if elem.Cmp(other.log.Stack[i]) != 0 {
+		if elem != other.log.Stack[i] {
 			return false
 		}
 	}
@@ -209,9 +210,10 @@ type traceTxRPCResponse struct {
 
 // ParseHex parses s as a 256 bit integer in hexadecimal syntax.
 // Leading zeros are accepted. The empty string parses as zero.
-func ParseHex(s string) (*big.Int, bool) {
+func ParseHex(s string) (uint256.Int, error) {
+	var n uint256.Int
 	if s == "" {
-		return new(big.Int), true
+		return n, nil
 	}
 	var bigint *big.Int
 	var ok bool
@@ -220,23 +222,26 @@ func ParseHex(s string) (*big.Int, bool) {
 	} else {
 		bigint, ok = new(big.Int).SetString(s, 16)
 	}
-	if ok && bigint.BitLen() > 256 {
-		bigint, ok = nil, false
+	if !ok {
+		return n, fmt.Errorf("could not convert %v to bigint", s)
 	}
-	return bigint, ok
+	if overflow := n.SetFromBig(bigint); overflow {
+		return n, fmt.Errorf("conversion from bigint (%x) to uint256.Int caused overflow", bigint)
+	}
+	return n, nil
 }
 
 // parseStack takes a list of strings and returns a stack of *big.Ints
-func parseStack(stackStrings []interface{}) ([]*big.Int, error) {
+func parseStack(stackStrings []interface{}) ([]uint256.Int, error) {
 	var (
-		s []*big.Int
+		s []uint256.Int
 	)
 	for _, item := range stackStrings {
-		bigint, ok := ParseHex(item.(string))
-		if !ok {
-			return nil, fmt.Errorf("could not convert %q to bigint", item)
+		n, err := ParseHex(item.(string))
+		if err != nil {
+			return nil, fmt.Errorf("parsing failed: %v", err)
 		}
-		s = append(s, bigint)
+		s = append(s, n)
 	}
 	// reverse it
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
@@ -361,6 +366,16 @@ func ReadFile(location string) (*Traces, error) {
 			return nil, err
 		}
 	}
+	if strings.HasSuffix(location, ".json") {
+		// read as json
+		t, err := readJson(data)
+		// Do a second pass to assign addresses, where applicable
+		if err == nil {
+			AnalyzeCalls(t)
+		}
+		return t, err
+	}
+
 	// First attempt to read as JSON struct
 	t, err := readJson(data)
 	if err != nil {

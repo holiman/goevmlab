@@ -176,7 +176,7 @@ func runit() error {
 			EIP158Block:         new(big.Int),
 			PetersburgBlock:     new(big.Int),
 			IstanbulBlock:       new(big.Int),
-			YoloV2Block:         new(big.Int),
+			BerlinBlock:         new(big.Int),
 		},
 		EVMConfig: vm.Config{
 			Debug:  true,
@@ -203,7 +203,7 @@ func runit() error {
 			Nonce:      v.Nonce,
 			PrivateKey: v.PrivateKey,
 		}
-		if fuzzAcc.Storage == nil{
+		if fuzzAcc.Storage == nil {
 			fuzzAcc.Storage = make(map[common.Hash]common.Hash)
 		}
 		fuzzGenesisAlloc[k] = fuzzAcc
@@ -222,7 +222,7 @@ func runit() error {
 	mkr.SetTx(tx)
 
 	mkr.SetPre(&fuzzGenesisAlloc)
-	if err := mkr.Fill(os.Stdout); err != nil{
+	if err := mkr.Fill(os.Stdout); err != nil {
 		return err
 	}
 
@@ -236,25 +236,21 @@ type dumbTracer struct {
 	counter uint64
 }
 
-func (d *dumbTracer) CaptureStart(from common.Address, to common.Address, call bool, input []byte, gas uint64, value *big.Int) error {
+func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
 	fmt.Printf("captureStart\n")
 	fmt.Printf("	from: %v\n", from.Hex())
 	fmt.Printf("	to: %v\n", to.Hex())
-	return nil
 }
 
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, rData []byte, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	fmt.Printf("pc %d op %v gas %d cost %d depth %d\n", pc, op, gas, cost, depth)
-	return nil
 }
 
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, rstack *vm.ReturnStack, contract *vm.Contract, depth int, err error) error {
+func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
 	fmt.Printf("CaptureFault %v\n", err)
-	return nil
 }
 
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
 	fmt.Printf("\nCaptureEnd\n")
 	fmt.Printf("Counter: %d\n", d.counter)
-	return nil
 }
