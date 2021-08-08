@@ -49,6 +49,7 @@ func runit() error {
 	v := make([]byte, 32)
 	r := make([]byte, 32)
 	s := make([]byte, 32)
+	copy(v, hexutil.MustDecode("0x000000000000000000000000000000000000000000000000000000000000001b"))
 	copy(r, hexutil.MustDecode("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"))
 	copy(s, hexutil.MustDecode("0x6b8d2c81b11b2d699528dde488dbdf2f94293d0d33c32e347f255fa4a6c1f0a9"))
 	copy(hash, hexutil.MustDecode("0x6b8d2c81b11b2d699528dde488dbdf2f94293d0d33c32e347f255fa4a6c1f0a9"))
@@ -63,10 +64,14 @@ func runit() error {
 		big.NewInt(0),   // value
 		big.NewInt(0),   // inoffset
 		big.NewInt(128), // insize
-		big.NewInt(128),
-		big.NewInt(128), // outsize
+		big.NewInt(0), // outoffset
+		big.NewInt(32), // outsize
 	)
-	a.Op(ops.RETURNDATASIZE)
+	a.Op(ops.POP)
+	// Move the output (mem 0:32) into the stack
+	a.Push(0)
+	a.Op(ops.MLOAD)
+	a.Push(0)
 	a.Op(ops.SSTORE)
 	aAddr := common.HexToAddress("0xff0a")
 	alloc := make(core.GenesisAlloc)
