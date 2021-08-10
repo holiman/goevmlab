@@ -75,7 +75,7 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
@@ -91,7 +91,7 @@ func (vm *BesuBatchVM) Close() {
 		vm.stdin.Close()
 	}
 	if vm.cmd != nil {
-		vm.cmd.Wait()
+		_ = vm.cmd.Wait()
 	}
 }
 

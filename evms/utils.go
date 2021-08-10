@@ -1,9 +1,8 @@
 package evms
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/holiman/uint256"
 )
 
 // RemoveUnsupportedElems removes some elements that not all clients support.
@@ -11,7 +10,7 @@ import (
 // method
 func RemoveUnsupportedElems(elem *vm.StructLog) {
 	if elem.Stack == nil {
-		elem.Stack = make([]*big.Int, 0)
+		elem.Stack = make([]uint256.Int, 0)
 	}
 	elem.Memory = make([]byte, 0)
 	// Parity is missing gasCost, memSize and refund

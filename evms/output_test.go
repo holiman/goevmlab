@@ -67,6 +67,7 @@ func TestVMsOutput(t *testing.T) {
 
 // TestStateRootOnly checks if the functionality to extract raw stateroot works
 func TestStateRootOnly(t *testing.T) {
+	t.Skip("Test is machine-specific due to bundled binaries")
 	vms := []Evm{
 		NewGethEVM("../binaries/evm"),
 		NewNethermindVM("../binaries/nethtest"),

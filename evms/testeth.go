@@ -18,6 +18,7 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -91,6 +92,8 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
 		var elem vm.StructLog
+		// we don't accept leading zeroes
+		data = bytes.Replace(data, []byte(`"0x00"`), []byte(` "0x0"`), -1)
 		if err := json.Unmarshal(data, &elem); err != nil {
 			//fmt.Printf("aleth err: %v, line\n\t%v\n", err, string(data))
 			continue

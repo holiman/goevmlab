@@ -536,7 +536,3 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 		go execute(i)
 	}
 }
-
-func startStatistics() {
-
-}

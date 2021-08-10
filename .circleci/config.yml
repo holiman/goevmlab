@@ -21,6 +21,12 @@ jobs:
       - run:
           name: "Test"
           command: go test -v ./...
+      - run:
+          name: "Build all examples"
+          command: go build -v ./examples/...
+      - run:
+          name: "Build all cmds"
+          command: go build -v ./cmd/...
 
 workflows:
   version: 2

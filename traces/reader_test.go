@@ -193,7 +193,7 @@ func TestParityVsGeth(t *testing.T) {
 			t.Fatalf("step %d, stack size %d != %d", step, len(gLog.Stack), len(pLog.Stack))
 		}
 		for i, item := range gLog.Stack {
-			if item.Cmp(pLog.Stack[i]) != 0 {
+			if item != pLog.Stack[i] {
 				t.Errorf("step %d, stack item %d diff: %v != %v", step, i, item, pLog.Stack[i])
 			}
 		}
