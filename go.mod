@@ -12,7 +12,7 @@ require (
 	github.com/go-kit/kit v0.9.0 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang/snappy v0.0.3
-	github.com/holiman/uint256 v1.2.0 // indirect
+	github.com/holiman/uint256 v1.2.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/rivo/tview v0.0.0-20200712113419-c65badfc3d92
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
