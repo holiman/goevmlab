@@ -59,6 +59,11 @@ var (
 		Value: 10_000_000,
 		Usage: "Sets the gas amount to use",
 	}
+	dataSizeFlag = cli.Uint64Flag{
+		Name:  "calldatasize",
+		Value: 1_305_700,
+		Usage: "Sets the amount of memory to use for calldata.",
+	}
 	outFileFlag = cli.StringFlag{
 		Name:  "out",
 		Usage: "If set, causes a state-test to be written with the given name.",
@@ -82,6 +87,7 @@ func init() {
 		gasFlag,
 		forkFlag,
 		outFileFlag,
+		dataSizeFlag,
 	}
 	app.Commands = []cli.Command{
 		evaluateCommand,
@@ -98,10 +104,11 @@ func main() {
 func evaluate(ctx *cli.Context) error {
 	var (
 		// gas to use for the tx
-		gas         = uint64(ctx.GlobalInt(gasFlag.Name))
-		outFilename = ctx.GlobalString(outFileFlag.Name)
-		fork        = ctx.GlobalString(forkFlag.Name)
-		dest        = ctx.GlobalString(destFlag.Name)
+		gas          = uint64(ctx.GlobalInt(gasFlag.Name))
+		outFilename  = ctx.GlobalString(outFileFlag.Name)
+		fork         = ctx.GlobalString(forkFlag.Name)
+		dest         = ctx.GlobalString(destFlag.Name)
+		calldataSize = ctx.GlobalUint64(dataSizeFlag.Name)
 	)
 	// Validate ruleset
 	ruleset, ok := common2.Forks[fork]
@@ -118,13 +125,12 @@ Call-address: 0x%x
 Gas to use: %d
 Fork: %v
 `, destAddr.Bytes(), gas, fork)
-
 	a := program.NewProgram()
 	a.Op(ops.PC)          // Push 0
 	a.Op(ops.DUP1)        // outsize = 0, on next iteration we use the return value of CALL
 	label := a.Jumpdest() // Loop Head
 	a.Op(ops.DUP2)        // outoffset = 0
-	a.Push(1305700)       // insize = 1305700
+	a.Push(calldataSize)  // insize = 1305700
 	a.Op(ops.DUP2)        // inoffset = 0
 	a.Push(destAddr)
 	//	a.Push(0xdeadbeef)   // Push target address, alternatively we could call an empty contract here
@@ -152,7 +158,7 @@ Fork: %v
 		}
 	}
 	statedb.CreateAccount(sender)
-
+	tracer := &dumbTracer{}
 	runtimeConfig := runtime.Config{
 		Origin:      sender,
 		State:       statedb,
@@ -164,7 +170,7 @@ Fork: %v
 		ChainConfig: ruleset,
 		EVMConfig: vm.Config{
 			Debug:  true,
-			Tracer: &dumbTracer{},
+			Tracer: tracer,
 		},
 	}
 	// Run with tracing
@@ -174,7 +180,12 @@ Fork: %v
 	t0 := time.Now()
 	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
-	fmt.Printf("\nExecution time: %v\n", t1)
+	fmt.Printf(`
+Execution time  : %v
+Number of CALLs : %d
+Size of calldata: %d
+Total calldata  : %s 
+`, t1, tracer.counter, calldataSize, common.StorageSize(float64(calldataSize*tracer.counter)))
 	if err != nil {
 		fmt.Printf("Execution ended on error: %v\n", err)
 	} else {
@@ -254,9 +265,6 @@ func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Ad
 
 func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	if op == vm.STATICCALL {
-		d.counter++
-	}
-	if op == vm.EXTCODESIZE {
 		d.counter++
 	}
 }
