@@ -333,7 +333,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	SELFBALANCE: {"SELFBALANCE", nil, []string{"balance at current context"}},
 	BASEFEE:     {"BASEFEE", nil, []string{"basefee in current block"}},
 
-	POP:      {"POP", nil, []string{"value to pop"}},
+	POP:      {"POP", []string{"value to pop"},nil },
 	MLOAD:    {"MLOAD", []string{"offset"}, nil},
 	MSTORE:   {"MSTORE", []string{"offset", "value"}, nil},
 	MSTORE8:  {"MSTORE8", []string{"offset", "value"}, nil},
