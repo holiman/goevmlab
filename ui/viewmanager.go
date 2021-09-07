@@ -198,7 +198,7 @@ func (mgr *viewManager) onStepSelected(line *traces.TraceLine) {
 
 		for i, item := range line.Stack() {
 			mgr.stackView.SetCell(i+1, 0, tview.NewTableCell(fmt.Sprintf("%02d", i)))
-			mgr.stackView.SetCell(i+1, 1, tview.NewTableCell(fmt.Sprintf("%64x", item)))
+			mgr.stackView.SetCell(i+1, 1, tview.NewTableCell(fmt.Sprintf("%64s", item.Hex())))
 			if i < len(popDescriptors) {
 				mgr.stackView.SetCell(i+1, 2, tview.NewTableCell(popDescriptors[i]))
 			}
