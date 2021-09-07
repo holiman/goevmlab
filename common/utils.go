@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"os/signal"
 	"path"
@@ -33,6 +34,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
 	"gopkg.in/urfave/cli.v1"
@@ -535,4 +539,61 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 		meta.wg.Add(1)
 		go execute(i)
 	}
+}
+
+// ConvertToStateTest is a utility to turn stuff into sharable state tests.
+func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uint64,
+	target common.Address) error {
+
+	mkr := fuzzing.BasicStateTest(fork)
+	// convert the genesisAlloc
+	var fuzzGenesisAlloc = make(fuzzing.GenesisAlloc)
+	for k, v := range alloc {
+		fuzzAcc := fuzzing.GenesisAccount{
+			Code:       v.Code,
+			Storage:    v.Storage,
+			Balance:    v.Balance,
+			Nonce:      v.Nonce,
+			PrivateKey: v.PrivateKey,
+		}
+		if fuzzAcc.Balance == nil {
+			fuzzAcc.Balance = new(big.Int)
+		}
+		if fuzzAcc.Storage == nil {
+			fuzzAcc.Storage = make(map[common.Hash]common.Hash)
+		}
+		fuzzGenesisAlloc[k] = fuzzAcc
+	}
+	// Also add the sender
+	var sender = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+	if _, ok := fuzzGenesisAlloc[sender]; !ok {
+		fuzzGenesisAlloc[sender] = fuzzing.GenesisAccount{
+			Balance: big.NewInt(1000000000000000000), // 1 eth
+			Nonce:   0,
+			Storage: make(map[common.Hash]common.Hash),
+		}
+	}
+
+	tx := &fuzzing.StTransaction{
+		GasLimit:   []uint64{gasLimit},
+		Nonce:      0,
+		Value:      []string{"0x0"},
+		Data:       []string{""},
+		GasPrice:   big.NewInt(0x10),
+		PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		To:         target.Hex(),
+	}
+	mkr.SetTx(tx)
+	mkr.SetPre(&fuzzGenesisAlloc)
+	if err := mkr.Fill(nil); err != nil {
+		return err
+	}
+	gst := mkr.ToGeneralStateTest(name)
+	dat, _ := json.MarshalIndent(gst, "", " ")
+	fname := fmt.Sprintf("%v.json", name)
+	if err := ioutil.WriteFile(fname, dat, 0777); err != nil {
+		return err
+	}
+	fmt.Printf("Wrote file %v\n", fname)
+	return nil
 }
