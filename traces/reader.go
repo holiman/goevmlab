@@ -60,7 +60,7 @@ func (traces *Traces) Search(op string, from int) (*TraceLine, int) {
 	}
 	for i := from; i < len(traces.Ops); i++ {
 		t := traces.Ops[i]
-		if op == t.log.Op.String() {
+		if strings.HasPrefix(t.log.Op.String(), op) {
 			return t, i
 		}
 	}
