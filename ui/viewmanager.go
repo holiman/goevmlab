@@ -247,7 +247,7 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 			}).
 			SetSelectionChangedFunc(func(row, col int) {
 				// don't update for headings
-				if row == 0 {
+				if row < 1 {
 					return
 				}
 				mgr.onStepSelected(trace.Get(row - 1))
