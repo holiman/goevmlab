@@ -113,7 +113,7 @@ func NewViewManager(trace *traces.Traces) {
 	stack.SetTitle("Stack").SetBorder(true)
 	mem := tview.NewTable()
 	mem.SetTitle("Memory").SetBorder(true)
-	searchField := tview.NewInputField().SetPlaceholder("search opcodes...")
+	searchField := tview.NewInputField().SetPlaceholder("press '/' to search for an opcode...")
 	searchField.SetLabel("? ").SetDoneFunc(func(key tcell.Key) {
 		query := searchField.GetText()
 		cur, _ := ops.GetSelection()
@@ -246,6 +246,10 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 				table.GetCell(row, column).SetTextColor(tcell.ColorRed)
 			}).
 			SetSelectionChangedFunc(func(row, col int) {
+				// don't update for headings
+				if row == 0 {
+					return
+				}
 				mgr.onStepSelected(trace.Get(row - 1))
 			}).
 			Select(1, 1).SetFixed(1, 1)
@@ -255,7 +259,8 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 			table.SetCell(0, col,
 				tview.NewTableCell(strings.ToUpper(title)).
 					SetTextColor(headingCol).
-					SetAlign(tview.AlignCenter))
+					SetAlign(tview.AlignCenter).
+					SetSelectable(false))
 		}
 		// Ops table body
 		for i, elem := range trace.Ops {
