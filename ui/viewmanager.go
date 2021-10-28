@@ -117,7 +117,7 @@ func NewViewManager(trace *traces.Traces) {
 	searchField.SetLabel("? ").SetDoneFunc(func(key tcell.Key) {
 		query := searchField.GetText()
 		cur, _ := ops.GetSelection()
-		tl, idx := trace.Search(query, cur-1)
+		tl, idx := trace.Search(query, cur)
 		if tl != nil {
 			ops.Select(idx+1, 0)
 		}
