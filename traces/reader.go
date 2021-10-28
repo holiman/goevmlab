@@ -54,6 +54,19 @@ func (traces *Traces) Get(index int) *TraceLine {
 	return nil
 }
 
+func (traces *Traces) Search(op string, from int) (*TraceLine, int) {
+	if from >= len(traces.Ops) {
+		return nil, 0
+	}
+	for i := from; i < len(traces.Ops); i++ {
+		t := traces.Ops[i]
+		if strings.HasPrefix(t.log.Op.String(), op) {
+			return t, i
+		}
+	}
+	return nil, 0
+}
+
 func (t *TraceLine) Get(title string) string {
 	op := t.log
 	switch strings.ToLower(title) {

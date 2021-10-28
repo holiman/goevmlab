@@ -102,6 +102,7 @@ func NewDiffviewManager(traces []*traces.Traces) {
 
 // NewViewManager create a viewmanager for the single-trace view
 func NewViewManager(trace *traces.Traces) {
+	app := tview.NewApplication()
 	root := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	ops := tview.NewTable()
@@ -112,6 +113,17 @@ func NewViewManager(trace *traces.Traces) {
 	stack.SetTitle("Stack").SetBorder(true)
 	mem := tview.NewTable()
 	mem.SetTitle("Memory").SetBorder(true)
+	searchField := tview.NewInputField().SetPlaceholder("press '/' to search for an opcode...")
+	searchField.SetLabel("? ").SetDoneFunc(func(key tcell.Key) {
+		query := searchField.GetText()
+		cur, _ := ops.GetSelection()
+		tl, idx := trace.Search(query, cur)
+		if tl != nil {
+			ops.Select(idx+1, 0)
+		}
+		searchField.SetText("")
+		app.SetFocus(ops)
+	})
 
 	mgr := viewManager{
 		trace:     trace,
@@ -134,18 +146,20 @@ func NewViewManager(trace *traces.Traces) {
 		AddItem(stack, 0, 1, false).
 		AddItem(mem, 0, 1, false)
 
-	root = root.AddItem(upper, 0, 1, true).AddItem(lower, 0, 1, false)
+	bottom := tview.NewFlex().SetDirection(tview.FlexRow).AddItem(searchField, 0, 1, false)
+	root = root.AddItem(upper, 0, 1, true).AddItem(lower, 0, 1, false).AddItem(bottom, 1, 1, false)
 
 	capture := func(event *tcell.EventKey) *tcell.EventKey {
 		// Toggle flow direction when 'm' key is pressed.
 		if event.Rune() == rune('m') {
 			direction = (direction + 1) % 2
 			lower.SetDirection(direction)
+		} else if event.Rune() == '/' {
+			app.SetFocus(searchField)
 		}
 		return event
 	}
-
-	app := tview.NewApplication().SetRoot(root, true).SetInputCapture(capture)
+	app.SetRoot(root, true).SetInputCapture(capture)
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
@@ -232,6 +246,10 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 				table.GetCell(row, column).SetTextColor(tcell.ColorRed)
 			}).
 			SetSelectionChangedFunc(func(row, col int) {
+				// don't update for headings
+				if row < 1 {
+					return
+				}
 				mgr.onStepSelected(trace.Get(row - 1))
 			}).
 			Select(1, 1).SetFixed(1, 1)
@@ -241,7 +259,8 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 			table.SetCell(0, col,
 				tview.NewTableCell(strings.ToUpper(title)).
 					SetTextColor(headingCol).
-					SetAlign(tview.AlignCenter))
+					SetAlign(tview.AlignCenter).
+					SetSelectable(false))
 		}
 		// Ops table body
 		for i, elem := range trace.Ops {
