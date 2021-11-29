@@ -75,7 +75,7 @@ const (
 	SHR    = OpCode(0x1C)
 	SAR    = OpCode(0x1D)
 
-	SHA3 = OpCode(0x20)
+	KECCAK256 = OpCode(0x20)
 )
 
 // 0x30 range - closure state.
@@ -301,7 +301,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	MULMOD: {"MULMOD", []string{"a", "b", "x"}, []string{"(a * b) mod x"}},
 
 	// 0x20 range - crypto.
-	SHA3: {"SHA3", []string{"offset", "size"}, []string{"keccak256(mem[offset:offset+size])"}},
+	KECCAK256: {"KECCAK256", []string{"offset", "size"}, []string{"keccak256(mem[offset:offset+size])"}},
 	// 0x30 range - closure state.
 	ADDRESS:      {"ADDRESS", nil, []string{"address of current context"}},
 	BALANCE:      {"BALANCE", []string{"address"}, []string{"balance of address"}},
