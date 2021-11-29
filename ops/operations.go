@@ -257,6 +257,10 @@ func init() {
 		stringToOp[elem.name] = k
 		ValidOpcodes = append(ValidOpcodes, k)
 	}
+
+	// Add mapping for legacy opcode names
+	stringToOp["SHA3"] = KECCAK256
+	stringToOp["SUICIDE"] = SELFDESTRUCT
 }
 
 // StringToOp finds the opcode whose name is stored in `str`.
