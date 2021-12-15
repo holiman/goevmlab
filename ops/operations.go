@@ -244,6 +244,11 @@ func (op OpCode) String() string {
 	return fmt.Sprintf("opcode 0x%x not defined", int(op))
 }
 
+func IsDefined(op OpCode) bool {
+	_, ok := opCodeInfo[op]
+	return ok
+}
+
 // stringToOp is a mapping from strings to OpCode
 var stringToOp map[string]OpCode
 
