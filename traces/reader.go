@@ -33,13 +33,14 @@ import (
 	"github.com/golang/snappy"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/uint256"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 type TraceLine struct {
 	step      uint64
 	address   *common.Address
 	callStack []*callInfo
-	log       *vm.StructLog
+	log       *logger.StructLog
 }
 
 type Traces struct {
@@ -138,7 +139,7 @@ func (t *TraceLine) Equals(other *TraceLine) bool {
 	//t.Get("depth") == other.Get("pc")
 }
 
-func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
+func convertToStructLog(op map[string]interface{}) (*logger.StructLog, error) {
 	intify := func(value interface{}) int {
 		// Try to convert it
 		if floatVal, ok := value.(float64); ok {
@@ -165,7 +166,7 @@ func convertToStructLog(op map[string]interface{}) (*vm.StructLog, error) {
 		return int(retval)
 	}
 
-	log := &vm.StructLog{}
+	log := &logger.StructLog{}
 	ok := false
 	for k, v := range op {
 		switch k {
@@ -301,7 +302,7 @@ func readJson(data []byte) (*Traces, error) {
 	}
 
 	for step, log := range traceData.Result.Logs {
-		structLog := &vm.StructLog{
+		structLog := &logger.StructLog{
 			Depth:   int(log.Depth),
 			Pc:      log.Pc,
 			GasCost: log.GasCost,

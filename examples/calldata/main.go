@@ -128,13 +128,7 @@ type dumbTracer struct {
 	counter uint64
 }
 
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	fmt.Printf("captureStart\n")
-	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", to.Hex())
-}
-
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
+func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	if op == vm.STATICCALL {
 		d.counter++
 	}
@@ -143,8 +137,20 @@ func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cos
 	}
 }
 
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
+func (d *dumbTracer) CaptureEnter(typ vm.OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
+}
+
+func (d *dumbTracer) CaptureExit(output []byte, gasUsed uint64, err error) {
+}
+
+func (d *dumbTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
 	fmt.Printf("CaptureFault %v\n", err)
+}
+
+func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+	fmt.Printf("captureStart\n")
+	fmt.Printf("	from: %v\n", from.Hex())
+	fmt.Printf("	to: %v\n", to.Hex())
 }
 
 func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {

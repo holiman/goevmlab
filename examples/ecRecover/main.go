@@ -32,6 +32,7 @@ import (
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 func main() {
@@ -107,7 +108,7 @@ func runit() error {
 		ChainConfig: ruleset,
 		EVMConfig: vm.Config{
 			Debug:  true,
-			Tracer: vm.NewJSONLogger(nil, os.Stderr),
+			Tracer: logger.NewJSONLogger(nil, os.Stderr),
 		},
 	}
 	// Diagnose it

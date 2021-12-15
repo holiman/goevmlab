@@ -26,7 +26,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // ErigonVM is s Evm-interface wrapper around the eroigon `evm` binary
@@ -101,7 +101,7 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		//fmt.Printf("geth: %v\n", string(data))
-		var elem vm.StructLog
+		var elem logger.StructLog
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
 			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))

@@ -1,14 +1,14 @@
 package evms
 
 import (
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // RemoveUnsupportedElems removes some elements that not all clients support.
 // Once the relenvant json-fields have been added, we can remove things from this
 // method
-func RemoveUnsupportedElems(elem *vm.StructLog) {
+func RemoveUnsupportedElems(elem *logger.StructLog) {
 	if elem.Stack == nil {
 		elem.Stack = make([]uint256.Int, 0)
 	}

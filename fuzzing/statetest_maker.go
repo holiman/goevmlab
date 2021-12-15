@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // The sender
@@ -286,7 +287,7 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	cfg := vm.Config{}
 	if traceOutput != nil {
 		cfg.Debug = true
-		cfg.Tracer = vm.NewJSONLogger(&vm.LogConfig{}, traceOutput)
+		cfg.Tracer = logger.NewJSONLogger(&logger.Config{}, traceOutput)
 	}
 	_, statedb, root, err := test.RunNoVerify(subtest, cfg, false)
 	if err != nil {

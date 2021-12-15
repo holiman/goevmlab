@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 type callInfo struct {
@@ -122,7 +123,7 @@ func AnalyzeCalls(trace *Traces) {
 // contextAddr -- the execution context
 // callDest    -- the call destination
 // name        -- type of call
-func determineDestination(log *vm.StructLog, current *common.Address) (contextAddr, callDest *common.Address, name string) {
+func determineDestination(log *logger.StructLog, current *common.Address) (contextAddr, callDest *common.Address, name string) {
 	switch log.Op {
 	case vm.CALL:
 		name = "CALL"

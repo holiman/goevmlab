@@ -26,7 +26,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // AlethVM is s Evm-interface wrapper around the `testeth` binary, based on Aleth.
@@ -91,7 +91,7 @@ func (evm *AlethVM) Copy(out io.Writer, input io.Reader) {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
-		var elem vm.StructLog
+		var elem logger.StructLog
 		// we don't accept leading zeroes
 		data = bytes.Replace(data, []byte(`"0x00"`), []byte(` "0x0"`), -1)
 		if err := json.Unmarshal(data, &elem); err != nil {

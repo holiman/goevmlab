@@ -27,7 +27,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
@@ -105,7 +105,7 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		var elem vm.StructLog
+		var elem logger.StructLog
 
 		// Nethermind sometimes report a negative refund
 		// TODO(@holiman): they may have fixed this, if so, delete this code
