@@ -26,7 +26,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 type ParityVM struct {
@@ -109,7 +109,7 @@ func (evm *ParityVM) Copy(out io.Writer, input io.Reader) {
 		// Calling bytes means that bytes in 'l' will be overwritten
 		// in the next loop. Fine for now though, we immediately marshal it
 		data := scanner.Bytes()
-		var elem vm.StructLog
+		var elem logger.StructLog
 		_ = json.Unmarshal(data, &elem)
 		// We ignore json errors, but need to see if the elem was parsed ok.
 		// We can use depth for that

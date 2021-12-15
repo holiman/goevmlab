@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // This program creates a testcase surrounding selfdestruct in the context of
@@ -180,7 +181,7 @@ func runit() error {
 		},
 		EVMConfig: vm.Config{
 			Debug:  true,
-			Tracer: vm.NewMarkdownLogger(nil, os.Stdout),
+			Tracer: logger.NewMarkdownLogger(nil, os.Stdout),
 		},
 	}
 	// Run with tracing

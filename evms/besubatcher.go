@@ -27,7 +27,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // BesuBatchVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
@@ -116,7 +116,7 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
 	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		var elem vm.StructLog
+		var elem logger.StructLog
 		// Besu (like Nethermind) sometimes report a negative refund
 		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
 			// we can just make it positive, it will be zeroed later
