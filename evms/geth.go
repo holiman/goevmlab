@@ -98,6 +98,30 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 	scanner := bufio.NewScanner(input)
 	buf := make([]byte, 4*1024*1024)
 	scanner.Buffer(buf, cap(buf))
+
+	// When geth encounters an error, it may already have spat out the info, prematurely.
+	// We need to merge it back to one item
+	var prev *logger.StructLog
+	var yield = func(current *logger.StructLog) {
+		if prev == nil {
+			prev = current
+			return
+		}
+		jsondata, _ := json.Marshal(prev)
+		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		}
+		if current == nil { // final flush
+			return
+		}
+		if prev.Pc == current.Pc && prev.Depth == current.Depth {
+			// Yup, that happened here. Set the error and continue
+			prev = nil
+		} else {
+			prev = current
+		}
+	}
+
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		//fmt.Printf("geth: %v\n", string(data))
@@ -133,13 +157,14 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 			continue
 		}
 		RemoveUnsupportedElems(&elem)
-
-		jsondata, _ := json.Marshal(elem)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return
-		}
+		yield(&elem)
+		//jsondata, _ := json.Marshal(elem)
+		//if _, err := out.Write(append(jsondata, '\n')); err != nil {
+		//	fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		//	return
+		//}
 	}
+	yield(nil)
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)

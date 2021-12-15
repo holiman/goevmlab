@@ -28,10 +28,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // The sender
@@ -497,6 +497,34 @@ func create2200Test(gst *GstMaker) {
 	}
 }
 
+func createNaive2200Test(gst *GstMaker) {
+	// The accounts which we want to be able to invoke
+	addrs := []common.Address{
+		common.HexToAddress("0xF1"),
+	}
+	for _, addr := range addrs {
+		gst.AddAccount(addr, GenesisAccount{
+			Code:    RandomBytecode(),
+			Balance: new(big.Int),
+			Storage: RandStorage(15, 20),
+		})
+	}
+	// The transaction
+	{
+		tx := &StTransaction{
+			// 8M gaslimit
+			GasLimit:   []uint64{8000000},
+			Nonce:      0,
+			Value:      []string{randHex(4)},
+			Data:       []string{randHex(100)},
+			GasPrice:   big.NewInt(0x10),
+			To:         addrs[0].Hex(),
+			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		}
+		gst.SetTx(tx)
+	}
+}
+
 func GenerateECRecover() (*GstMaker, []byte) {
 	gst := BasicStateTest("Istanbul")
 	// Add a contract which calls BLS
@@ -556,4 +584,10 @@ func RandCallECRecover() []byte {
 		offset += 32
 	}
 	return p.Bytecode()
+}
+
+func GenerateNaiveLondonTest() *GstMaker {
+	gst := BasicStateTest("London")
+	createNaive2200Test(gst)
+	return gst
 }
