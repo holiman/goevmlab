@@ -59,16 +59,23 @@ func TestSanity(t *testing.T) {
 		{
 			// This check can only be executed if the go-ethereum codebase
 			// is refactored a bit, to make the following public:
-			// - vm.IstanbulInstructionSet
+			// - vm.LatestInstructionSet pointing to latest instruction set
 			// - vm.operation.MinStack
 			// - vm.operation.MaxStack
-			// Was tested on 2019-08-29, oll korrekt
+			// Was tested on 2021-12-15, oll korrekt
+
 			/*
 				gotPops := len(ourOp.Pops())
-				geth_instr := vm.IstanbulInstructionSet[gethOp]
-				if gotPops != geth_instr.MinStack{
+				geth_instr := vm.LatestInstructionset[gethOp]
+				if gotPops != geth_instr.MinStack {
 					t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, geth_instr.MinStack)
 				}
+				havePush := len(ourOp.Pushes())
+				wantPush := 1024 - geth_instr.MaxStack + geth_instr.MinStack
+				if havePush != wantPush {
+					t.Errorf("op %v push wrong, us: %d, geth: %d", ourOp.String(), havePush, wantPush)
+				}
+
 			*/
 		}
 	}
