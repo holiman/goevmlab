@@ -30,6 +30,10 @@ const (
 	headingCol = tcell.ColorYellow
 )
 
+type Config struct {
+	HasChunking bool
+}
+
 type viewManager struct {
 	trace *traces.Traces
 
@@ -38,6 +42,8 @@ type viewManager struct {
 	memView   *tview.Table
 	opView    *tview.Form
 	root      *tview.Grid
+
+	config *Config
 }
 
 func NewDiffviewManager(traces []*traces.Traces) {
@@ -101,7 +107,7 @@ func NewDiffviewManager(traces []*traces.Traces) {
 }
 
 // NewViewManager create a viewmanager for the single-trace view
-func NewViewManager(trace *traces.Traces) {
+func NewViewManager(trace *traces.Traces, cfg *Config) {
 	app := tview.NewApplication()
 	root := tview.NewFlex().SetDirection(tview.FlexRow)
 
@@ -131,6 +137,7 @@ func NewViewManager(trace *traces.Traces) {
 		opView:    opView,
 		stackView: stack,
 		memView:   mem,
+		config:    cfg,
 	}
 
 	mgr.init(trace)
@@ -262,10 +269,12 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 					SetAlign(tview.AlignCenter).
 					SetSelectable(false))
 		}
-		table.SetCell(0, len(headings),
-			tview.NewTableCell(strings.ToUpper("chunk")).
-				SetTextColor(headingCol).
-				SetAlign(tview.AlignCenter))
+		if mgr.config.HasChunking {
+			table.SetCell(0, len(headings),
+				tview.NewTableCell(strings.ToUpper("chunk")).
+					SetTextColor(headingCol).
+					SetAlign(tview.AlignCenter))
+		}
 		// Ops table body
 		for i, elem := range trace.Ops {
 			if elem == nil {
@@ -276,7 +285,7 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 				data := elem.Get(title)
 				table.SetCell(row, col, tview.NewTableCell(data))
 
-				if title == "pc" {
+				if title == "pc" && mgr.config.HasChunking {
 					data := elem.Get("pc")
 					var pc, pch int
 					fmt.Sscanf(data, "%d (%#x)", &pc, &pch)

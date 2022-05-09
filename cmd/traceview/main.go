@@ -43,6 +43,7 @@ func main() {
 		"../../traces/testdata/14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy",
 	}
 
+	hasChunking := flag.Bool("chunking", false, "enable code chunking info in traceview")
 	flag.Parse()
 	if flag.NArg() != 1 {
 		fmt.Printf("Expected one argument\n")
@@ -62,5 +63,5 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
-	ui.NewViewManager(trace)
+	ui.NewViewManager(trace, &ui.Config{HasChunking: *hasChunking})
 }
