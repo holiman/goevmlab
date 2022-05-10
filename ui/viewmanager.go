@@ -32,6 +32,7 @@ const (
 
 type Config struct {
 	HasChunking bool
+	ChunkSize   uint
 }
 
 type viewManager struct {
@@ -289,7 +290,7 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 					data := elem.Get("pc")
 					var pc, pch int
 					fmt.Sscanf(data, "%d (%#x)", &pc, &pch)
-					table.SetCell(row, len(headings), tview.NewTableCell(fmt.Sprintf("%d", pc/31)))
+					table.SetCell(row, len(headings), tview.NewTableCell(fmt.Sprintf("%d", pc/int(mgr.config.ChunkSize))))
 				}
 			}
 		}
