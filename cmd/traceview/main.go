@@ -44,19 +44,18 @@ func main() {
 	}
 
 	hasChunking := flag.Bool("chunking", false, "enable code chunking info in traceview")
-	chunkSize := flag.Uint64("chunksize", 31, "size of a code chunk")
+	flag.Uint64Var(&traces.ChunkSize, "chunksize", 31, "size of a code chunk")
 	flag.Parse()
 	if flag.NArg() != 1 {
 		fmt.Printf("Expected one argument\n")
 		flag.Usage()
 		os.Exit(1)
 	}
-	if *chunkSize == 0 {
+	if traces.ChunkSize == 0 {
 		fmt.Printf("Chunk size must be a strictly positive integer\n")
 		flag.Usage()
 		os.Exit(2)
 	}
-	traces.ChunkSize = *chunkSize
 
 	fName := flag.Arg(0)
 	// Some debugging help here
