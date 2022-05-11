@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/traces"
 	"github.com/rivo/tview"
@@ -248,7 +248,7 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 		headings := []string{"step", "pc", "opName", "opCode",
 			"gas", "gasCost", "depth", "refund"}
 
-		if mgr.config.HasChunking {
+		if mgr.config != nil && mgr.config.HasChunking {
 			headings = append(headings, "chunk")
 		}
 
