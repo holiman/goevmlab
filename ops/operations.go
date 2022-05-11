@@ -233,6 +233,7 @@ const (
 
 	STATICCALL = OpCode(0xfa)
 
+	INVALID      = OpCode(0xfe)
 	REVERT       = OpCode(0xfd)
 	SELFDESTRUCT = OpCode(0xff)
 )
@@ -441,6 +442,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	CREATE2:      {"CREATE2", []string{"value", "mem offset", "mem size", "salt"}, []string{"address or zero"}},
 	STATICCALL:   {"STATICCALL", []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
 	REVERT:       {"REVERT", []string{"offset", "size"}, nil},
+	INVALID:      {"INVALID", nil, nil},
 	SELFDESTRUCT: {"SELFDESTRUCT", []string{"beneficiary address"}, nil},
 }
 
