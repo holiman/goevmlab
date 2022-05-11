@@ -119,15 +119,18 @@ func NewViewManager(trace *traces.Traces, cfg *Config) {
 	stack.SetTitle("Stack").SetBorder(true)
 	mem := tview.NewTable()
 	mem.SetTitle("Memory").SetBorder(true)
-	searchField := tview.NewInputField().SetPlaceholder("press '/' to search for an opcode...")
-	searchField.SetLabel("? ").SetDoneFunc(func(key tcell.Key) {
+	searchField := tview.NewInputField().SetPlaceholder("Press '/' for opcode search, and 'n' for next. Press 'm' to toggle mem/stack layout. ")
+	var doSearch = func() {
 		query := searchField.GetText()
 		cur, _ := ops.GetSelection()
+		query = strings.TrimPrefix(query, "/")
 		tl, idx := trace.Search(query, cur)
 		if tl != nil {
 			ops.Select(idx+1, 0)
 		}
-		searchField.SetText("")
+	}
+	searchField.SetLabel("Search>  ").SetDoneFunc(func(key tcell.Key) {
+		doSearch()
 		app.SetFocus(ops)
 	})
 
@@ -158,11 +161,15 @@ func NewViewManager(trace *traces.Traces, cfg *Config) {
 
 	capture := func(event *tcell.EventKey) *tcell.EventKey {
 		// Toggle flow direction when 'm' key is pressed.
-		if event.Rune() == rune('m') {
+		switch event.Rune() {
+		case rune('m'):
 			direction = (direction + 1) % 2
 			lower.SetDirection(direction)
-		} else if event.Rune() == '/' {
+		case rune('/'):
+			searchField.SetText("")
 			app.SetFocus(searchField)
+		case rune('n'):
+			doSearch()
 		}
 		return event
 	}
