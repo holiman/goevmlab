@@ -30,10 +30,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/golang/snappy"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/uint256"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 type TraceLine struct {
@@ -47,6 +47,9 @@ type Traces struct {
 	Ops  []*TraceLine
 	Errs []string
 }
+
+// Global variable chunk size
+var ChunkSize = uint64(31)
 
 func (traces *Traces) Get(index int) *TraceLine {
 	if index < len(traces.Ops) && index >= 0 {
@@ -73,7 +76,8 @@ func (t *TraceLine) Get(title string) string {
 	switch strings.ToLower(title) {
 	case "step":
 		return fmt.Sprintf("%d", t.step)
-
+	case "chunk":
+		return fmt.Sprintf("%v (0x%x)", op.Pc/ChunkSize, op.Pc/ChunkSize)
 	case "pc":
 		return fmt.Sprintf("%v (0x%x)", op.Pc, op.Pc)
 	case "opname":
