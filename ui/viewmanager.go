@@ -32,7 +32,6 @@ const (
 
 type Config struct {
 	HasChunking bool
-	ChunkSize   uint
 }
 
 type viewManager struct {
@@ -249,6 +248,10 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 		headings := []string{"step", "pc", "opName", "opCode",
 			"gas", "gasCost", "depth", "refund"}
 
+		if mgr.config.HasChunking {
+			headings = append(headings, "chunk")
+		}
+
 		table.SetSelectable(true, false).
 			SetSelectedFunc(func(row int, column int) {
 				table.GetCell(row, column).SetTextColor(tcell.ColorRed)
@@ -270,12 +273,6 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 					SetAlign(tview.AlignCenter).
 					SetSelectable(false))
 		}
-		if mgr.config.HasChunking {
-			table.SetCell(0, len(headings),
-				tview.NewTableCell(strings.ToUpper("chunk")).
-					SetTextColor(headingCol).
-					SetAlign(tview.AlignCenter))
-		}
 		// Ops table body
 		for i, elem := range trace.Ops {
 			if elem == nil {
@@ -285,13 +282,6 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 			for col, title := range headings {
 				data := elem.Get(title)
 				table.SetCell(row, col, tview.NewTableCell(data))
-
-				if title == "pc" && mgr.config.HasChunking {
-					data := elem.Get("pc")
-					var pc, pch int
-					fmt.Sscanf(data, "%d (%#x)", &pc, &pch)
-					table.SetCell(row, len(headings), tview.NewTableCell(fmt.Sprintf("%d", pc/int(mgr.config.ChunkSize))))
-				}
 			}
 		}
 	}
