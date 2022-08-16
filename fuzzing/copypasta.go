@@ -114,7 +114,7 @@ type stJSON struct {
 }
 
 type stPostState struct {
-	Root    common.UnprefixedHash `json:"hash"`
+	Root    common.Hash           `json:"hash"`
 	Logs    common.UnprefixedHash `json:"logs"`
 	Indexes stIndex               `json:"indexes"`
 }

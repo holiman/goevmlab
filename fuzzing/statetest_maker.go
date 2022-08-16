@@ -231,7 +231,7 @@ func (g *GstMaker) ToSubTest() *stJSON {
 		postState[fork] = []stPostState{
 			stPostState{
 				Logs:    common.UnprefixedHash(g.logs),
-				Root:    common.UnprefixedHash(g.root),
+				Root:    g.root,
 				Indexes: stIndex{Gas: 0, Value: 0, Data: 0},
 			},
 		}
