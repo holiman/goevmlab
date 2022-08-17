@@ -62,22 +62,34 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 	}
 	addrGen := addressRandomizer(addresses)
 
-	// 30% sstore,
-	// 30% sload,
-	// 20% call of some type
+	// 10% sstore,
+	// 10% sload,
+	// 30% valid ops
+	// 10% random op
+	// 25% call of some type
 	// 5% create, 5% create2,
 	// 5% return, 5% revert
 	p := program.NewProgram()
 	for {
 		r := rand.Intn(101)
 		switch {
-		case r < 30:
+		case r < 10:
 			p.Sstore(rand.Intn(5), rand.Intn(3))
-		case r < 60:
+		case r < 20:
 			slot := rand.Intn(5)
 			p.Push(slot)
 			p.Op(ops.SLOAD)
 			p.Op(ops.POP)
+		case r < 50: // 30% chance of well-formed opcode
+			b := make([]byte, 10)
+			rand.Read(b)
+			for i := 0; i < len(b); i++ {
+				if op := ops.OpCode(b[i]); ops.IsDefined(op) {
+					p.Op(op)
+				}
+			}
+		case r < 60: // 10% chance of some random opcode
+			p.Op(ops.OpCode(rand.Uint32()))
 		case r < 80:
 			// zero value call with no data
 			p2 := RandCall(nil, addrGen, nil, nil, nil)
