@@ -1,4 +1,4 @@
-// Copyright 2019 Martin Holst Swende
+// Copyright 2022 Martin Holst Swende
 // This file is part of the go-evmlab library.
 //
 // The library is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Author = "Martin Holst Swende"
-	app.Usage = "Generator for blake (state-)tests"
+	app.Usage = "Generator for tests targeting precompiles"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags,
 		common.ThreadFlag,
@@ -51,10 +51,10 @@ func main() {
 
 func startFuzzer(c *cli.Context) error {
 	generator := func() *fuzzing.GstMaker {
-		base := fuzzing.GenerateBlake()
+		base := fuzzing.GeneratePrecompileTest("London")
 		target := base.GetDestination()
-		base.SetCode(target, fuzzing.RandCallBlake())
+		base.SetCode(target, fuzzing.RandCallPrecompile())
 		return base
 	}
-	return common.ExecuteFuzzer(c, generator, "blaketest")
+	return common.ExecuteFuzzer(c, generator, "precompiletest")
 }
