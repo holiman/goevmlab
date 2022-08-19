@@ -101,6 +101,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
+	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
 	var prev *logger.StructLog
 	var yield = func(current *logger.StructLog) {
 		if prev == nil {
@@ -126,8 +127,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		data := scanner.Bytes()
 		//fmt.Printf("geth: %v\n", string(data))
 		var elem logger.StructLog
-		err := json.Unmarshal(data, &elem)
-		if err != nil {
+		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
@@ -135,6 +135,10 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
 		if elem.Depth == 0 {
+			/* It might be the stateroot
+			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
+			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
+			*/
 			if stateRoot.StateRoot == "" {
 				if err := json.Unmarshal(data, &stateRoot); err == nil {
 					// geth doesn't 0x-prefix stateroot
@@ -143,12 +147,6 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 					}
 				}
 			}
-
-			/*  Most likely one of these:
-			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-			*/
-			// For now, just ignore these
 			continue
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
@@ -158,11 +156,6 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		}
 		RemoveUnsupportedElems(&elem)
 		yield(&elem)
-		//jsondata, _ := json.Marshal(elem)
-		//if _, err := out.Write(append(jsondata, '\n')); err != nil {
-		//	fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-		//	return
-		//}
 	}
 	yield(nil)
 	root, _ := json.Marshal(stateRoot)

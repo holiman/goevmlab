@@ -108,7 +108,7 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	// We use a larger scanner buffer for besu: it does not have a way to
 	// disable 'returndata', which can become larger than fits into a default
 	// scanner buffer
-	buf := make([]byte, 4*1024*1024)
+	buf := make([]byte, 8*1024*1024)
 	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
