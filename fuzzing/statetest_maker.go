@@ -474,6 +474,12 @@ func create2200Test(gst *GstMaker) {
 	var allAddrs []common.Address
 	allAddrs = append(allAddrs, addrs...)
 	allAddrs = append(allAddrs, nonGenesisAddresses...)
+	// make them exist in the state
+	for _, addr := range nonGenesisAddresses {
+		gst.AddAccount(addr, GenesisAccount{
+			Balance: new(big.Int).SetUint64(1),
+		})
+	}
 	for _, addr := range addrs {
 		gst.AddAccount(addr, GenesisAccount{
 			Code:    RandCall2200(allAddrs),
