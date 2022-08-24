@@ -478,6 +478,7 @@ func create2200Test(gst *GstMaker) {
 	for _, addr := range nonGenesisAddresses {
 		gst.AddAccount(addr, GenesisAccount{
 			Balance: new(big.Int).SetUint64(1),
+			Storage: make(map[common.Hash]common.Hash),
 		})
 	}
 	for _, addr := range addrs {
