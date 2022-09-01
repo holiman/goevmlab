@@ -100,11 +100,10 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		//fmt.Printf("geth: %v\n", string(data))
 		var elem logger.StructLog
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
-			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))
+			fmt.Printf("erigon err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
 		// If the output cannot be marshalled, all fields will be blanks.

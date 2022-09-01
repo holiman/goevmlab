@@ -230,8 +230,8 @@ func (g *GstMaker) ToSubTest() *stJSON {
 		postState := make(map[string][]stPostState)
 		postState[fork] = []stPostState{
 			stPostState{
-				Logs:    common.UnprefixedHash(g.logs),
-				Root:    common.UnprefixedHash(g.root),
+				Logs:    g.logs,
+				Root:    g.root,
 				Indexes: stIndex{Gas: 0, Value: 0, Data: 0},
 			},
 		}
@@ -474,6 +474,13 @@ func create2200Test(gst *GstMaker) {
 	var allAddrs []common.Address
 	allAddrs = append(allAddrs, addrs...)
 	allAddrs = append(allAddrs, nonGenesisAddresses...)
+	// make them exist in the state
+	for _, addr := range nonGenesisAddresses {
+		gst.AddAccount(addr, GenesisAccount{
+			Balance: new(big.Int).SetUint64(1),
+			Storage: make(map[common.Hash]common.Hash),
+		})
+	}
 	for _, addr := range addrs {
 		gst.AddAccount(addr, GenesisAccount{
 			Code:    RandCall2200(allAddrs),
@@ -590,4 +597,56 @@ func GenerateNaiveLondonTest() *GstMaker {
 	gst := BasicStateTest("London")
 	createNaive2200Test(gst)
 	return gst
+}
+
+func GeneratePrecompileTest(forkName string) *GstMaker {
+	gst := BasicStateTest(forkName)
+	// Add a contract which calls a precompile
+	dest := common.HexToAddress("0x0000ca1100b1a7e")
+	gst.AddAccount(dest, GenesisAccount{
+		Code:    RandCallPrecompile(),
+		Balance: new(big.Int),
+		Storage: make(map[common.Hash]common.Hash),
+	})
+	// The transaction
+	{
+		tx := &StTransaction{
+			// 8M gaslimit
+			GasLimit:   []uint64{8000000},
+			Nonce:      0,
+			Value:      []string{randHex(4)},
+			Data:       []string{""},
+			GasPrice:   big.NewInt(0x20),
+			To:         dest.Hex(),
+			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		}
+		gst.SetTx(tx)
+	}
+	return gst
+}
+
+func RandCallPrecompile() []byte {
+	// fill the memory
+	p := program.NewProgram()
+	data := make([]byte, 1024)
+	rand.Read(data)
+	p.Mstore(data, 0)
+	memInFn := func() (offset, size interface{}) {
+		offset, size = 0, rand.Uint32()%uint32(len(data))
+		return
+	}
+	memOutFn := func() (offset, size interface{}) {
+		offset, size = 0, 64
+		return
+	}
+	addrGen := func() interface{} {
+		return rand.Uint32() % 18
+	}
+	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
+	p.AddAll(p2)
+	// pop the ret value
+	p.Op(ops.POP)
+	// Store the output in some slot, to make sure the stateroot changes
+	p.MemToStorage(0, 64, 0)
+	return p.Bytecode()
 }
