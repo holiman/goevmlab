@@ -18,7 +18,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -106,9 +105,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-func generate(ctx *cli.Context) error {
-	return errors.New("TODO")
-}
 
 func evaluate(ctx *cli.Context) error {
 	var (
@@ -124,7 +120,7 @@ func evaluate(ctx *cli.Context) error {
 	ruleset, ok := common2.Forks[fork]
 	if !ok {
 		var valid []string
-		for n, _ := range common2.Forks {
+		for n := range common2.Forks {
 			valid = append(valid, n)
 		}
 		return fmt.Errorf("fork '%v' not defined. Valid values are %v", fork, strings.Join(valid, ","))
@@ -209,11 +205,11 @@ Fork: %v
 		},
 	}
 	// Run with tracing
-	_, _, err := runtime.Call(attackerAddr, nil, &runtimeConfig)
+	_, _, _ = runtime.Call(attackerAddr, nil, &runtimeConfig)
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	t0 := time.Now()
-	_, _, err = runtime.Call(attackerAddr, nil, &runtimeConfig)
+	_, _, err := runtime.Call(attackerAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 
 	fmt.Printf("\nExecution time: %v\n", t1)
@@ -289,6 +285,10 @@ type dumbTracer struct {
 	jumpCount uint64
 	opCount   uint64
 }
+
+func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
+
+func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
 
 func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
 }

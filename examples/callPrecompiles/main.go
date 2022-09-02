@@ -144,6 +144,10 @@ type dumbTracer struct {
 	counter uint64
 }
 
+func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
+
+func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
+
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	if op == vm.STATICCALL {
 		d.counter++
