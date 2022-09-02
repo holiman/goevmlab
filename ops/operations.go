@@ -128,6 +128,7 @@ const (
 	BEGINSUB  = OpCode(0x5c) // Not live, used in a test
 	RETURNSUB = OpCode(0x5d) // Not live, used in a test
 	JUMPSUB   = OpCode(0x5e) // Not live, used in a test
+	PUSH0     = OpCode(0x5f) // Not live, used in a test
 )
 
 // 0x60 through 0x7F range.
@@ -355,6 +356,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	MSIZE:    {"MSIZE", nil, []string{"size of memory"}},
 	GAS:      {"GAS", nil, []string{"current gas remaining"}},
 	JUMPDEST: {"JUMPDEST", nil, nil},
+	PUSH0:    {"PUSH0", nil, []string{"zero"}},
 	//BEGINSUB:  {"BEGINSUB", nil, nil},
 	//RETURNSUB: {"RETURNSUB", nil, nil},
 	//JUMPSUB:   {"JUMPSUB", []string{"subroutine destination"}, nil},
