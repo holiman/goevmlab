@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   linux:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.18
     steps:
       - run:
           name: "Go version"
