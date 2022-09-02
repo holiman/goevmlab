@@ -64,6 +64,7 @@ func staticCallAttack() []byte {
 	a.Jump(dest)
 	return a.Bytecode()
 }
+
 func extCodeSizeAttack() []byte {
 	// Causes 14205 EXTCODESIZEs
 	//       63          17686763 ns/op
@@ -87,13 +88,16 @@ func runit() error {
 		else:
 		code = "5b%s600056" % (("5a%s50"%opcode) * code_repitions)  # JUMPDEST (GAS BALANCE/EXTCODESIZE/EXTCODEHASH POP) * 8'000 PUSH1 0x0 JUMP
 	*/
+	code := staticCallAttack()
+	if false {
+		code = extCodeSizeAttack()
+	}
 
 	aAddr := common.HexToAddress("0xff0a")
 	alloc := make(core.GenesisAlloc)
 	alloc[aAddr] = core.GenesisAccount{
-		Nonce: 0,
-		Code:  staticCallAttack(),
-		//Code:    extCodeSizeAttack(),
+		Nonce:   0,
+		Code:    code,
 		Balance: big.NewInt(0xffffffff),
 	}
 	var err error
@@ -157,7 +161,7 @@ func runit() error {
 	})
 	//t0 := time.Now()
 	//t1 := time.Since(t0)
-	fmt.Printf(res.String())
+	fmt.Print(res.String())
 	fmt.Println()
 	//fmt.Printf("Time elapsed: %v\n", t1)
 	return err
@@ -166,6 +170,10 @@ func runit() error {
 type dumbTracer struct {
 	counter uint64
 }
+
+func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
+
+func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
 
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	if op == vm.STATICCALL {

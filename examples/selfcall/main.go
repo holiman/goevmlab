@@ -133,7 +133,7 @@ func runit() error {
 		},
 	}
 	// Run with tracing
-	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
+	_, _, _ = runtime.Call(aAddr, nil, &runtimeConfig)
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	t0 := time.Now()
@@ -146,6 +146,10 @@ func runit() error {
 type dumbTracer struct {
 	counter uint64
 }
+
+func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
+
+func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
 
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	if op == vm.STATICCALL {

@@ -18,7 +18,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -103,9 +102,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-func generate(ctx *cli.Context) error {
-	return errors.New("TODO")
-}
 
 func evaluate(ctx *cli.Context) error {
 	var (
@@ -133,7 +129,7 @@ func evaluate(ctx *cli.Context) error {
 	ruleset, ok := common2.Forks[fork]
 	if !ok {
 		var valid []string
-		for n, _ := range common2.Forks {
+		for n := range common2.Forks {
 			valid = append(valid, n)
 		}
 		return fmt.Errorf("fork '%v' not defined. Valid values are %v", fork, strings.Join(valid, ","))
@@ -219,11 +215,11 @@ Fork: %v
 		},
 	}
 	// Run with tracing
-	_, _, err := runtime.Call(attackerAddr, nil, &runtimeConfig)
+	_, _, _ = runtime.Call(attackerAddr, nil, &runtimeConfig)
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	t0 := time.Now()
-	_, _, err = runtime.Call(attackerAddr, nil, &runtimeConfig)
+	_, _, err := runtime.Call(attackerAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 
 	fmt.Printf("Amount of code analyzed (CREATE x initcode size): %.02f MB",
@@ -307,6 +303,12 @@ type dumbTracer struct {
 	startGas  uint64
 	phase1Gas uint64
 	phase2Gas uint64
+}
+
+func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {
+}
+
+func (d *dumbTracer) CaptureTxEnd(restGas uint64) {
 }
 
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {

@@ -33,9 +33,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/goevmlab/program"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // This program creates a testcase surrounding selfdestruct in the context of
@@ -185,7 +185,7 @@ func runit() error {
 		},
 	}
 	// Run with tracing
-	_, _, err = runtime.Call(callerAddr, nil, &runtimeConfig)
+	_, _, _ = runtime.Call(callerAddr, nil, &runtimeConfig)
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	t0 := time.Now()
@@ -229,29 +229,6 @@ func runit() error {
 
 	gst := mkr.ToGeneralStateTest("TestSelfdestruct")
 	dat, _ := json.MarshalIndent(gst, "", " ")
-	fmt.Printf(string(dat))
+	fmt.Println(string(dat))
 	return err
-}
-
-type dumbTracer struct {
-	counter uint64
-}
-
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	fmt.Printf("captureStart\n")
-	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", to.Hex())
-}
-
-func (d *dumbTracer) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	fmt.Printf("pc %d op %v gas %d cost %d depth %d\n", pc, op, gas, cost, depth)
-}
-
-func (d *dumbTracer) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
-	fmt.Printf("CaptureFault %v\n", err)
-}
-
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
-	fmt.Printf("\nCaptureEnd\n")
-	fmt.Printf("Counter: %d\n", d.counter)
 }
