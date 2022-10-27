@@ -22,6 +22,7 @@ func (s StTransaction) MarshalJSON() ([]byte, error) {
 		GasLimit   []math.HexOrDecimal64 `json:"gasLimit"`
 		Value      []string              `json:"value"`
 		PrivateKey hexutil.Bytes         `json:"secretKey"`
+		Sender     string 			     `json:"sender"`
 	}
 	var enc StTransaction
 	enc.GasPrice = (*math.HexOrDecimal256)(s.GasPrice)
@@ -36,6 +37,7 @@ func (s StTransaction) MarshalJSON() ([]byte, error) {
 	}
 	enc.Value = s.Value
 	enc.PrivateKey = s.PrivateKey
+	enc.Sender = s.Sender
 	return json.Marshal(&enc)
 }
 

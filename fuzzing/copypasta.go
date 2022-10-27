@@ -156,6 +156,7 @@ type StTransaction struct {
 	GasLimit   []uint64 `json:"gasLimit"`
 	Value      []string `json:"value"`
 	PrivateKey []byte   `json:"secretKey"`
+	Sender     string   `json:"sender"`
 }
 
 type stTransactionMarshaling struct {
