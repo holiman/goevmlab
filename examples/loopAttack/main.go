@@ -109,11 +109,11 @@ func main() {
 func evaluate(ctx *cli.Context) error {
 	var (
 		// gas to use for the tx
-		gas         = uint64(ctx.GlobalInt(gasFlag.Name))
-		outFilename = ctx.GlobalString(outFileFlag.Name)
-		fork        = ctx.GlobalString(forkFlag.Name)
-		pusher      = ctx.GlobalInt(pushFlag.Name)
-		popper      = ctx.GlobalInt(popFlag.Name)
+		gas         = uint64(ctx.Int(gasFlag.Name))
+		outFilename = ctx.String(outFileFlag.Name)
+		fork        = ctx.String(forkFlag.Name)
+		pusher      = ctx.Int(pushFlag.Name)
+		popper      = ctx.Int(popFlag.Name)
 		// The attacker code
 		attackerAddr = common.HexToAddress("0x31337")
 	)

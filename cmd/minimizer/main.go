@@ -35,7 +35,7 @@ import (
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Test-case minimizer"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Action = startFuzzer

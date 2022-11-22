@@ -22,12 +22,13 @@ import (
 	"path/filepath"
 
 	"github.com/holiman/goevmlab/common"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Fuzzer targeting SSTORE and SLOAD"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Action = startFuzzer

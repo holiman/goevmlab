@@ -107,12 +107,12 @@ func evaluate(ctx *cli.Context) error {
 	var (
 		// codeMultiplier determines the size of the memory area to use.
 		// The resulting size will be multiplied by 0x6000
-		codeMultiplier = ctx.GlobalInt(multiplierFlag.Name)
+		codeMultiplier = ctx.Int(multiplierFlag.Name)
 		// gas to use for the tx
-		gas          = uint64(ctx.GlobalInt(gasFlag.Name))
-		outFilename  = ctx.GlobalString(outFileFlag.Name)
-		fork         = ctx.GlobalString(forkFlag.Name)
-		payload      = ctx.GlobalInt(payloadFlag.Name)
+		gas          = uint64(ctx.Int(gasFlag.Name))
+		outFilename  = ctx.String(outFileFlag.Name)
+		fork         = ctx.String(forkFlag.Name)
+		payload      = ctx.Int(payloadFlag.Name)
 		initCodeSize = codeMultiplier * 0x6000
 		// initcode is different from the mainnet attack code, which just did
 		// a small jump across the first bytes and then stopped. This code instead
