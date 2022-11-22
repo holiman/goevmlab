@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -30,12 +29,13 @@ import (
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Test-case minimizer"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Action = startFuzzer

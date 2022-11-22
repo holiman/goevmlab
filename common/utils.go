@@ -39,53 +39,53 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 var (
-	GethFlag = cli.StringFlag{
+	GethFlag = &cli.StringFlag{
 		Name:  "geth",
 		Usage: "Location of go-ethereum 'evm' binary",
 	}
-	ParityFlag = cli.StringFlag{
+	ParityFlag = &cli.StringFlag{
 		Name:  "parity",
 		Usage: "Location of go-ethereum 'parity-vm' binary",
 	}
-	NethermindFlag = cli.StringFlag{
+	NethermindFlag = &cli.StringFlag{
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
 	}
-	AlethFlag = cli.StringFlag{
+	AlethFlag = &cli.StringFlag{
 		Name:  "testeth",
 		Usage: "Location of aleth 'testeth' binary",
 	}
-	BesuFlag = cli.StringFlag{
+	BesuFlag = &cli.StringFlag{
 		Name:  "besu",
 		Usage: "Location of besu vm binary",
 	}
-	BesuBatchFlag = cli.StringFlag{
+	BesuBatchFlag = &cli.StringFlag{
 		Name:  "besubatch",
 		Usage: "Location of besu vm binary",
 	}
-	ErigonFlag = cli.StringFlag{
+	ErigonFlag = &cli.StringFlag{
 		Name:  "erigon",
 		Usage: "Location of erigon 'evm' binary",
 	}
-	ThreadFlag = cli.IntFlag{
+	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
 		Value: runtime.NumCPU(),
 	}
-	LocationFlag = cli.StringFlag{
+	LocationFlag = &cli.StringFlag{
 		Name:  "outdir",
 		Usage: "Location to place artefacts",
 		Value: "/tmp",
 	}
-	PrefixFlag = cli.StringFlag{
+	PrefixFlag = &cli.StringFlag{
 		Name:  "prefix",
 		Usage: "prefix of output files",
 	}
-	CountFlag = cli.IntFlag{
+	CountFlag = &cli.IntFlag{
 		Name:  "count",
 		Usage: "number of tests to generate",
 	}
@@ -102,13 +102,13 @@ var (
 
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
-		gethBin      = c.GlobalString(GethFlag.Name)
-		parityBin    = c.GlobalString(ParityFlag.Name)
-		nethBin      = c.GlobalString(NethermindFlag.Name)
-		alethBin     = c.GlobalString(AlethFlag.Name)
-		besuBin      = c.GlobalString(BesuFlag.Name)
-		besuBatchBin = c.GlobalString(BesuBatchFlag.Name)
-		erigonBin    = c.GlobalString(ErigonFlag.Name)
+		gethBin      = c.String(GethFlag.Name)
+		parityBin    = c.String(ParityFlag.Name)
+		nethBin      = c.String(NethermindFlag.Name)
+		alethBin     = c.String(AlethFlag.Name)
+		besuBin      = c.String(BesuFlag.Name)
+		besuBatchBin = c.String(BesuBatchFlag.Name)
+		erigonBin    = c.String(ErigonFlag.Name)
 		vms          []evms.Evm
 	)
 	if gethBin != "" {
@@ -266,8 +266,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 
 	var (
 		vms        = initVMs(c)
-		numThreads = c.GlobalInt(ThreadFlag.Name)
-		location   = c.GlobalString(LocationFlag.Name)
+		numThreads = c.Int(ThreadFlag.Name)
+		location   = c.String(LocationFlag.Name)
 	)
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")

@@ -19,19 +19,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Generator for tests targeting SSTORE and SLOAD"
 	return app
 }
@@ -46,12 +46,12 @@ func init() {
 		common.LocationFlag,
 		common.CountFlag,
 	}
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		generateCommand,
 	}
 }
 
-var generateCommand = cli.Command{
+var generateCommand = &cli.Command{
 	Action:      generate,
 	Name:        "generate",
 	Usage:       "generate tests",
@@ -119,10 +119,10 @@ func createTests(location, prefix string, limit int, trace bool) error {
 func generate(ctx *cli.Context) error {
 
 	var prefix = ""
-	if ctx.GlobalIsSet(common.PrefixFlag.Name) {
-		prefix = ctx.GlobalString(common.PrefixFlag.Name)
+	if ctx.IsSet(common.PrefixFlag.Name) {
+		prefix = ctx.String(common.PrefixFlag.Name)
 	}
-	var location = ctx.GlobalString(common.LocationFlag.Name)
+	var location = ctx.String(common.LocationFlag.Name)
 	//if err := os.MkdirAll(path.Join(location, "traces"), 0755); err != nil {
 	//	return fmt.Errorf("could not create %v: %v", location, err)
 	//}
@@ -130,8 +130,8 @@ func generate(ctx *cli.Context) error {
 		return fmt.Errorf("could not create %v: %v", location, err)
 	}
 	var count = 0
-	if ctx.GlobalIsSet(common.CountFlag.Name) {
-		count = ctx.GlobalInt(common.CountFlag.Name)
+	if ctx.IsSet(common.CountFlag.Name) {
+		count = ctx.Int(common.CountFlag.Name)
 	}
 	return createTests(location, prefix, count, false)
 }

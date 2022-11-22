@@ -18,18 +18,18 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path/filepath"
 
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Generator for blake (state-)tests"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags,

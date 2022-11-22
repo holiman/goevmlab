@@ -18,18 +18,18 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/holiman/goevmlab/common"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Tests execution speed on list of statetests"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Action = startTests
@@ -50,7 +50,7 @@ func startTests(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return fmt.Errorf("input state test directory needed")
 	}
-	dir := c.Args()[0]
+	dir := c.Args().First()
 	finfo, err := os.Stat(dir)
 	if err != nil {
 		return err

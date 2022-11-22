@@ -23,8 +23,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/holiman/goevmlab/ops"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -32,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
 )
 
