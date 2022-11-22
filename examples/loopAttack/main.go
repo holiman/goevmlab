@@ -43,28 +43,28 @@ import (
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Generator for loop analysis tests"
 	return app
 }
 
 var (
 	app     = initApp()
-	gasFlag = cli.IntFlag{
+	gasFlag = &cli.IntFlag{
 		Name:  "gas",
 		Value: 10_000_000,
 		Usage: "Sets the gas amount to use",
 	}
-	outFileFlag = cli.StringFlag{
+	outFileFlag = &cli.StringFlag{
 		Name:  "out",
 		Usage: "If set, causes a state-test to be written with the given name.",
 	}
-	forkFlag = cli.StringFlag{
+	forkFlag = &cli.StringFlag{
 		Name:  "fork",
 		Value: "London",
 		Usage: "What fork rules to use (e.g. Berlin, London)",
 	}
-	pushFlag = cli.IntFlag{
+	pushFlag = &cli.IntFlag{
 		Name:  "push",
 		Value: int(ops.PC),
 		Usage: "What opcode to use for filling the stack with. These are all 2-gas ops: " +
@@ -73,12 +73,12 @@ var (
 			"TIMESTAMP(0x42), NUMBER(0x43), DIFFICULTY(0x44), GASLIMIT(0x45), " +
 			"CHAINID(0x46), BASEFEE(0x48)",
 	}
-	popFlag = cli.IntFlag{
+	popFlag = &cli.IntFlag{
 		Name:  "pop",
 		Value: int(ops.POP),
 		Usage: "What opcode to use for emptying the stack with.",
 	}
-	evaluateCommand = cli.Command{
+	evaluateCommand = &cli.Command{
 		Action:      evaluate,
 		Name:        "evaluate",
 		Usage:       "evaluate the test using the built-in go-ethereum base",
@@ -94,7 +94,7 @@ func init() {
 		popFlag,
 		outFileFlag,
 	}
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		evaluateCommand,
 	}
 }

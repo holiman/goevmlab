@@ -44,38 +44,38 @@ import (
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Author = "Martin Holst Swende"
+	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Generator for jumpdest analysis tests"
 	return app
 }
 
 var (
 	app            = initApp()
-	multiplierFlag = cli.IntFlag{
+	multiplierFlag = &cli.IntFlag{
 		Name:  "multiplier",
 		Value: 65, // 65 * 0x6000 = 1_597_440 bytes
 		Usage: "Sets the memory payload size, which becomes 'multiplier x 0x6000'",
 	}
-	gasFlag = cli.IntFlag{
+	gasFlag = &cli.IntFlag{
 		Name:  "gas",
 		Value: 10_000_000,
 		Usage: "Sets the gas amount to use",
 	}
-	outFileFlag = cli.StringFlag{
+	outFileFlag = &cli.StringFlag{
 		Name:  "out",
 		Usage: "If set, causes a state-test to be written with the given name.",
 	}
-	forkFlag = cli.StringFlag{
+	forkFlag = &cli.StringFlag{
 		Name:  "fork",
 		Value: "Berlin",
 		Usage: "What fork rules to use (e.g. Berlin, London)",
 	}
-	payloadFlag = cli.IntFlag{
+	payloadFlag = &cli.IntFlag{
 		Name:  "payload",
 		Value: 0x5b,
 		Usage: "What opcode to fill the space with.",
 	}
-	evaluateCommand = cli.Command{
+	evaluateCommand = &cli.Command{
 		Action:      evaluate,
 		Name:        "evaluate",
 		Usage:       "evaluate the test using the built-in go-ethereum base",
@@ -91,7 +91,7 @@ func init() {
 		payloadFlag,
 		outFileFlag,
 	}
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		evaluateCommand,
 	}
 }
