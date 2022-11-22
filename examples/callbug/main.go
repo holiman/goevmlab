@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"math/big"
 )
 
 func main() {

@@ -38,7 +38,7 @@ import (
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {

@@ -19,10 +19,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/holiman/goevmlab/traces"
-	"github.com/holiman/goevmlab/ui"
 	"os"
 	"strconv"
+
+	"github.com/holiman/goevmlab/traces"
+	"github.com/holiman/goevmlab/ui"
 )
 
 func init() {

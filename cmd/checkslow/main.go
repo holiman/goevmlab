@@ -18,12 +18,11 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/holiman/goevmlab/common"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {

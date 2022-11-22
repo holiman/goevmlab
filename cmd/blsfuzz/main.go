@@ -21,10 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/urfave/cli.v1"
-
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {

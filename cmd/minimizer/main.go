@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -30,6 +29,7 @@ import (
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
+	"github.com/urfave/cli/v2"
 )
 
 func initApp() *cli.App {

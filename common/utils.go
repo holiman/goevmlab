@@ -39,7 +39,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
-	"gopkg.in/urfave/cli.v1"
 )
 
 var (
