@@ -17,10 +17,11 @@
 package program
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/goevmlab/ops"
 	"math/big"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/goevmlab/ops"
 )
 
 func TestPush(t *testing.T) {

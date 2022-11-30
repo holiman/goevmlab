@@ -109,7 +109,7 @@ func TestStateRootOnly(t *testing.T) {
 		NewParityVM("../binaries/openethereum-evm"),
 	}
 	for _, vm := range vms {
-		got, err := vm.GetStateRoot("./testdata/statetest1.json")
+		got, _, err := vm.GetStateRoot("./testdata/statetest1.json")
 		if err != nil {
 			t.Errorf("got error: %v", err)
 		} else if exp := "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"; got != exp {

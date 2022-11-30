@@ -44,20 +44,20 @@ func NewErigonVM(path string) *ErigonVM {
 // This currently only works for non-filled statetests. TODO: make it work even if the
 // test is filled. Either by getting the whole trace, or adding stateroot to exec std output
 // even in success-case
-func (evm *ErigonVM) GetStateRoot(path string) (string, error) {
+func (evm *ErigonVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
 	cmd := exec.Command(evm.path, "statetest", path)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", cmd.String(), err
 	}
 	start := strings.Index(string(data), "mismatch: got ")
 	end := strings.Index(string(data), ", want")
 	if start > 0 && end > 0 {
 		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
-		return root, nil
+		return root, cmd.String(), nil
 	}
-	return "", errors.New("no stateroot found")
+	return "", cmd.String(), errors.New("no stateroot found")
 }
 
 // RunStateTest implements the Evm interface

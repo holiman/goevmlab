@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -39,7 +40,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
-	"github.com/urfave/cli/v2"
+        "github.com/urfave/cli/v2"
+
 )
 
 var (
@@ -47,17 +49,9 @@ var (
 		Name:  "geth",
 		Usage: "Location of go-ethereum 'evm' binary",
 	}
-	ParityFlag = &cli.StringFlag{
-		Name:  "parity",
-		Usage: "Location of go-ethereum 'parity-vm' binary",
-	}
 	NethermindFlag = &cli.StringFlag{
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
-	}
-	AlethFlag = &cli.StringFlag{
-		Name:  "testeth",
-		Usage: "Location of aleth 'testeth' binary",
 	}
 	BesuFlag = &cli.StringFlag{
 		Name:  "besu",
@@ -89,23 +83,26 @@ var (
 		Name:  "count",
 		Usage: "number of tests to generate",
 	}
+	SkipTraceFlag = &cli.BoolFlag{
+		Name: "skiptrace",
+		Usage: "If 'skiptrace' is set to true, then the evms will execute _without_ tracing, and only the final stateroot will be compared after execution.\n" +
+			"This mode is faster, and can be used even if the clients-under-test has known errors in the trace-output, \n" +
+			"but has a very high chance of missing cases which could be exploitable.",
+	}
 	VmFlags = []cli.Flag{
 		GethFlag,
-		ParityFlag,
 		NethermindFlag,
-		AlethFlag,
 		BesuFlag,
 		BesuBatchFlag,
 		ErigonFlag,
+		SkipTraceFlag,
 	}
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
 		gethBin      = c.String(GethFlag.Name)
-		parityBin    = c.String(ParityFlag.Name)
 		nethBin      = c.String(NethermindFlag.Name)
-		alethBin     = c.String(AlethFlag.Name)
 		besuBin      = c.String(BesuFlag.Name)
 		besuBatchBin = c.String(BesuBatchFlag.Name)
 		erigonBin    = c.String(ErigonFlag.Name)
@@ -114,14 +111,8 @@ func initVMs(c *cli.Context) []evms.Evm {
 	if gethBin != "" {
 		vms = append(vms, evms.NewGethEVM(gethBin))
 	}
-	if parityBin != "" {
-		vms = append(vms, evms.NewParityVM(parityBin))
-	}
 	if nethBin != "" {
 		vms = append(vms, evms.NewNethermindVM(nethBin))
-	}
-	if alethBin != "" {
-		vms = append(vms, evms.NewAlethVM(alethBin))
 	}
 	if besuBin != "" {
 		vms = append(vms, evms.NewBesuVM(besuBin))
@@ -149,7 +140,7 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 	wg.Add(len(vms))
 	for i, vm := range vms {
 		go func(index int, vm evms.Evm) {
-			root, err := vm.GetStateRoot(path)
+			root, _, err := vm.GetStateRoot(path)
 			roots[index] = root
 			errs[index] = err
 			wg.Done()
@@ -268,6 +259,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		vms        = initVMs(c)
 		numThreads = c.Int(ThreadFlag.Name)
 		location   = c.String(LocationFlag.Name)
+		skipTrace  = c.Bool(SkipTraceFlag.Name)
 	)
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")
@@ -284,7 +276,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, generatorFn, location)
-	meta.startTestExecutors((numThreads + 1) / 2)
+	meta.startTestExecutors((numThreads+1)/2, skipTrace)
 	// One goroutine to spit out some statistics
 	ctx, cancel := context.WithCancel(context.Background())
 	meta.wg.Add(1)
@@ -443,8 +435,15 @@ func (meta *testMeta) startTestFactories(numFactories int, generatorFn Generator
 		go factory(i)
 	}
 }
+func (meta *testMeta) startTestExecutors(numThreads int, skipTrace bool) {
+	if skipTrace {
+		meta.startNontracingTestExecutors(numThreads)
+	} else {
+		meta.startTracingTestExecutors(numThreads)
+	}
+}
 
-func (meta *testMeta) startTestExecutors(numThreads int) {
+func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 	executors := int64(0)
 
 	execute := func(threadId int) {
@@ -457,6 +456,7 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 				fmt.Printf("last executor exiting\n")
 			}
 		}()
+		// Output files are used, the vms spit out their traces to these files.
 		var outputs []*os.File
 		defer func() {
 			for _, f := range outputs {
@@ -541,9 +541,98 @@ func (meta *testMeta) startTestExecutors(numThreads int) {
 	}
 }
 
+func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
+	executors := int64(0)
+	execute := func(threadId int) {
+		defer meta.wg.Done()
+		defer func() {
+			// clean-up tasks
+			if f := atomic.AddInt64(&executors, -1); f == 0 {
+				close(meta.removeCh)
+				close(meta.slowCh)
+				fmt.Printf("last executor exiting\n")
+			}
+		}()
+		atomic.AddInt64(&executors, 1)
+		fmt.Printf("Fuzzing thread %d started\n", threadId)
+		// Open/create outputs for writing
+		for file := range meta.testCh {
+			if atomic.LoadInt64(&meta.abort) == 1 {
+				// Continue to drain the testch
+				continue
+			}
+			// Zero out the output files and reset offset
+			var slowTest uint32
+			// Kick off the binaries, which runs the test on all the vms in parallel
+			var vmWg sync.WaitGroup
+			vmWg.Add(len(meta.vms))
+			var roots = make([]string, len(meta.vms))
+			var commands = make([]string, len(meta.vms))
+			for i := range meta.vms {
+				go func(i int) {
+					defer vmWg.Done()
+					var (
+						t0                 = time.Now()
+						evm                = meta.vms[i]
+						root, command, err = evm.GetStateRoot(file)
+					)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "error starting vm %v: error %v\n", evm.Name(), err)
+						return
+					}
+					roots[i] = root
+					commands[i] = command
+					if execTime := time.Since(t0); execTime > 5*time.Second {
+						fmt.Printf("%10v done in %v (slow)", evm.Name(), execTime)
+						// Flag test as slow
+						atomic.StoreUint32(&slowTest, 1)
+					}
+				}(i)
+			}
+			vmWg.Wait()
+			// All the tests are now executed, and we need to read and compare the roots
+			atomic.AddUint64(&meta.numTests, 1)
+			// Compare roots
+			consensusError := false
+			for i, root := range roots[:len(roots)-1] {
+				if root == roots[i+1] {
+					continue
+				}
+				// Consensus error
+				atomic.StoreInt64(&meta.abort, 1)
+				consensusError = true
+				break
+			}
+			if consensusError {
+				out := new(strings.Builder)
+				fmt.Fprintf(out, "Consensus error\n")
+				for i, r := range roots {
+					fmt.Fprintf(out, "  - %v stateroot: %v\n", meta.vms[i].Name(), r)
+					fmt.Fprintf(out, "    - command: %v\n", commands[i])
+				}
+				fmt.Fprintf(out, "Testcase: %v\n", file)
+				fmt.Println(out.String())
+				meta.consensusCh <- file // flag as consensus-issue
+			} else if slowTest != 0 {
+				meta.slowCh <- file // flag as slow
+			} else {
+				meta.removeCh <- file // flag for removal
+			}
+		}
+	}
+	numExecutors := numThreads / 2
+	if numExecutors == 0 {
+		numExecutors = 1
+	}
+	for i := 0; i < numExecutors; i++ {
+		// Thread that executes the tests and compares the outputs
+		meta.wg.Add(1)
+		go execute(i)
+	}
+}
+
 // ConvertToStateTest is a utility to turn stuff into sharable state tests.
-func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uint64,
-	target common.Address) error {
+func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uint64, target common.Address) error {
 
 	mkr := fuzzing.BasicStateTest(fork)
 	// convert the genesisAlloc

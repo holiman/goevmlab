@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -44,6 +43,10 @@ func NewBesuBatchVM(path string) *BesuBatchVM {
 	return &BesuBatchVM{
 		path: path,
 	}
+}
+
+func (evm *BesuBatchVM) Name() string {
+	return "besubatch"
 }
 
 // RunStateTest implements the Evm interface
@@ -82,10 +85,6 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	return evm.cmd.String(), nil
 }
 
-func (evm *BesuBatchVM) Name() string {
-	return "besubatch"
-}
-
 func (vm *BesuBatchVM) Close() {
 	if vm.stdin != nil {
 		vm.stdin.Close()
@@ -95,8 +94,32 @@ func (vm *BesuBatchVM) Close() {
 	}
 }
 
-func (vm *BesuBatchVM) GetStateRoot(path string) (string, error) {
-	return "", errors.New("Not implemented")
+func (evm *BesuBatchVM) GetStateRoot(path string) (root, command string, err error) {
+	if evm.cmd == nil {
+		evm.cmd = exec.Command(evm.path, "--nomemory", "state-test")
+		// The stateroot is delivered on stdout
+		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
+			return "", evm.cmd.String(), err
+		}
+		if evm.stdin, err = evm.cmd.StdinPipe(); err != nil {
+			return "", evm.cmd.String(), err
+		}
+		if err = evm.cmd.Start(); err != nil {
+			return "", evm.cmd.String(), err
+		}
+	}
+	evm.mu.Lock()
+	defer evm.mu.Unlock()
+	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	sRoot := evm.copyUntilEnd(devNull{}, evm.stdout)
+	return sRoot.StateRoot, evm.cmd.String(), nil
+
+}
+
+type devNull struct{}
+
+func (d devNull) Write(p []byte) (n int, err error) {
+	return len(p), nil
 }
 
 // Copy feed reads from the reader, does some client-specific filtering and
@@ -105,7 +128,7 @@ func (evm *BesuBatchVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input)
 }
 
-func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
+func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
@@ -135,7 +158,7 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
 			if stateRoot.StateRoot == "" {
 				var tempRoot besuStateRoot
 				if err := json.Unmarshal(data, &tempRoot); err == nil {
-					// Besu calls state root "rootHash"
+					// Besu calls state root "postHash"
 					stateRoot.StateRoot = tempRoot.StateRoot
 				}
 			}
@@ -151,12 +174,12 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) {
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return
+			return stateRoot
 		}
 	}
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-		return
 	}
+	return stateRoot
 }
