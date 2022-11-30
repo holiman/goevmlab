@@ -140,9 +140,9 @@ func TestBlake(t *testing.T) {
 	}
 	f.Close()
 	geth := evms.NewGethEVM("../binaries/evm")
-	parity := evms.NewParityVM("../binaries/parity-evm")
+	nethermind := evms.NewNethermindVM("../binaries/parity-evm")
 
-	if err := testCompare(geth, parity, p); err != nil {
+	if err := testCompare(geth, nethermind, p); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -169,8 +169,8 @@ func TestFuzzing(t *testing.T) {
 		}
 		f.Close()
 		geth := evms.NewGethEVM("../binaries/evm")
-		parity := evms.NewParityVM("../binaries/parity-evm")
-		return testCompare(geth, parity, p)
+		nethermind := evms.NewNethermindVM("../binaries/parity-evm")
+		return testCompare(geth, nethermind, p)
 	}
 
 	if err := testFuzzing(t); err != nil {

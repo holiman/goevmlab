@@ -37,9 +37,7 @@ func TestVMsOutput(t *testing.T) {
 	}
 	var cases = []testCase{
 		{NewGethEVM(""), "testdata/statetest1_geth_stderr.jsonl", ""},
-		{NewParityVM(""), "testdata/statetest1_parity_stderr.jsonl", "testdata/statetest1_parity_stdout.jsonl"},
 		{NewNethermindVM(""), "testdata/statetest1_nethermind_stderr.jsonl", ""},
-		{NewAlethVM(""), "testdata/statetest1_testeth_stdout.jsonl", ""},
 	}
 	var readers []io.Reader
 	var vms []Evm
@@ -106,7 +104,6 @@ func TestStateRootOnly(t *testing.T) {
 	vms := []Evm{
 		NewGethEVM("../binaries/evm"),
 		NewNethermindVM("../binaries/nethtest"),
-		NewParityVM("../binaries/openethereum-evm"),
 	}
 	for _, vm := range vms {
 		got, _, err := vm.GetStateRoot("./testdata/statetest1.json")
