@@ -77,7 +77,7 @@ func (evm *BesuVM) Name() string {
 func (vm *BesuVM) Close() {
 }
 
-func (vm *BesuVM) GetStateRoot(path string) (string, error) {
+func (vm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	// Run without tracing
 	cmd := exec.Command(vm.path, "--nomemory",
 		"state-test", path)
@@ -85,15 +85,15 @@ func (vm *BesuVM) GetStateRoot(path string) (string, error) {
 	/// {"output":"","gasUsed":"0x798765","time":342028058,"test":"00000000-storagefuzz-0","fork":"Berlin","d":0,"g":0,"v":0,"postHash":"0xbaeec41171e943575740bb99cdd8ffd45fa6207bf170f99c1a61425069ffae97","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", cmd.String(), err
 	}
 	start := strings.Index(string(data), `"postHash":"`)
 	if start > 0 {
 		start = start + len(`"postHash":"`)
 		root := string(data[start : start+2+64])
-		return root, nil
+		return root, cmd.String(), nil
 	}
-	return "", errors.New("no stateroot found")
+	return "", cmd.String(), errors.New("no stateroot found")
 }
 
 type besuStateRoot struct {

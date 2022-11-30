@@ -42,25 +42,25 @@ func NewNethermindVM(path string) *NethermindVM {
 }
 
 // GetStateRoot runs the test and returns the stateroot
-func (evm *NethermindVM) GetStateRoot(path string) (string, error) {
+func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
 	cmd := exec.Command(evm.path, "-m", "-s", "-i", path)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", cmd.String(), err
 	}
 	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
 	marker := `{"stateRoot":"`
 	start := strings.Index(string(data), marker)
 	if start <= 0 {
-		return "", errors.New("no stateroot found")
+		return "", cmd.String(), errors.New("no stateroot found")
 	}
 	end := strings.Index(string(data)[start:], `"}`)
 	if start > 0 && end > 0 {
 		root := string(data[start+len(marker) : start+end])
-		return root, nil
+		return root, cmd.String(), nil
 	}
-	return "", errors.New("no stateroot found")
+	return "", cmd.String(), errors.New("no stateroot found")
 }
 
 // RunStateTest implements the Evm interface
