@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/evms"
 	"io"
 	"os"
@@ -34,15 +33,6 @@ import (
 
 func TestGenerator(t *testing.T) {
 	st := GenerateStateTest("randoTest")
-
-	_, err := json.MarshalIndent(st, "", " ")
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestBlakeGenerator(t *testing.T) {
-	st := GenerateBlakeTest("randoTest")
 
 	_, err := json.MarshalIndent(st, "", " ")
 	if err != nil {
@@ -130,8 +120,7 @@ func TestBlake(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//fmt.Printf("file is %v \n", p)
-	gst := GenerateBlakeTest(testName)
+	gst := FactoryBlake("London").ToGeneralStateTest()
 	encoder := json.NewEncoder(f)
 	encoder.SetIndent("", " ")
 	if err = encoder.Encode(gst); err != nil {
@@ -208,12 +197,9 @@ BenchmarkGenerator-6   	  100000	     13638 ns/op
 BenchmarkGenerator-6   	  200000	      8413 ns/op
 */
 func BenchmarkGenerator(b *testing.B) {
-	t := GenerateBlake()
-	alloc := *t.pre
-	target := common.HexToAddress(t.tx.To)
-	dest := alloc[target]
+	createFn := FactoryBlake("London")
 	for i := 0; i < b.N; i++ {
-		dest.Code = RandCallBlake()
+		t := createFn()
 		t.ToGeneralStateTest("rando")
 	}
 }

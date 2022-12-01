@@ -50,11 +50,5 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	generator := func() *fuzzing.GstMaker {
-		base := fuzzing.GenerateBlake()
-		target := base.GetDestination()
-		base.SetCode(target, fuzzing.RandCallBlake())
-		return base
-	}
-	return common.ExecuteFuzzer(c, generator, "blaketest")
+	return common.ExecuteFuzzer(c, fuzzing.FactoryBlake("London"), "blaketest")
 }

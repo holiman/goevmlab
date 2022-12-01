@@ -40,28 +40,27 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
-        "github.com/urfave/cli/v2"
-
+	"github.com/urfave/cli/v2"
 )
 
 var (
-	GethFlag = &cli.StringFlag{
+	GethFlag = &cli.StringSliceFlag{
 		Name:  "geth",
 		Usage: "Location of go-ethereum 'evm' binary",
 	}
-	NethermindFlag = &cli.StringFlag{
+	NethermindFlag = &cli.StringSliceFlag{
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
 	}
-	BesuFlag = &cli.StringFlag{
+	BesuFlag = &cli.StringSliceFlag{
 		Name:  "besu",
 		Usage: "Location of besu vm binary",
 	}
-	BesuBatchFlag = &cli.StringFlag{
+	BesuBatchFlag = &cli.StringSliceFlag{
 		Name:  "besubatch",
 		Usage: "Location of besu vm binary",
 	}
-	ErigonFlag = &cli.StringFlag{
+	ErigonFlag = &cli.StringSliceFlag{
 		Name:  "erigon",
 		Usage: "Location of erigon 'evm' binary",
 	}
@@ -82,6 +81,7 @@ var (
 	CountFlag = &cli.IntFlag{
 		Name:  "count",
 		Usage: "number of tests to generate",
+		Value: 100,
 	}
 	SkipTraceFlag = &cli.BoolFlag{
 		Name: "skiptrace",
@@ -101,27 +101,28 @@ var (
 
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
-		gethBin      = c.String(GethFlag.Name)
-		nethBin      = c.String(NethermindFlag.Name)
-		besuBin      = c.String(BesuFlag.Name)
-		besuBatchBin = c.String(BesuBatchFlag.Name)
-		erigonBin    = c.String(ErigonFlag.Name)
-		vms          []evms.Evm
+		gethBins      = c.StringSlice(GethFlag.Name)
+		nethBins      = c.StringSlice(NethermindFlag.Name)
+		besuBins      = c.StringSlice(BesuFlag.Name)
+		besuBatchBins = c.StringSlice(BesuBatchFlag.Name)
+		erigonBins    = c.StringSlice(ErigonFlag.Name)
+
+		vms []evms.Evm
 	)
-	if gethBin != "" {
-		vms = append(vms, evms.NewGethEVM(gethBin))
+	for i, gethBin := range gethBins {
+		vms = append(vms, evms.NewGethEVM(gethBin, fmt.Sprintf("%d", i)))
 	}
-	if nethBin != "" {
-		vms = append(vms, evms.NewNethermindVM(nethBin))
+	for i, nethBin := range nethBins {
+		vms = append(vms, evms.NewNethermindVM(nethBin, fmt.Sprintf("%d", i)))
 	}
-	if besuBin != "" {
-		vms = append(vms, evms.NewBesuVM(besuBin))
+	for i, besuBin := range besuBins {
+		vms = append(vms, evms.NewBesuVM(besuBin, fmt.Sprintf("%d", i)))
 	}
-	if besuBatchBin != "" {
-		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin))
+	for i, besuBatchBin := range besuBatchBins {
+		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin, fmt.Sprintf("%d", i)))
 	}
-	if erigonBin != "" {
-		vms = append(vms, evms.NewErigonVM(erigonBin))
+	for i, erigonBin := range erigonBins {
+		vms = append(vms, evms.NewErigonVM(erigonBin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 

@@ -33,12 +33,18 @@ import (
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
 	path string
+	name string // in case multiple instances are used
 }
 
-func NewBesuVM(path string) *BesuVM {
+func NewBesuVM(path, name string) *BesuVM {
 	return &BesuVM{
 		path: path,
+		name: name,
 	}
+}
+
+func (evm *BesuVM) Name() string {
+	return fmt.Sprintf("besu-%v", evm.name)
 }
 
 // RunStateTest implements the Evm interface
@@ -68,10 +74,6 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 	// release resources, handle error but ignore non-zero exit codes
 	_ = cmd.Wait()
 	return cmd.String(), nil
-}
-
-func (evm *BesuVM) Name() string {
-	return "besu"
 }
 
 func (vm *BesuVM) Close() {

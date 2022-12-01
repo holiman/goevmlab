@@ -23,10 +23,9 @@ import (
 	"math/big"
 	"math/rand"
 
-	"github.com/ethereum/go-ethereum/core/state"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
@@ -85,49 +84,6 @@ func init() {
 		usedOpCodes = append(usedOpCodes, op)
 	}
 }
-
-//// randCall creates a random call-type
-//func randCall(p *program.Program, op ops.OpCode) {
-//	addrGen := addressRandomizer(allAddresses)
-//	memGen := randInt(0x70, 0xef)
-//
-//	p.Push(memGen()) //mem out size
-//	p.Push(memGen()) // mem out start
-//	p.Push(memGen()) //mem in size
-//	p.Push(memGen()) // mem in start
-//	switch op {
-//	case ops.CALL, ops.CALLCODE:
-//		p.Push(rand.Intn(256)) //value
-//	}
-//	addr := addrGen()
-//	p.Push(addr)
-//	p.Op(ops.GAS)
-//	p.Op(op)
-//}
-//// randProgram creates a random program
-//func randProgram(maxSize int) []byte {
-//	var p = program.NewProgram()
-//	stack := 0
-//	var numOps = len(usedOpCodes)
-//	for {
-//		op := usedOpCodes[rand.Intn(numOps)]
-//		if op.IsCall() {
-//			randCall(p, op)
-//			stack += 1
-//		} else {
-//			if stack-len(op.Pops()) < 0 {
-//				continue
-//			}
-//			stack -= len(op.Pops())
-//			stack += len(op.Pushes())
-//			p.Op(op)
-//		}
-//		if p.Size() > maxSize {
-//			break
-//		}
-//	}
-//	return p.Bytecode()
-//}
 
 // GstMaker is a construct to generate General State Tests
 type GstMaker struct {
@@ -225,8 +181,6 @@ func (g *GstMaker) ToSubTest() *stJSON {
 	st.Env = *g.env
 	st.Tx = g.tx
 	for _, fork := range g.forks {
-		//postHash := common.HexToHash("0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134")
-		//logsHash := common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
 		postState := make(map[string][]stPostState)
 		postState[fork] = []stPostState{
 			stPostState{
@@ -320,7 +274,7 @@ func AddTransaction(dest *common.Address, gst *GstMaker) {
 		Nonce:      0,
 		Value:      []string{"0x01"},
 		Data:       []string{"0x"},
-		GasPrice:   big.NewInt(0x01),
+		GasPrice:   big.NewInt(0x16),
 		PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 	}
 	gst.SetTx(tx)
@@ -339,7 +293,7 @@ func GenerateStateTest(name string) *GeneralStateTest {
 			Nonce:      0,
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x01),
+			GasPrice:   big.NewInt(0x10),
 			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		}
 		if dest != nil {
@@ -347,38 +301,6 @@ func GenerateStateTest(name string) *GeneralStateTest {
 		}
 		gst.SetTx(tx)
 	}
-	return gst.ToGeneralStateTest(name)
-}
-
-func GenerateBlake() *GstMaker {
-	gst := BasicStateTest("Istanbul")
-	// Add a contract which calls blake
-	dest := common.HexToAddress("0x0000ca1100b1a7e")
-	gst.AddAccount(dest, GenesisAccount{
-		Code:    RandCallBlake(),
-		Balance: new(big.Int),
-		Storage: make(map[common.Hash]common.Hash),
-	})
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x01),
-			To:         dest.Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-	return gst
-}
-
-// GenerateBlakeTest generates a random test of the blake F precompile
-func GenerateBlakeTest(name string) *GeneralStateTest {
-	gst := GenerateBlake()
 	return gst.ToGeneralStateTest(name)
 }
 
@@ -413,123 +335,13 @@ func GenerateSubroutineTest() *GstMaker {
 			Nonce:      0,
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x01),
-			To:         addrs[0].Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-	return gst
-}
-
-func Generate2200LondonTest() *GstMaker {
-	gst := BasicStateTest("London")
-	create2200Test(gst)
-	return gst
-}
-
-func Generate2200BerlinTest() *GstMaker {
-	gst := BasicStateTest("Berlin")
-	create2200Test(gst)
-	return gst
-}
-
-func Generate2200Test() *GstMaker {
-	gst := BasicStateTest("Istanbul")
-	create2200Test(gst)
-	return gst
-}
-
-func create2200Test(gst *GstMaker) {
-	// The accounts which we want to be able to invoke
-	addrs := []common.Address{
-		common.HexToAddress("0xF1"),
-		common.HexToAddress("0xF2"),
-		common.HexToAddress("0xF3"),
-		common.HexToAddress("0xF4"),
-		common.HexToAddress("0xF5"),
-		common.HexToAddress("0xF6"),
-		common.HexToAddress("0xF7"),
-		common.HexToAddress("0xF8"),
-		common.HexToAddress("0xF9"),
-		common.HexToAddress("0xFA"),
-	}
-	nonGenesisAddresses := []common.Address{
-		common.HexToAddress("0x00"),
-		common.HexToAddress("0x01"),
-		common.HexToAddress("0x02"),
-		common.HexToAddress("0x03"),
-		common.HexToAddress("0x04"),
-		common.HexToAddress("0x05"),
-		common.HexToAddress("0x06"),
-		common.HexToAddress("0x07"),
-		common.HexToAddress("0x08"),
-		common.HexToAddress("0x09"),
-		common.HexToAddress("0x0A"),
-		common.HexToAddress("0x0B"),
-		common.HexToAddress("0x0C"),
-		common.HexToAddress("0x0D"),
-		common.HexToAddress("0x0E"),
-	}
-	var allAddrs []common.Address
-	allAddrs = append(allAddrs, addrs...)
-	allAddrs = append(allAddrs, nonGenesisAddresses...)
-	// make them exist in the state
-	for _, addr := range nonGenesisAddresses {
-		gst.AddAccount(addr, GenesisAccount{
-			Balance: new(big.Int).SetUint64(1),
-			Storage: make(map[common.Hash]common.Hash),
-		})
-	}
-	for _, addr := range addrs {
-		gst.AddAccount(addr, GenesisAccount{
-			Code:    RandCall2200(allAddrs),
-			Balance: new(big.Int),
-			Storage: RandStorage(15, 20),
-		})
-	}
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
 			GasPrice:   big.NewInt(0x10),
 			To:         addrs[0].Hex(),
 			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		}
 		gst.SetTx(tx)
 	}
-}
-
-func createNaive2200Test(gst *GstMaker) {
-	// The accounts which we want to be able to invoke
-	addrs := []common.Address{
-		common.HexToAddress("0xF1"),
-	}
-	for _, addr := range addrs {
-		gst.AddAccount(addr, GenesisAccount{
-			Code:    RandomBytecode(),
-			Balance: new(big.Int),
-			Storage: RandStorage(15, 20),
-		})
-	}
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x10),
-			To:         addrs[0].Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
+	return gst
 }
 
 func GenerateECRecover() (*GstMaker, []byte) {
@@ -550,7 +362,7 @@ func GenerateECRecover() (*GstMaker, []byte) {
 			Nonce:      0,
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x01),
+			GasPrice:   big.NewInt(0x10),
 			To:         dest.Hex(),
 			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		}

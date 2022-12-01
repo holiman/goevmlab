@@ -32,12 +32,18 @@ import (
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
 type GethEVM struct {
 	path string
+	name string // in case multiple instances are used
 }
 
-func NewGethEVM(path string) *GethEVM {
+func NewGethEVM(path string, name string) *GethEVM {
 	return &GethEVM{
 		path: path,
+		name: name,
 	}
+}
+
+func (evm *GethEVM) Name() string {
+	return fmt.Sprintf("geth-%v", evm.name)
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -84,10 +90,6 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 	return cmd.String(), cmd.Wait()
 }
 
-func (evm *GethEVM) Name() string {
-	return "geth"
-}
-
 func (vm *GethEVM) Close() {
 }
 
@@ -125,7 +127,12 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		//fmt.Printf("geth: %v\n", string(data))
+		if len(data) > 1 && data[0] == '#' {
+			// Output preceded by # is ignored, but can be used for debugging, e.g.
+			// to check that the generated tests cover the intended surface.
+			fmt.Printf("%v: %v\n", evm.Name(), string(data))
+			continue
+		}
 		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))
