@@ -110,32 +110,6 @@ func testCompare(a, b evms.Evm, testfile string) error {
 	return nil
 }
 
-func TestBlake(t *testing.T) {
-	t.Skip("Test is machine-specific due to bundled binaries")
-	setupBinaries(t)
-	testName := "blake_test"
-	fileName := fmt.Sprintf("%v.json", testName)
-	p := path.Join(os.TempDir(), fileName)
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gst := FactoryBlake("London").ToGeneralStateTest()
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", " ")
-	if err = encoder.Encode(gst); err != nil {
-		f.Close()
-		t.Fatal(err)
-	}
-	f.Close()
-	geth := evms.NewGethEVM("../binaries/evm")
-	nethermind := evms.NewNethermindVM("../binaries/parity-evm")
-
-	if err := testCompare(geth, nethermind, p); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestFuzzing(t *testing.T) {
 	t.Skip("Test is machine-specific due to bundled binaries")
 
@@ -157,8 +131,8 @@ func TestFuzzing(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.Close()
-		geth := evms.NewGethEVM("../binaries/evm")
-		nethermind := evms.NewNethermindVM("../binaries/parity-evm")
+		geth := evms.NewGethEVM("../binaries/evm", "")
+		nethermind := evms.NewNethermindVM("../binaries/parity-evm", "")
 		return testCompare(geth, nethermind, p)
 	}
 
