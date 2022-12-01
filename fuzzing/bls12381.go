@@ -67,7 +67,6 @@ func fillBls(gst *GstMaker) {
 		To:         dest.Hex(),
 		PrivateKey: pKey,
 	})
-	return
 }
 
 func RandCallBLS() []byte {
