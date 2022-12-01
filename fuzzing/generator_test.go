@@ -141,43 +141,6 @@ func TestFuzzing(t *testing.T) {
 	}
 }
 
-//func TestFuzzingCoverage(t *testing.T) {
-//	tot := 0
-//	totDepth := 0
-//	for i := 0; i < 100; i++ {
-//		numSteps, maxdepth, _ := testFuzzing(t)
-//		tot += numSteps
-//		fmt.Printf("numSteps %d maxDepth: %d\n", numSteps, maxdepth)
-//		totDepth += (maxdepth - 1)
-//	}
-//	fmt.Printf("total steps (100 tests): %d, total depth %d\n", tot, totDepth)
-//}
-
-/*
-BenchmarkGenerator-6   	  500000	      2419 ns/op
-
-BenchmarkGenerator-6   	  500000	      3092 ns/op
-
-# randomizing code from valid opcodes, with pushdata insertion and stack balance
-BenchmarkGenerator-6   	   10000	    118339 ns/op
-
-# using program, smart calldata
-BenchmarkGenerator-6   	   20000	     60932 ns/op
-
-# using blake2 generator
-BenchmarkGenerator-6   	  100000	     13638 ns/op
-
-# blake2, but only doing new randcall
-BenchmarkGenerator-6   	  200000	      8413 ns/op
-*/
-func BenchmarkGenerator(b *testing.B) {
-	createFn := FactoryBlake("London")
-	for i := 0; i < b.N; i++ {
-		t := createFn()
-		t.ToGeneralStateTest("rando")
-	}
-}
-
 func BenchmarkGeneratorWithMarshalling(b *testing.B) {
 	/*
 		With indent:
