@@ -21,9 +21,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
 )
+
+var app = initApp()
 
 func initApp() *cli.App {
 	app := cli.NewApp()
@@ -35,9 +38,8 @@ func initApp() *cli.App {
 	return app
 }
 
-var app = initApp()
-
 func main() {
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -45,9 +47,12 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-
 	if c.NArg() != 1 {
-		return fmt.Errorf("input state test file needed")
+		return fmt.Errorf("file (or regexp) needed")
 	}
-	return common.RunOneTest(c.Args().First(), c)
+	files, err := filepath.Glob(c.Args().First())
+	if err != nil {
+		return err
+	}
+	return common.RunTests(files, c)
 }
