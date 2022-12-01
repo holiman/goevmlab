@@ -38,6 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -169,11 +170,10 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 	return true, nil
 }
 
-func RunOneTest(path string, c *cli.Context) error {
+func RunTests(paths []string, c *cli.Context) error {
 	var (
 		vms     = initVMs(c)
 		outputs []*os.File
-		readers []io.Reader
 	)
 	if len(vms) < 1 {
 		return fmt.Errorf("No vms specified!")
@@ -186,40 +186,50 @@ func RunOneTest(path string, c *cli.Context) error {
 		}
 		outputs = append(outputs, out)
 	}
-	// Kick off the binaries
-	var wg sync.WaitGroup
-	wg.Add(len(vms))
-	for i, vm := range vms {
-		go func(evm evms.Evm, out io.Writer) {
-			defer wg.Done()
-			t0 := time.Now()
-			if _, err := evm.RunStateTest(path, out, false); err != nil {
-				fmt.Fprintf(os.Stderr, "error running test: %v\n", err)
-				return
-			}
-			execTime := time.Since(t0)
-			fmt.Printf("%10v done in %v\n", evm.Name(), execTime)
-		}(vm, outputs[i])
-	}
-	wg.Wait()
-	// Seek to beginning
-	for _, f := range outputs {
-		_, _ = f.Seek(0, 0)
-		readers = append(readers, f)
-	}
-	// Compare outputs
-	if eq, _ := evms.CompareFiles(vms, readers); !eq {
-		fmt.Printf("output files:\n")
-		for _, output := range outputs {
-			fmt.Printf(" - %v\n", output.Name())
+	for _, path := range paths {
+		// Zero out the output files and reset offset
+		for _, f := range outputs {
+			_ = f.Truncate(0)
+			_, _ = f.Seek(0, 0)
 		}
-		return fmt.Errorf("Consensus error")
+		// Kick off the binaries
+		var wg sync.WaitGroup
+		wg.Add(len(vms))
+
+		for i, vm := range vms {
+			go func(evm evms.Evm, out io.Writer) {
+				defer wg.Done()
+				t0 := time.Now()
+				if _, err := evm.RunStateTest(path, out, false); err != nil {
+					fmt.Fprintf(os.Stderr, "error running test: %v\n", err)
+					return
+				}
+				execTime := time.Since(t0)
+				log.Debug("%10v done in %v\n", evm.Name(), execTime)
+			}(vm, outputs[i])
+		}
+		wg.Wait()
+		// Seek to beginning
+		var readers []io.Reader
+		for _, f := range outputs {
+			_, _ = f.Seek(0, 0)
+			readers = append(readers, f)
+		}
+		// Compare outputs
+		if eq, _ := evms.CompareFiles(vms, readers); !eq {
+			fmt.Printf("output files:\n")
+			for _, output := range outputs {
+				fmt.Printf(" - %v\n", output.Name())
+			}
+			return fmt.Errorf("Consensus error")
+		} else {
+			log.Debug("%v: all agree!\n", path)
+		}
 	}
 	for _, f := range outputs {
 		f.Close()
 	}
-
-	fmt.Printf("all agree!\n")
+	log.Info("Execution done", "count", len(paths))
 	return nil
 }
 

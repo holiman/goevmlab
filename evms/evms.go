@@ -60,7 +60,7 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 				fmt.Printf("diff: \n%v: %v\n%v: %v\n",
 					refVM.Name(),
 					string(refOut.Bytes()),
-					vms[i+1].Name(),
+					vms[i].Name(),
 					string(scanner.Bytes()))
 				return false, count
 			}
