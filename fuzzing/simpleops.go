@@ -5,35 +5,36 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
 )
 
-func GenerateSimpleOpsTest() *GstMaker {
-	gst := BasicStateTest("London")
+func FactorySimpleOps(fork string) func() *GstMaker {
+	return func() *GstMaker {
+		gst := BasicStateTest(fork)
+		fillSimple(gst)
+		return gst
+	}
+}
+
+func fillSimple(gst *GstMaker) {
 	dest := common.HexToAddress("0xd0de")
-	code := generateSimpleOpsProgram()
 	gst.AddAccount(dest, GenesisAccount{
-		Code:    code,
+		Code:    generateSimpleOpsProgram(),
 		Balance: new(big.Int),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{16000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x10),
-			To:         dest.Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-	return gst
+	gst.SetTx(&StTransaction{
+		// 8M gaslimit
+		GasLimit:   []uint64{16000000},
+		Nonce:      0,
+		Value:      []string{randHex(4)},
+		Data:       []string{randHex(100)},
+		GasPrice:   big.NewInt(0x10),
+		To:         dest.Hex(),
+		PrivateKey: pKey,
+	})
 }
 
 var operations = []ops.OpCode{

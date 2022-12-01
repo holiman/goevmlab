@@ -38,30 +38,30 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
-        "github.com/urfave/cli/v2"
-
+	"github.com/urfave/cli/v2"
 )
 
 var (
-	GethFlag = &cli.StringFlag{
+	GethFlag = &cli.StringSliceFlag{
 		Name:  "geth",
 		Usage: "Location of go-ethereum 'evm' binary",
 	}
-	NethermindFlag = &cli.StringFlag{
+	NethermindFlag = &cli.StringSliceFlag{
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
 	}
-	BesuFlag = &cli.StringFlag{
+	BesuFlag = &cli.StringSliceFlag{
 		Name:  "besu",
 		Usage: "Location of besu vm binary",
 	}
-	BesuBatchFlag = &cli.StringFlag{
+	BesuBatchFlag = &cli.StringSliceFlag{
 		Name:  "besubatch",
 		Usage: "Location of besu vm binary",
 	}
-	ErigonFlag = &cli.StringFlag{
+	ErigonFlag = &cli.StringSliceFlag{
 		Name:  "erigon",
 		Usage: "Location of erigon 'evm' binary",
 	}
@@ -82,6 +82,12 @@ var (
 	CountFlag = &cli.IntFlag{
 		Name:  "count",
 		Usage: "number of tests to generate",
+		Value: 100,
+	}
+	TraceFlag = &cli.BoolFlag{
+		Name: "trace",
+		Usage: "if true, a trace will be generated along with the tests. \n" +
+			"This is useful for debugging the usefulness of the tests",
 	}
 	SkipTraceFlag = &cli.BoolFlag{
 		Name: "skiptrace",
@@ -97,31 +103,33 @@ var (
 		ErigonFlag,
 		SkipTraceFlag,
 	}
+	traceLengthGauge = new(metrics.StandardGauge)
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
-		gethBin      = c.String(GethFlag.Name)
-		nethBin      = c.String(NethermindFlag.Name)
-		besuBin      = c.String(BesuFlag.Name)
-		besuBatchBin = c.String(BesuBatchFlag.Name)
-		erigonBin    = c.String(ErigonFlag.Name)
-		vms          []evms.Evm
+		gethBins      = c.StringSlice(GethFlag.Name)
+		nethBins      = c.StringSlice(NethermindFlag.Name)
+		besuBins      = c.StringSlice(BesuFlag.Name)
+		besuBatchBins = c.StringSlice(BesuBatchFlag.Name)
+		erigonBins    = c.StringSlice(ErigonFlag.Name)
+
+		vms []evms.Evm
 	)
-	if gethBin != "" {
-		vms = append(vms, evms.NewGethEVM(gethBin))
+	for i, gethBin := range gethBins {
+		vms = append(vms, evms.NewGethEVM(gethBin, fmt.Sprintf("%d", i)))
 	}
-	if nethBin != "" {
-		vms = append(vms, evms.NewNethermindVM(nethBin))
+	for i, nethBin := range nethBins {
+		vms = append(vms, evms.NewNethermindVM(nethBin, fmt.Sprintf("%d", i)))
 	}
-	if besuBin != "" {
-		vms = append(vms, evms.NewBesuVM(besuBin))
+	for i, besuBin := range besuBins {
+		vms = append(vms, evms.NewBesuVM(besuBin, fmt.Sprintf("%d", i)))
 	}
-	if besuBatchBin != "" {
-		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin))
+	for i, besuBatchBin := range besuBatchBins {
+		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin, fmt.Sprintf("%d", i)))
 	}
-	if erigonBin != "" {
-		vms = append(vms, evms.NewErigonVM(erigonBin))
+	for i, erigonBin := range erigonBins {
+		vms = append(vms, evms.NewErigonVM(erigonBin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 
@@ -200,7 +208,7 @@ func RunOneTest(path string, c *cli.Context) error {
 		readers = append(readers, f)
 	}
 	// Compare outputs
-	if eq := evms.CompareFiles(vms, readers); !eq {
+	if eq, _ := evms.CompareFiles(vms, readers); !eq {
 		fmt.Printf("output files:\n")
 		for _, output := range outputs {
 			fmt.Printf(" - %v\n", output.Name())
@@ -284,7 +292,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		defer meta.wg.Done()
 		var (
 			tStart    = time.Now()
-			ticker    = time.NewTicker(60 * time.Second)
+			ticker    = time.NewTicker(5 * time.Second)
 			testCount = uint64(0)
 		)
 		defer ticker.Stop()
@@ -296,7 +304,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				testCount = n
 				timeSpent := time.Since(tStart)
 				execPerSecond := float64(uint64(time.Second)*n) / float64(timeSpent)
-				fmt.Printf("%d tests executed, in %v (%.02f tests/s)\n", n, timeSpent, execPerSecond)
+				fmt.Printf("%d tests executed, in %v (%.02f tests/s), tracelength gauge: %d\n",
+					n, timeSpent, execPerSecond, traceLengthGauge.Value())
 				// Update global counter
 				globalCount := uint64(0)
 				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil {
@@ -515,7 +524,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			}
 			atomic.AddUint64(&meta.numTests, 1)
 			// Compare outputs
-			if eq := evms.CompareFiles(meta.vms, readers); !eq {
+			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
 				atomic.StoreInt64(&meta.abort, 1)
 				s := "output files: "
 				for _, f := range outputs {
@@ -527,6 +536,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				meta.slowCh <- file // flag as slow
 			} else {
 				meta.removeCh <- file // flag for removal
+				traceLengthGauge.Update(int64(len))
 			}
 		}
 	}

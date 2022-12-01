@@ -33,12 +33,18 @@ import (
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
 type NethermindVM struct {
 	path string
+	name string
 }
 
-func NewNethermindVM(path string) *NethermindVM {
+func NewNethermindVM(path, name string) *NethermindVM {
 	return &NethermindVM{
 		path: path,
+		name: name,
 	}
+}
+
+func (evm *NethermindVM) Name() string {
+	return fmt.Sprintf("nethermind-%v", evm.name)
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -87,10 +93,6 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	// release resources, handle error but ignore non-zero exit codes
 	_ = cmd.Wait()
 	return cmd.String(), nil
-}
-
-func (evm *NethermindVM) Name() string {
-	return "nethermind"
 }
 
 func (vm *NethermindVM) Close() {

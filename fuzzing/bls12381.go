@@ -22,7 +22,6 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
@@ -48,8 +47,7 @@ var precompilesBLS = []blsPrec{
 	{17, NewFP2toG2, 256}, // FP2 to G2
 }
 
-func GenerateBLS() (*GstMaker, []byte) {
-	gst := BasicStateTest("Berlin")
+func fillBls(gst *GstMaker) {
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca110b15012381")
 	code := RandCallBLS()
@@ -59,20 +57,16 @@ func GenerateBLS() (*GstMaker, []byte) {
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x01),
-			To:         dest.Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-	return gst, code
+	gst.SetTx(&StTransaction{
+		// 8M gaslimit
+		GasLimit:   []uint64{8000000},
+		Nonce:      0,
+		Value:      []string{randHex(4)},
+		Data:       []string{randHex(100)},
+		GasPrice:   big.NewInt(0x10),
+		To:         dest.Hex(),
+		PrivateKey: pKey,
+	})
 }
 
 func RandCallBLS() []byte {

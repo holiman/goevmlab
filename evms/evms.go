@@ -43,7 +43,10 @@ type stateRoot struct {
 	StateRoot string `json:"stateRoot"`
 }
 
-func CompareFiles(vms []Evm, readers []io.Reader) bool {
+// CompareFiles returns true if the files are equal, along with the number of line s
+// compared
+func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
+	var count = 0
 	var scanners []*bufio.Scanner
 	for _, r := range readers {
 		scanners = append(scanners, bufio.NewScanner(r))
@@ -53,17 +56,16 @@ func CompareFiles(vms []Evm, readers []io.Reader) bool {
 	for refOut.Scan() {
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
-			//fmt.Printf("%d ref: %v\n", i, string(refOut.Bytes()))
-			//fmt.Printf("%d cut: %v\n", i, string(scanner.Bytes()))
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
 				fmt.Printf("diff: \n%v: %v\n%v: %v\n",
 					refVM.Name(),
 					string(refOut.Bytes()),
 					vms[i+1].Name(),
 					string(scanner.Bytes()))
-				return false
+				return false, count
 			}
 		}
+		count++
 	}
-	return true
+	return true, count
 }

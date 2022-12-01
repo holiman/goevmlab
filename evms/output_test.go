@@ -36,8 +36,8 @@ func TestVMsOutput(t *testing.T) {
 		file2 string
 	}
 	var cases = []testCase{
-		{NewGethEVM(""), "testdata/statetest1_geth_stderr.jsonl", ""},
-		{NewNethermindVM(""), "testdata/statetest1_nethermind_stderr.jsonl", ""},
+		{NewGethEVM("", ""), "testdata/statetest1_geth_stderr.jsonl", ""},
+		{NewNethermindVM("", ""), "testdata/statetest1_nethermind_stderr.jsonl", ""},
 	}
 	var readers []io.Reader
 	var vms []Evm
@@ -57,7 +57,7 @@ func TestVMsOutput(t *testing.T) {
 		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
 		vms = append(vms, vm.vm)
 	}
-	eq := CompareFiles(vms, readers)
+	eq, _ := CompareFiles(vms, readers)
 	if !eq {
 		t.Errorf("Expected equality, didn't get it")
 	}
@@ -70,9 +70,9 @@ func TestBesuGethOutput(t *testing.T) {
 		file2 string
 	}
 	var cases = []testCase{
-		{NewBesuVM(""), "", "testdata/00016209-naivefuzz-0.besu.stdout.out"},
-		{NewBesuBatchVM(""), "", "testdata/00016209-naivefuzz-0.besu.stdout.out"},
-		{NewGethEVM(""), "testdata/00016209-naivefuzz-0.geth.stderr.out", ""},
+		{NewBesuVM("", ""), "", "testdata/00016209-naivefuzz-0.besu.stdout.out"},
+		{NewBesuBatchVM("", ""), "", "testdata/00016209-naivefuzz-0.besu.stdout.out"},
+		{NewGethEVM("", ""), "testdata/00016209-naivefuzz-0.geth.stderr.out", ""},
 	}
 	var readers []io.Reader
 	var vms []Evm
@@ -92,7 +92,7 @@ func TestBesuGethOutput(t *testing.T) {
 		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
 		vms = append(vms, vm.vm)
 	}
-	eq := CompareFiles(vms, readers)
+	eq, _ := CompareFiles(vms, readers)
 	if !eq {
 		t.Errorf("Expected equality, didn't get it")
 	}
@@ -102,8 +102,8 @@ func TestBesuGethOutput(t *testing.T) {
 func TestStateRootOnly(t *testing.T) {
 	t.Skip("Test is machine-specific due to bundled binaries")
 	vms := []Evm{
-		NewGethEVM("../binaries/evm"),
-		NewNethermindVM("../binaries/nethtest"),
+		NewGethEVM("../binaries/evm", ""),
+		NewNethermindVM("../binaries/nethtest", ""),
 	}
 	for _, vm := range vms {
 		got, _, err := vm.GetStateRoot("./testdata/statetest1.json")

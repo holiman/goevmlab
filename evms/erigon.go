@@ -32,12 +32,18 @@ import (
 // ErigonVM is s Evm-interface wrapper around the eroigon `evm` binary
 type ErigonVM struct {
 	path string
+	name string // in case multiple instances are used
 }
 
-func NewErigonVM(path string) *ErigonVM {
+func NewErigonVM(path, name string) *ErigonVM {
 	return &ErigonVM{
 		path: path,
+		name: name,
 	}
+}
+
+func (evm *ErigonVM) Name() string {
+	return fmt.Sprintf("erigon-%v", evm.name)
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -82,10 +88,6 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (s
 	evm.Copy(out, stderr)
 	// release resources
 	return cmd.String(), cmd.Wait()
-}
-
-func (evm *ErigonVM) Name() string {
-	return "erigon"
 }
 
 func (vm *ErigonVM) Close() {

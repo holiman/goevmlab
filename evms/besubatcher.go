@@ -37,16 +37,18 @@ type BesuBatchVM struct {
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
 	mu     sync.Mutex
+	name   string // in case multiple instances are used
 }
 
-func NewBesuBatchVM(path string) *BesuBatchVM {
+func NewBesuBatchVM(path, name string) *BesuBatchVM {
 	return &BesuBatchVM{
 		path: path,
+		name: name,
 	}
 }
 
 func (evm *BesuBatchVM) Name() string {
-	return "besubatch"
+	return fmt.Sprintf("besubatcj-%v", evm.name)
 }
 
 // RunStateTest implements the Evm interface

@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/evms"
 	"io"
 	"os"
@@ -34,15 +33,6 @@ import (
 
 func TestGenerator(t *testing.T) {
 	st := GenerateStateTest("randoTest")
-
-	_, err := json.MarshalIndent(st, "", " ")
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestBlakeGenerator(t *testing.T) {
-	st := GenerateBlakeTest("randoTest")
 
 	_, err := json.MarshalIndent(st, "", " ")
 	if err != nil {
@@ -113,38 +103,11 @@ func testCompare(a, b evms.Evm, testfile string) error {
 		fmt.Printf("error: %v\n", err)
 		return err
 	}
-	eq := evms.CompareFiles([]evms.Evm{a, b}, []io.Reader{wa, wb})
+	eq, _ := evms.CompareFiles([]evms.Evm{a, b}, []io.Reader{wa, wb})
 	if !eq {
 		return fmt.Errorf("diffs encountered")
 	}
 	return nil
-}
-
-func TestBlake(t *testing.T) {
-	t.Skip("Test is machine-specific due to bundled binaries")
-	setupBinaries(t)
-	testName := "blake_test"
-	fileName := fmt.Sprintf("%v.json", testName)
-	p := path.Join(os.TempDir(), fileName)
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//fmt.Printf("file is %v \n", p)
-	gst := GenerateBlakeTest(testName)
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", " ")
-	if err = encoder.Encode(gst); err != nil {
-		f.Close()
-		t.Fatal(err)
-	}
-	f.Close()
-	geth := evms.NewGethEVM("../binaries/evm")
-	nethermind := evms.NewNethermindVM("../binaries/parity-evm")
-
-	if err := testCompare(geth, nethermind, p); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestFuzzing(t *testing.T) {
@@ -168,53 +131,13 @@ func TestFuzzing(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.Close()
-		geth := evms.NewGethEVM("../binaries/evm")
-		nethermind := evms.NewNethermindVM("../binaries/parity-evm")
+		geth := evms.NewGethEVM("../binaries/evm", "")
+		nethermind := evms.NewNethermindVM("../binaries/parity-evm", "")
 		return testCompare(geth, nethermind, p)
 	}
 
 	if err := testFuzzing(t); err != nil {
 		t.Fatal(err)
-	}
-}
-
-//func TestFuzzingCoverage(t *testing.T) {
-//	tot := 0
-//	totDepth := 0
-//	for i := 0; i < 100; i++ {
-//		numSteps, maxdepth, _ := testFuzzing(t)
-//		tot += numSteps
-//		fmt.Printf("numSteps %d maxDepth: %d\n", numSteps, maxdepth)
-//		totDepth += (maxdepth - 1)
-//	}
-//	fmt.Printf("total steps (100 tests): %d, total depth %d\n", tot, totDepth)
-//}
-
-/*
-BenchmarkGenerator-6   	  500000	      2419 ns/op
-
-BenchmarkGenerator-6   	  500000	      3092 ns/op
-
-# randomizing code from valid opcodes, with pushdata insertion and stack balance
-BenchmarkGenerator-6   	   10000	    118339 ns/op
-
-# using program, smart calldata
-BenchmarkGenerator-6   	   20000	     60932 ns/op
-
-# using blake2 generator
-BenchmarkGenerator-6   	  100000	     13638 ns/op
-
-# blake2, but only doing new randcall
-BenchmarkGenerator-6   	  200000	      8413 ns/op
-*/
-func BenchmarkGenerator(b *testing.B) {
-	t := GenerateBlake()
-	alloc := *t.pre
-	target := common.HexToAddress(t.tx.To)
-	dest := alloc[target]
-	for i := 0; i < b.N; i++ {
-		dest.Code = RandCallBlake()
-		t.ToGeneralStateTest("rando")
 	}
 }
 

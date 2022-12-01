@@ -186,37 +186,3 @@ func RandCallBlake() []byte {
 	p.MemToStorage(0, 64, 0)
 	return p.Bytecode()
 }
-
-func RandomBytecode() []byte {
-	b := make([]byte, 1024)
-	rand.Read(b)
-	i := 0
-	var next = func() byte {
-		x := b[i]
-		i++
-		if i >= len(b) {
-			rand.Read(b)
-			i = 0
-		}
-		return x
-	}
-	p := program.NewProgram()
-	p.Push(0)
-	p.Push(1)
-	p.Push(1)
-	p.Push(2)
-	p.Push(2)
-	p.Push(500)
-	p.Push(0xffff)
-	for {
-		op := ops.OpCode(next())
-		if !ops.IsDefined(op) {
-			continue
-		}
-		p.Op(op)
-		if len(p.Bytecode()) > 1024 {
-			break
-		}
-	}
-	return p.Bytecode()
-}

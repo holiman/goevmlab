@@ -29,7 +29,7 @@ func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
-	app.Usage = "Fuzzer targeting SSTORE and SLOAD"
+	app.Usage = "Executes one test against several vms"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Action = startFuzzer
 	return app
