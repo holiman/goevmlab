@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
@@ -51,6 +52,7 @@ func initApp() *cli.App {
 }
 
 func main() {
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -65,13 +67,29 @@ func startFuzzer(c *cli.Context) error {
 		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
 		return errors.New("missing target")
 	}
-
-	if len(fNames) > 1 {
-		fmt.Printf("Only one target supported\n")
-	}
-	factory := fuzzing.Factory(fNames[0], "London")
-	if factory == nil {
-		return fmt.Errorf("unknown target %v", fNames[0])
+	var factory common.GeneratorFn
+	if len(fNames) == 1 {
+		factory = fuzzing.Factory(fNames[0], "London")
+		if factory == nil {
+			return fmt.Errorf("unknown target %v", fNames[0])
+		}
+	} else {
+		// Need to put together a meta-factory
+		var factories []common.GeneratorFn
+		for _, fName := range fNames {
+			if f := fuzzing.Factory(fName, "London"); f == nil {
+				return fmt.Errorf("unknown target %v", fName)
+			} else {
+				factories = append(factories, f)
+			}
+			log.Info("Added factory", "name", fName)
+		}
+		index := 0
+		factory = func() *fuzzing.GstMaker {
+			fn := factories[index%len(factories)]
+			index++
+			return fn()
+		}
 	}
 	return common.ExecuteFuzzer(c, factory, "naivefuzz")
 }

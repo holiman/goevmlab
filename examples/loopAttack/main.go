@@ -282,15 +282,9 @@ func convertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 }
 
 type dumbTracer struct {
+	common2.NoOpTracer
 	jumpCount uint64
 	opCount   uint64
-}
-
-func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
-
-func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
-
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
 }
 
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
@@ -298,12 +292,6 @@ func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 	if op == vm.JUMP {
 		d.jumpCount++
 	}
-}
-
-func (d *dumbTracer) CaptureEnter(typ vm.OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
-}
-
-func (d *dumbTracer) CaptureExit(output []byte, gasUsed uint64, err error) {
 }
 
 func (d *dumbTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {

@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
+	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
 )
@@ -140,12 +141,9 @@ func runit() error {
 }
 
 type dumbTracer struct {
+	common2.NoOpTracer
 	counter uint64
 }
-
-func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
-
-func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
 
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
 	if op == vm.STATICCALL {
@@ -154,16 +152,6 @@ func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 	if op == vm.EXTCODESIZE {
 		d.counter++
 	}
-}
-
-func (d *dumbTracer) CaptureEnter(typ vm.OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
-}
-
-func (d *dumbTracer) CaptureExit(output []byte, gasUsed uint64, err error) {
-}
-
-func (d *dumbTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
-	fmt.Printf("CaptureFault %v\n", err)
 }
 
 func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
