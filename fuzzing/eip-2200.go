@@ -11,12 +11,12 @@ import (
 func Factory2200(fork string) func() *GstMaker {
 	return func() *GstMaker {
 		gst := BasicStateTest(fork)
-		create2200Test(gst)
+		fillSstore(gst)
 		return gst
 	}
 }
 
-func create2200Test(gst *GstMaker) {
+func fillSstore(gst *GstMaker) {
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),

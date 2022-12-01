@@ -47,14 +47,6 @@ var precompilesBLS = []blsPrec{
 	{17, NewFP2toG2, 256}, // FP2 to G2
 }
 
-func FactoryBLS(fork string) func() *GstMaker {
-	return func() *GstMaker {
-		gst := BasicStateTest(fork)
-		fillBls(gst)
-		return gst
-	}
-}
-
 func fillBls(gst *GstMaker) {
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca110b15012381")

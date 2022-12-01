@@ -6,15 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// FactoryBlake returns a 'factory' which creates blake-precompile tests on the given fork.
-func FactoryBlake(fork string) func() *GstMaker {
-	return func() *GstMaker {
-		gst := BasicStateTest(fork)
-		fillBlake(gst)
-		return gst
-	}
-}
-
 func fillBlake(gst *GstMaker) {
 	// Add a contract which calls blake
 	dest := common.HexToAddress("0x0000ca1100b1a7e")

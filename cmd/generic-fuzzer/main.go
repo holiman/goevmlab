@@ -1,4 +1,4 @@
-// Copyright 2019 Martin Holst Swende
+// Copyright 2022 Martin Holst Swende
 // This file is part of the go-evmlab library.
 //
 // The library is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,21 +27,28 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var (
+	targetFlag = &cli.StringSliceFlag{
+		Name:  "target",
+		Usage: "fuzzing-target",
+	}
+	app = initApp()
+)
+
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
-	app.Usage = "Fuzzer targeting SSTORE and SLOAD"
+	app.Usage = "Fuzzer with various targets"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags,
 		common.ThreadFlag,
 		common.LocationFlag,
+		targetFlag,
 	)
 	app.Action = startFuzzer
 	return app
 }
-
-var app = initApp()
 
 func main() {
 	if err := app.Run(os.Args); err != nil {
@@ -50,6 +58,20 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	fmt.Printf("Generator started \n")
-	return common.ExecuteFuzzer(c, fuzzing.Factory2200("London"), "storagefuzz")
+	fNames := c.StringSlice(targetFlag.Name)
+	// At this point, we only do one at a time
+	if len(fNames) == 0 {
+		fmt.Printf("At least one fuzzer target needed. ")
+		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
+		return errors.New("missing target")
+	}
+
+	if len(fNames) > 1 {
+		fmt.Printf("Only one target supported\n")
+	}
+	factory := fuzzing.Factory(fNames[0], "London")
+	if factory == nil {
+		return fmt.Errorf("unknown target %v", fNames[0])
+	}
+	return common.ExecuteFuzzer(c, factory, "naivefuzz")
 }
