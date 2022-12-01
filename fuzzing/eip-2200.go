@@ -79,31 +79,3 @@ func create2200Test(gst *GstMaker) {
 		gst.SetTx(tx)
 	}
 }
-
-func createNaive2200Test(gst *GstMaker) {
-	// The accounts which we want to be able to invoke
-	addrs := []common.Address{
-		common.HexToAddress("0xF1"),
-	}
-	for _, addr := range addrs {
-		gst.AddAccount(addr, GenesisAccount{
-			Code:    RandomBytecode(),
-			Balance: new(big.Int),
-			Storage: RandStorage(15, 20),
-		})
-	}
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x10),
-			To:         addrs[0].Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-}

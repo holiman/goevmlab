@@ -38,6 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
@@ -83,6 +84,11 @@ var (
 		Usage: "number of tests to generate",
 		Value: 100,
 	}
+	TraceFlag = &cli.BoolFlag{
+		Name: "trace",
+		Usage: "if true, a trace will be generated along with the tests. \n" +
+			"This is useful for debugging the usefulness of the tests",
+	}
 	SkipTraceFlag = &cli.BoolFlag{
 		Name: "skiptrace",
 		Usage: "If 'skiptrace' is set to true, then the evms will execute _without_ tracing, and only the final stateroot will be compared after execution.\n" +
@@ -97,6 +103,7 @@ var (
 		ErigonFlag,
 		SkipTraceFlag,
 	}
+	traceLengthGauge = new(metrics.StandardGauge)
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
@@ -201,7 +208,7 @@ func RunOneTest(path string, c *cli.Context) error {
 		readers = append(readers, f)
 	}
 	// Compare outputs
-	if eq := evms.CompareFiles(vms, readers); !eq {
+	if eq, _ := evms.CompareFiles(vms, readers); !eq {
 		fmt.Printf("output files:\n")
 		for _, output := range outputs {
 			fmt.Printf(" - %v\n", output.Name())
@@ -285,7 +292,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		defer meta.wg.Done()
 		var (
 			tStart    = time.Now()
-			ticker    = time.NewTicker(60 * time.Second)
+			ticker    = time.NewTicker(5 * time.Second)
 			testCount = uint64(0)
 		)
 		defer ticker.Stop()
@@ -297,7 +304,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				testCount = n
 				timeSpent := time.Since(tStart)
 				execPerSecond := float64(uint64(time.Second)*n) / float64(timeSpent)
-				fmt.Printf("%d tests executed, in %v (%.02f tests/s)\n", n, timeSpent, execPerSecond)
+				fmt.Printf("%d tests executed, in %v (%.02f tests/s), tracelength gauge: %d\n",
+					n, timeSpent, execPerSecond, traceLengthGauge.Value())
 				// Update global counter
 				globalCount := uint64(0)
 				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil {
@@ -516,7 +524,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			}
 			atomic.AddUint64(&meta.numTests, 1)
 			// Compare outputs
-			if eq := evms.CompareFiles(meta.vms, readers); !eq {
+			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
 				atomic.StoreInt64(&meta.abort, 1)
 				s := "output files: "
 				for _, f := range outputs {
@@ -528,6 +536,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				meta.slowCh <- file // flag as slow
 			} else {
 				meta.removeCh <- file // flag for removal
+				traceLengthGauge.Update(int64(len))
 			}
 		}
 	}

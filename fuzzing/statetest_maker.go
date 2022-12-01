@@ -25,7 +25,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
@@ -35,6 +34,7 @@ import (
 
 // The sender
 var sender = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+var pKey = hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
 
 var randomAddresses = []common.Address{
 	// Some random accounts
@@ -275,7 +275,7 @@ func AddTransaction(dest *common.Address, gst *GstMaker) {
 		Value:      []string{"0x01"},
 		Data:       []string{"0x"},
 		GasPrice:   big.NewInt(0x16),
-		PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+		PrivateKey: pKey,
 	}
 	gst.SetTx(tx)
 }
@@ -294,7 +294,7 @@ func GenerateStateTest(name string) *GeneralStateTest {
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
 			GasPrice:   big.NewInt(0x10),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+			PrivateKey: pKey,
 		}
 		if dest != nil {
 			tx.To = dest.Hex()
@@ -302,46 +302,6 @@ func GenerateStateTest(name string) *GeneralStateTest {
 		gst.SetTx(tx)
 	}
 	return gst.ToGeneralStateTest(name)
-}
-
-func GenerateSubroutineTest() *GstMaker {
-	gst := BasicStateTest("Berlin")
-	// The accounts which we want to be able to invoke
-	addrs := []common.Address{
-		common.HexToAddress("0xF1"),
-		common.HexToAddress("0xF2"),
-		common.HexToAddress("0xF3"),
-		common.HexToAddress("0xF4"),
-		common.HexToAddress("0xF5"),
-		common.HexToAddress("0xF6"),
-		common.HexToAddress("0xF7"),
-		common.HexToAddress("0xF8"),
-		common.HexToAddress("0xF9"),
-		common.HexToAddress("0xFA"),
-	}
-	//addrGen := addressRandomizer(addrs)
-	for _, addr := range addrs {
-		gst.AddAccount(addr, GenesisAccount{
-			Code:    RandCallSubroutine(addrs),
-			Balance: new(big.Int),
-			Storage: make(state.Storage),
-		})
-	}
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x10),
-			To:         addrs[0].Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-	return gst
 }
 
 func GenerateECRecover() (*GstMaker, []byte) {
@@ -364,7 +324,7 @@ func GenerateECRecover() (*GstMaker, []byte) {
 			Data:       []string{randHex(100)},
 			GasPrice:   big.NewInt(0x10),
 			To:         dest.Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+			PrivateKey: pKey,
 		}
 		gst.SetTx(tx)
 	}
@@ -402,63 +362,5 @@ func RandCallECRecover() []byte {
 		p.MemToStorage(0, 32, offset)
 		offset += 32
 	}
-	return p.Bytecode()
-}
-
-func GenerateNaiveLondonTest() *GstMaker {
-	gst := BasicStateTest("London")
-	createNaive2200Test(gst)
-	return gst
-}
-
-func GeneratePrecompileTest(forkName string) *GstMaker {
-	gst := BasicStateTest(forkName)
-	// Add a contract which calls a precompile
-	dest := common.HexToAddress("0x0000ca1100b1a7e")
-	gst.AddAccount(dest, GenesisAccount{
-		Code:    RandCallPrecompile(),
-		Balance: new(big.Int),
-		Storage: make(map[common.Hash]common.Hash),
-	})
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{""},
-			GasPrice:   big.NewInt(0x20),
-			To:         dest.Hex(),
-			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-		}
-		gst.SetTx(tx)
-	}
-	return gst
-}
-
-func RandCallPrecompile() []byte {
-	// fill the memory
-	p := program.NewProgram()
-	data := make([]byte, 1024)
-	rand.Read(data)
-	p.Mstore(data, 0)
-	memInFn := func() (offset, size interface{}) {
-		offset, size = 0, rand.Uint32()%uint32(len(data))
-		return
-	}
-	memOutFn := func() (offset, size interface{}) {
-		offset, size = 0, 64
-		return
-	}
-	addrGen := func() interface{} {
-		return rand.Uint32() % 18
-	}
-	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
-	p.AddAll(p2)
-	// pop the ret value
-	p.Op(ops.POP)
-	// Store the output in some slot, to make sure the stateroot changes
-	p.MemToStorage(0, 64, 0)
 	return p.Bytecode()
 }

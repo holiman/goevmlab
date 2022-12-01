@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
@@ -32,7 +33,7 @@ func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
-	app.Usage = "Generator for blake (state-)tests"
+	app.Usage = "Generator for bls12381 (state-)tests"
 	return app
 }
 
@@ -60,20 +61,19 @@ var generateCommand = &cli.Command{
 }
 
 func main() {
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
+	log.Info("Generating tests")
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func createTests(location, prefix string, limit int) error {
-	base, _ := fuzzing.GenerateBLS()
-	target := base.GetDestination()
-	fmt.Printf("target: %v\n", target.Hex())
-
+func createTests(location, prefix, fork string, limit int) error {
+	log.Info("Generating tests", "location", location, "prefix", prefix, "fork", fork, "limit", limit)
+	createFn := fuzzing.FactoryBLS(fork)
 	for i := 0; i < limit; i++ {
-
-		testName := fmt.Sprintf("%v-bls12381-test-%d", prefix, i)
+		testName := fmt.Sprintf("%vbls12381-test-%d", prefix, i)
 		fileName := fmt.Sprintf("%v.json", testName)
 		p := path.Join(location, fileName)
 		f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
@@ -81,15 +81,12 @@ func createTests(location, prefix string, limit int) error {
 			return err
 		}
 		// Generate new code
-		code := fuzzing.RandCallBLS()
-		base.SetCode(target, code)
-
+		base := createFn()
 		// Get new state root and logs hash
 		if err := base.Fill(nil); err != nil {
 			f.Close()
 			return err
 		}
-
 		test := base.ToGeneralStateTest(testName)
 		// Write to tfile
 		encoder := json.NewEncoder(f)
@@ -104,21 +101,17 @@ func createTests(location, prefix string, limit int) error {
 }
 
 func generate(ctx *cli.Context) error {
-
-	var prefix = ""
-	if ctx.IsSet(common.PrefixFlag.Name) {
-		prefix = ctx.String(common.PrefixFlag.Name)
-	}
-	var location = ""
-	if ctx.IsSet(common.LocationFlag.Name) {
+	var (
+		fork     = "London"
+		prefix   = ""
+		count    = ctx.Int(common.CountFlag.Name)
 		location = ctx.String(common.LocationFlag.Name)
-		if err := os.MkdirAll(location, 0755); err != nil {
-			return fmt.Errorf("could not create %v: %v", location, err)
-		}
+	)
+	if err := os.MkdirAll(location, 0755); err != nil {
+		return fmt.Errorf("could not create %v: %v", location, err)
 	}
-	var count = 0
-	if ctx.IsSet(common.CountFlag.Name) {
-		count = ctx.Int(common.CountFlag.Name)
+	if ctx.IsSet(common.PrefixFlag.Name) {
+		prefix = fmt.Sprintf("%v-", ctx.String(common.PrefixFlag.Name))
 	}
-	return createTests(location, prefix, count)
+	return createTests(location, prefix, fork, count)
 }

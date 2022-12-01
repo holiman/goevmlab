@@ -4,10 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
-
-var pKey = hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
 
 // FactoryBlake returns a 'factory' which creates blake-precompile tests on the given fork.
 func FactoryBlake(fork string) func() *GstMaker {

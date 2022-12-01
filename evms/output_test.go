@@ -57,7 +57,7 @@ func TestVMsOutput(t *testing.T) {
 		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
 		vms = append(vms, vm.vm)
 	}
-	eq := CompareFiles(vms, readers)
+	eq, _ := CompareFiles(vms, readers)
 	if !eq {
 		t.Errorf("Expected equality, didn't get it")
 	}
@@ -92,7 +92,7 @@ func TestBesuGethOutput(t *testing.T) {
 		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
 		vms = append(vms, vm.vm)
 	}
-	eq := CompareFiles(vms, readers)
+	eq, _ := CompareFiles(vms, readers)
 	if !eq {
 		t.Errorf("Expected equality, didn't get it")
 	}

@@ -50,11 +50,5 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	generator := func() *fuzzing.GstMaker {
-		base := fuzzing.GeneratePrecompileTest("London")
-		target := base.GetDestination()
-		base.SetCode(target, fuzzing.RandCallPrecompile())
-		return base
-	}
-	return common.ExecuteFuzzer(c, generator, "precompiletest")
+	return common.ExecuteFuzzer(c, fuzzing.FactoryPrecompileTest("London"), "precompiletest")
 }

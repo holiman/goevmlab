@@ -50,6 +50,5 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	fmt.Printf("Generator started \n")
-	return common.ExecuteFuzzer(c, fuzzing.GenerateNaiveLondonTest, "naivefuzz")
+	return common.ExecuteFuzzer(c, fuzzing.FactoryNaive("London"), "naivefuzz")
 }

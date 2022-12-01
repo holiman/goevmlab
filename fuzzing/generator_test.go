@@ -103,7 +103,7 @@ func testCompare(a, b evms.Evm, testfile string) error {
 		fmt.Printf("error: %v\n", err)
 		return err
 	}
-	eq := evms.CompareFiles([]evms.Evm{a, b}, []io.Reader{wa, wb})
+	eq, _ := evms.CompareFiles([]evms.Evm{a, b}, []io.Reader{wa, wb})
 	if !eq {
 		return fmt.Errorf("diffs encountered")
 	}

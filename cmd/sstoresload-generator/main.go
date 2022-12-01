@@ -23,9 +23,11 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
+	"io"
 )
 
 func initApp() *cli.App {
@@ -45,6 +47,7 @@ func init() {
 		common.PrefixFlag,
 		common.LocationFlag,
 		common.CountFlag,
+		common.TraceFlag,
 	}
 	app.Commands = []*cli.Command{
 		generateCommand,
@@ -60,49 +63,50 @@ var generateCommand = &cli.Command{
 }
 
 func main() {
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
+	log.Info("Generating tests")
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func createTests(location, prefix string, limit int, trace bool) error {
-
+func createTests(location, prefix, fork string, limit int, trace bool) error {
+	log.Info("Generating tests", "location", location, "prefix", prefix, "fork", fork, "limit", limit, "tracing", trace)
+	createFn := fuzzing.Factory2200("London")
 	for i := 0; i < limit; i++ {
-		testName := fmt.Sprintf("%v-storagetest-%04d", prefix, i)
+		testName := fmt.Sprintf("%vstoragetest-%04d", prefix, i)
 		fileName := fmt.Sprintf("%v.json", testName)
-
-		f, err := os.OpenFile(path.Join(location, "tests", fileName), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
+		p := path.Join(location, fileName)
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
 		if err != nil {
 			return err
 		}
 		close := func() {
 			f.Close()
 		}
-
 		// Now, let's also dump out the trace, so we can investigate if the tests
 		// are doing anything interesting
+		var traceOutput io.Writer
 		if trace {
 			traceName := fmt.Sprintf("%v-trace.jsonl", testName)
-			traceOut, err := os.OpenFile(path.Join(location, "traces", traceName), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
+			traceOut, err := os.OpenFile(path.Join(location, traceName), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
 			if err != nil {
 				return err
 			}
+			traceOutput = traceOut
 			close = func() {
 				f.Close()
 				traceOut.Close()
 			}
 		}
-
 		// Generate new code
-		base := fuzzing.Generate2200BerlinTest()
-
+		base := createFn()
 		// Get new state root and logs hash
-		if err := base.Fill(nil); err != nil {
+		if err := base.Fill(traceOutput); err != nil {
 			close()
 			return err
 		}
-
 		test := base.ToGeneralStateTest(testName)
 		// Write to tfile
 		encoder := json.NewEncoder(f)
@@ -117,21 +121,17 @@ func createTests(location, prefix string, limit int, trace bool) error {
 }
 
 func generate(ctx *cli.Context) error {
-
-	var prefix = ""
-	if ctx.IsSet(common.PrefixFlag.Name) {
-		prefix = ctx.String(common.PrefixFlag.Name)
-	}
-	var location = ctx.String(common.LocationFlag.Name)
-	//if err := os.MkdirAll(path.Join(location, "traces"), 0755); err != nil {
-	//	return fmt.Errorf("could not create %v: %v", location, err)
-	//}
-	if err := os.MkdirAll(path.Join(location, "tests"), 0755); err != nil {
+	var (
+		fork     = "London"
+		prefix   = ""
+		count    = ctx.Int(common.CountFlag.Name)
+		location = ctx.String(common.LocationFlag.Name)
+	)
+	if err := os.MkdirAll(location, 0755); err != nil {
 		return fmt.Errorf("could not create %v: %v", location, err)
 	}
-	var count = 0
-	if ctx.IsSet(common.CountFlag.Name) {
-		count = ctx.Int(common.CountFlag.Name)
+	if ctx.IsSet(common.PrefixFlag.Name) {
+		prefix = fmt.Sprintf("%v-", ctx.String(common.PrefixFlag.Name))
 	}
-	return createTests(location, prefix, count, false)
+	return createTests(location, prefix, fork, count, ctx.Bool(common.TraceFlag.Name))
 }
