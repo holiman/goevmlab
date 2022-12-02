@@ -101,7 +101,6 @@ var (
 		BesuFlag,
 		BesuBatchFlag,
 		ErigonFlag,
-		SkipTraceFlag,
 	}
 	traceLengthMA = NewMovingAverage(100)
 	traceLengthSA = NewSlidingAverage()
@@ -179,8 +178,10 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 // - false, nil: a consensus issue found
 func RunTests(paths []string, c *cli.Context) (bool, error) {
 	var (
-		vms     = initVMs(c)
-		outputs []*os.File
+		vms        = initVMs(c)
+		outputs    []*os.File
+		lastReport time.Time
+		start      = time.Now()
 	)
 	if len(vms) < 1 {
 		return true, fmt.Errorf("No vms specified!")
@@ -193,7 +194,11 @@ func RunTests(paths []string, c *cli.Context) (bool, error) {
 		}
 		outputs = append(outputs, out)
 	}
-	for _, path := range paths {
+	for i, path := range paths {
+		if time.Since(lastReport) > 8*time.Second {
+			log.Info("Processing tests", "count", i, "remaining", len(paths)-1, "elapsed", time.Since(start), "current", path)
+			lastReport = time.Now()
+		}
 		// Zero out the output files and reset offset
 		for _, f := range outputs {
 			_ = f.Truncate(0)

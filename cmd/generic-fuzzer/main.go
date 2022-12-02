@@ -43,6 +43,7 @@ func initApp() *cli.App {
 	app.Usage = "Fuzzer with various targets"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags,
+		common.SkipTraceFlag,
 		common.ThreadFlag,
 		common.LocationFlag,
 		targetFlag,
