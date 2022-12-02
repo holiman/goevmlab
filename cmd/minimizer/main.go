@@ -158,12 +158,12 @@ func startFuzzer(c *cli.Context) error {
 			panic(err)
 		}
 		if !allAgree {
-			fmt.Printf("Still ok! (failing testcase) ...\n")
+			log.Info("Change ok")
 			if err := ioutil.WriteFile(good, data, 0777); err != nil {
 				panic(err)
 			}
 		} else {
-			fmt.Printf("Not ok! (clients in consensus)...\n")
+			log.Info("Bad change, clients in consensus - reverting")
 		}
 		return allAgree
 	}
