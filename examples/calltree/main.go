@@ -36,7 +36,7 @@ import (
 )
 
 type dumbTracer struct {
-	common2.NoOpTracer
+	common2.BasicTracer
 	counter uint64
 }
 

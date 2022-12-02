@@ -295,7 +295,7 @@ func convertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 }
 
 type dumbTracer struct {
-	common2.NoOpTracer
+	common2.BasicTracer
 	createCount uint64
 	copyCount   uint64
 	memSize     uint64

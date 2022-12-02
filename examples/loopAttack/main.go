@@ -282,7 +282,7 @@ func convertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 }
 
 type dumbTracer struct {
-	common2.NoOpTracer
+	common2.BasicTracer
 	jumpCount uint64
 	opCount   uint64
 }

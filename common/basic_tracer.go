@@ -18,37 +18,35 @@ package common
 
 import (
 	"encoding/json"
-	"math/big"
-	"time"
 	"fmt"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers"
+	"math/big"
 )
 
 var (
 	// compile time type check
-	_ tracers.Tracer = (*NoOpTracer)(nil)
+	_ tracers.Tracer = (*BasicTracer)(nil)
 )
 
-type NoOpTracer struct{}
+type BasicTracer struct{}
 
-func (n *NoOpTracer) CaptureTxStart(uint64) {}
-func (n *NoOpTracer) CaptureTxEnd(uint64)   {}
-func (n *NoOpTracer) CaptureStart(*vm.EVM, common.Address, common.Address, bool, []byte, uint64, *big.Int) {
+func (n *BasicTracer) CaptureTxStart(uint64) {}
+func (n *BasicTracer) CaptureTxEnd(uint64)   {}
+func (n *BasicTracer) CaptureStart(*vm.EVM, common.Address, common.Address, bool, []byte, uint64, *big.Int) {
 }
-func (n *NoOpTracer) CaptureEnd([]byte, uint64, time.Duration, error) {}
-func (n *NoOpTracer) CaptureEnter(vm.OpCode, common.Address, common.Address, []byte, uint64, *big.Int) {
+func (n *BasicTracer) CaptureEnd([]byte, uint64, timeNoOpTracer.Duration, error) {}
+func (n *BasicTracer) CaptureEnter(vm.OpCode, common.Address, common.Address, []byte, uint64, *big.Int) {
 }
-func (n *NoOpTracer) CaptureExit([]byte, uint64, error) {}
-func (n *NoOpTracer) CaptureState(uint64, vm.OpCode, uint64, uint64, *vm.ScopeContext, []byte, int, error) {
+func (n *BasicTracer) CaptureExit([]byte, uint64, error) {}
+func (n *BasicTracer) CaptureState(uint64, vm.OpCode, uint64, uint64, *vm.ScopeContext, []byte, int, error) {
 }
-func (n *NoOpTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
+func (n *BasicTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
 	fmt.Printf("CaptureFault %v\n", err)
 }
 
-func (n *NoOpTracer) GetResult() (json.RawMessage, error) {
+func (n *BasicTracer) GetResult() (json.RawMessage, error) {
 	return nil, nil
 }
-func (n *NoOpTracer) Stop(err error) {}
+func (n *BasicTracer) Stop(err error) {}
