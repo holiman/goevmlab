@@ -1,26 +1,33 @@
 ## Command to generate these
 
-#### Geth 
+### Geth
 
-	../../evm --json --nomemory statetest ./statetest1.json 1> statetest1_geth_stdout.jsonl
-	../../evm --json --nomemory statetest ./statetest1.json 2> statetest1_geth_sterr.jsonl
-
-
-### Parity
-
-
-	../../parity-evm --std-json state-test ./statetest1.json 1> statetest1_parity_stdout.jsonl
-	../../parity-evm --std-json state-test ./statetest1.json 2> statetest1_parity_stderr.jsonl
-
-### Aleth / Testeth
-
-
-	../../testeth -t GeneralStateTests --  --testfile ./statetest1.json --jsontrace '{"disableMemory": true}' 1> statetest1_testeth_stdout.jsonl
-	../../testeth -t GeneralStateTests --  --testfile ./statetest1.json --jsontrace '{"disableMemory": true}' 2> statetest1_testeth_stderr.jsonl
+    evm="/home/user/go/src/github.com/ethereum/go-ethereum/build/bin/evm"
+    for i in *.json; do
+        $evm --json --nomemory --noreturndata statetest $i 2>/dev/null 1>$i.geth.txt
+        $evm --json --nomemory --noreturndata statetest $i 1>/dev/null 2>$i.geth.txt
+    done
 
 
 ### Nethermind
 
-	../../nethtest -m  --input statetest1.json --trace 1> statetest1_nethermind_stdout.jsonl
-	../../nethtest -m --input statetest1.json --trace 2> statetest1_nethermind_stderr.jsonl
+    for i in *.json; do
+	    $nethtest -m --trace --input $1  2>/dev/null 1>$i.nethermind.stdout.txt
+        $nethtest -m --trace --input $i  1>/dev/null 2>$i.nethermind.stderr.txt
+    done
 
+
+### Besu
+
+    for i in *.json; do
+        $besuvm --json --nomemory state-test ./statetest1.json 2>/dev/null 1>$i.besu.stdout.txt
+        $besuvm --json --nomemory state-test ./statetest1.json 1>/dev/null 2>$i.besu.stderr.txt
+    done
+
+### Erigon
+
+    erigonvm="/home/user/go/src/github.com/ledgerwatch/erigon/build/bin/evm"
+    for i in *.json; do
+        $erigonvm --json --nomemory --noreturndata statetest $i 2>/dev/null 1>$i.erigon.stdout.txt
+        $erigonvm --json --nomemory --noreturndata statetest $i 1>/dev/null 2>$i.erigon.stderr.txt
+    done

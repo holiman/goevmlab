@@ -115,7 +115,7 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		//	// we can just make it positive, it will be zeroed later
 		//	data[i+9] = byte(' ')
 		//}
-		// Nethermind uses a hex-encoded memsize. Let's just nuke it, by remaning it
+		//// Nethermind uses a hex-encoded memsize. Let's just nuke it, by remaning it
 		if i := bytes.Index(data, []byte(`"memSize":"0x`)); i > 0 {
 			// we can just make it positive, it will be zeroed later
 			data[i+1] = byte('f')

@@ -67,5 +67,16 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 		}
 		count++
 	}
+	// The source is 'done', need to also check if the other scanners are done
+	for i, scanner := range scanners[1:] {
+		if scanner.Scan() {
+			fmt.Printf("diff: \n%15v: %v\n%15v: %v\n",
+				refVM.Name(),
+				string("--  depleted --"),
+				vms[i+1].Name(),
+				string(scanner.Bytes()))
+			return false, count
+		}
+	}
 	return true, count
 }

@@ -199,17 +199,17 @@ func RunTests(paths []string, c *cli.Context) error {
 		wg.Add(len(vms))
 		var commands = make([]string, len(vms))
 		for i, vm := range vms {
-			go func(evm evms.Evm, out io.Writer) {
+			go func(evm evms.Evm, i int) {
 				defer wg.Done()
 				t0 := time.Now()
-				cmd, err := evm.RunStateTest(path, out, false)
+				cmd, err := evm.RunStateTest(path, outputs[i], false)
 				commands[i] = cmd
 				if err != nil {
 					log.Error("Error running test", "err", err)
 					return
 				}
 				log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
-			}(vm, outputs[i])
+			}(vm, i)
 		}
 		wg.Wait()
 		// Seek to beginning
