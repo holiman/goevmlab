@@ -172,19 +172,24 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 }
 
 // RunTests runs all tests in paths, on all clients.
-func RunTests(paths []string, c *cli.Context) error {
+// Return values are :
+// - true, nil: no consensus issue
+// - true, err: test execution failed
+// - false, err: a consensus issue found
+// - false, nil: a consensus issue found
+func RunTests(paths []string, c *cli.Context) (bool, error) {
 	var (
 		vms     = initVMs(c)
 		outputs []*os.File
 	)
 	if len(vms) < 1 {
-		return fmt.Errorf("No vms specified!")
+		return true, fmt.Errorf("No vms specified!")
 	}
 	// Open/create outputs for writing
 	for _, evm := range vms {
 		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
-			return fmt.Errorf("failed opening file %v", err)
+			return true, fmt.Errorf("failed opening file %v", err)
 		}
 		outputs = append(outputs, out)
 	}
@@ -230,14 +235,14 @@ func RunTests(paths []string, c *cli.Context) error {
 			fmt.Fprintf(out, "  - command: %v\n", commands[i])
 		}
 		fmt.Println(out)
-		return fmt.Errorf("Consensus error")
+		return false, fmt.Errorf("Consensus error")
 
 	}
 	for _, f := range outputs {
 		f.Close()
 	}
 	log.Info("Execution done", "count", len(paths))
-	return nil
+	return true, nil
 }
 
 type noopWriter struct{}

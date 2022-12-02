@@ -109,13 +109,8 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		data := scanner.Bytes()
 		var elem logger.StructLog
 
-		// Nethermind sometimes report a negative refund
-		// TODO(@holiman): they may have fixed this, if so, delete this code
-		//if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-		//	// we can just make it positive, it will be zeroed later
-		//	data[i+9] = byte(' ')
-		//}
-		//// Nethermind uses a hex-encoded memsize. Let's just nuke it, by remaning it
+		// Nethermind uses a hex-encoded memsize. Let's just nuke it, by renaming it
+		// TODO(@holiman) https://github.com/NethermindEth/nethermind/issues/4955
 		if i := bytes.Index(data, []byte(`"memSize":"0x`)); i > 0 {
 			// we can just make it positive, it will be zeroed later
 			data[i+1] = byte('f')
