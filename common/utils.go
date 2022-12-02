@@ -136,16 +136,18 @@ func initVMs(c *cli.Context) []evms.Evm {
 
 }
 
+// RootsEqual executes the test on the given path on all vms, and returns true
+// if they all report the same post stateroot.
 func RootsEqual(path string, c *cli.Context) (bool, error) {
 	var (
-		vms = initVMs(c)
-		wg  sync.WaitGroup
+		vms   = initVMs(c)
+		wg    sync.WaitGroup
+		roots = make([]string, len(vms))
+		errs  = make([]error, len(vms))
 	)
 	if len(vms) < 1 {
 		return false, fmt.Errorf("No vms specified!")
 	}
-	roots := make([]string, len(vms))
-	errs := make([]error, len(vms))
 	wg.Add(len(vms))
 	for i, vm := range vms {
 		go func(index int, vm evms.Evm) {
@@ -162,14 +164,14 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 		}
 	}
 	for _, root := range roots[1:] {
-		if root != roots[0] {
-			// Consensus error
+		if root != roots[0] { // Consensus error
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
+// RunTests runs all tests in paths, on all clients.
 func RunTests(paths []string, c *cli.Context) error {
 	var (
 		vms     = initVMs(c)
@@ -195,12 +197,14 @@ func RunTests(paths []string, c *cli.Context) error {
 		// Kick off the binaries
 		var wg sync.WaitGroup
 		wg.Add(len(vms))
-
+		var commands = make([]string, len(vms))
 		for i, vm := range vms {
 			go func(evm evms.Evm, out io.Writer) {
 				defer wg.Done()
 				t0 := time.Now()
-				if _, err := evm.RunStateTest(path, out, false); err != nil {
+				cmd, err := evm.RunStateTest(path, out, false)
+				commands[i] = cmd
+				if err != nil {
 					log.Error("Error running test", "err", err)
 					return
 				}
@@ -215,15 +219,19 @@ func RunTests(paths []string, c *cli.Context) error {
 			readers = append(readers, f)
 		}
 		// Compare outputs
-		if eq, _ := evms.CompareFiles(vms, readers); !eq {
-			fmt.Printf("output files:\n")
-			for _, output := range outputs {
-				fmt.Printf(" - %v\n", output.Name())
-			}
-			return fmt.Errorf("Consensus error")
-		} else {
-			log.Debug("%v: all agree!\n", path)
+		if eq, _ := evms.CompareFiles(vms, readers); eq {
+			continue
 		}
+		out := new(strings.Builder)
+		fmt.Fprintf(out, "Consensus error\n")
+		fmt.Fprintf(out, "Testcase: %v\n", path)
+		for i, f := range outputs {
+			fmt.Fprintf(out, "- %v: %v\n", vms[i].Name(), f.Name())
+			fmt.Fprintf(out, "  - command: %v\n", commands[i])
+		}
+		fmt.Println(out)
+		return fmt.Errorf("Consensus error")
+
 	}
 	for _, f := range outputs {
 		f.Close()
