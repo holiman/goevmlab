@@ -46,6 +46,7 @@ func (ma *MovingAverage) Min() int {
 	return min
 }
 
+// SlidingAverage implements a decaying moving average.
 type SlidingAverage float64
 
 func NewSlidingAverage() *SlidingAverage {

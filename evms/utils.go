@@ -1,8 +1,8 @@
 package evms
 
 import (
-	"github.com/holiman/uint256"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/holiman/uint256"
 )
 
 // RemoveUnsupportedElems removes some elements that not all clients support.
@@ -15,9 +15,9 @@ func RemoveUnsupportedElems(elem *logger.StructLog) {
 	elem.Memory = make([]byte, 0)
 	// Parity is missing gasCost, memSize and refund
 	elem.GasCost = 0
-	elem.MemorySize = 0
-	elem.RefundCounter = 0
+	//elem.MemorySize = 0
+	//elem.RefundCounter = 0
+
 	// Nethermind is missing returnData
 	elem.ReturnData = nil
-
 }

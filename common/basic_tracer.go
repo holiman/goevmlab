@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"math/big"
+	"time"
 )
 
 var (
@@ -36,7 +37,7 @@ func (n *BasicTracer) CaptureTxStart(uint64) {}
 func (n *BasicTracer) CaptureTxEnd(uint64)   {}
 func (n *BasicTracer) CaptureStart(*vm.EVM, common.Address, common.Address, bool, []byte, uint64, *big.Int) {
 }
-func (n *BasicTracer) CaptureEnd([]byte, uint64, timeNoOpTracer.Duration, error) {}
+func (n *BasicTracer) CaptureEnd([]byte, uint64, time.Duration, error) {}
 func (n *BasicTracer) CaptureEnter(vm.OpCode, common.Address, common.Address, []byte, uint64, *big.Int) {
 }
 func (n *BasicTracer) CaptureExit([]byte, uint64, error) {}
