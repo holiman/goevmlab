@@ -1,0 +1,8 @@
+Fuzzing thread 0 started
+diff: 
+geth: {"pc":2088,"op":80,"gas":"0x1f69","gasCost":"0x0","memory":"0x","memSize":0,"stack":["0xf589d288f0a09efd35aa4cc9fb15fee76631d8ec","0x0"],"returnStack":null,"returnData":"0x","depth":35,"refund":0,"opName":"POP","error":""}
+nethermind: {"pc":2088,"op":80,"gas":"0x214f","gasCost":"0x0","memory":"0x","memSize":0,"stack":["0xf589d288f0a09efd35aa4cc9fb15fee76631d8ec","0x1"],"returnStack":null,"returnData":"0x","depth":35,"refund":0,"opName":"POP","error":""}
+output files:  ./geth-output-0.jsonl ./parity-output-0.jsonl ./nethermind-output-0.jsonl ./besubatch-output-0.jsonl
+Possible consensus error!
+File: /tmp/00000002-storagefuzz-0.json
+waiting for procs to exit
