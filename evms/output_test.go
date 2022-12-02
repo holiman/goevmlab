@@ -18,6 +18,7 @@ package evms
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -27,74 +28,46 @@ import (
 // vms, using printouts from actual evm binaries. The parsed outputs should
 // not produce any differences.
 func TestVMsOutput(t *testing.T) {
-
-	// Some vms require both stdout and stderr (since the stateroot
-	// and the actual opcodes go to different outputs).
-	type testCase struct {
-		vm    Evm
-		file1 string
-		file2 string
-	}
-	var cases = []testCase{
-		{NewGethEVM("", ""), "testdata/statetest1_geth_stderr.jsonl", ""},
-		{NewNethermindVM("", ""), "testdata/statetest1_nethermind_stderr.jsonl", ""},
-	}
-	var readers []io.Reader
-	var vms []Evm
-	for _, vm := range cases {
-		parsedOutput := bytes.NewBuffer(nil)
-		for _, f := range []string{vm.file1, vm.file2} {
-			if len(f) == 0 {
-				break
-			}
-			rawOutput, err := os.Open(f)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rawOutput.Close()
-			vm.vm.Copy(parsedOutput, rawOutput)
-		}
-		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
-		vms = append(vms, vm.vm)
-	}
-	eq, _ := CompareFiles(vms, readers)
-	if !eq {
-		t.Errorf("Expected equality, didn't get it")
-	}
+	testVmsOutput(t, "testdata/statetest1.json")
+	testVmsOutput(t, "testdata/statetest_filled.json")
+	testVmsOutput(t, "testdata/00016209-naivefuzz-0.json")
 }
 
-func TestBesuGethOutput(t *testing.T) {
+func testVmsOutput(t *testing.T, testfile string) {
 	type testCase struct {
-		vm    Evm
-		file1 string
-		file2 string
+		vm     Evm
+		stdout string
+		stderr string
 	}
 	var cases = []testCase{
-		{NewBesuVM("", ""), "", "testdata/00016209-naivefuzz-0.besu.stdout.out"},
-		{NewBesuBatchVM("", ""), "", "testdata/00016209-naivefuzz-0.besu.stdout.out"},
-		{NewGethEVM("", ""), "testdata/00016209-naivefuzz-0.geth.stderr.out", ""},
+		{NewBesuVM("", ""), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
+		{NewBesuBatchVM("", ""), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
+		{NewNethermindVM("", ""), "", fmt.Sprintf("%v.nethermind.stderr.txt", testfile)},
+		{NewErigonVM("", ""), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
+		{NewGethEVM("", ""), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
 	}
 	var readers []io.Reader
 	var vms []Evm
-	for _, vm := range cases {
+	for _, tc := range cases {
 		parsedOutput := bytes.NewBuffer(nil)
-		for _, f := range []string{vm.file1, vm.file2} {
+		// Read the stdout and stderr outputs
+		for _, f := range []string{tc.stdout, tc.stderr} {
 			if len(f) == 0 {
-				break
+				continue
 			}
 			rawOutput, err := os.Open(f)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer rawOutput.Close()
-			vm.vm.Copy(parsedOutput, rawOutput)
+			// And feed via the vm-specific copy-shim
+			tc.vm.Copy(parsedOutput, rawOutput)
+			rawOutput.Close()
 		}
 		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
-		vms = append(vms, vm.vm)
+		vms = append(vms, tc.vm)
 	}
-	eq, _ := CompareFiles(vms, readers)
-	if !eq {
-		t.Errorf("Expected equality, didn't get it")
+	if eq, _ := CompareFiles(vms, readers); !eq {
+		t.Errorf("Expected equality, didn't get it, file: %v", testfile)
 	}
 }
 

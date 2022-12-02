@@ -356,10 +356,13 @@ var opCodeInfo = map[OpCode]opInfo{
 	MSIZE:    {"MSIZE", nil, []string{"size of memory"}},
 	GAS:      {"GAS", nil, []string{"current gas remaining"}},
 	JUMPDEST: {"JUMPDEST", nil, nil},
-	PUSH0:    {"PUSH0", nil, []string{"zero"}},
+
+	PUSH0: {"PUSH0", nil, []string{"zero"}},
+
 	//BEGINSUB:  {"BEGINSUB", nil, nil},
 	//RETURNSUB: {"RETURNSUB", nil, nil},
 	//JUMPSUB:   {"JUMPSUB", []string{"subroutine destination"}, nil},
+
 	// 0x60 through 0x7F range - push.
 	PUSH1:  {"PUSH1", nil, []string{"1 byte pushed value"}},
 	PUSH2:  {"PUSH2", nil, []string{"2 bytes pushed value"}},

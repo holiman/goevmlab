@@ -44,9 +44,6 @@ sudo chown root:root /etc/apt/sources.list.d/microsoft-prod.list
 sudo apt-get -y install apt-transport-https
 sudo apt-get update
 # These need to be updated from time to time
-#sudo apt-get install dotnet-sdk-2.2
-#sudo apt-get -y install dotnet-sdk-3.0
-#sudo apt-get -y install dotnet-sdk-3.1
 sudo apt-get -y install dotnet-sdk-5.0
 ```
 And `build_nethermind.sh`:
@@ -60,22 +57,12 @@ Winds up in:
 src/Nethermind/Nethermind.State.Test.Runner/bin/Release/net5.0/linux-x64/publish/nethtest
 ```
 
-## Parity (`parity-evm`)
-
-Assuming you have a rust toolchain, then: 
-
-```
-cargo build --release -p evmbin
-```
-Should spit out the binary into `target/release/parity-evm`
-
-
 ## Besu (`besu`)
 
 From an up to date repo, do
 
 ```
-/gradlew --parallel ethereum:evmtool:installDist
+./gradlew --parallel ethereum:evmtool:installDist
 ```
 It should wind up in 
 ```

@@ -39,7 +39,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
@@ -104,7 +103,8 @@ var (
 		ErigonFlag,
 		SkipTraceFlag,
 	}
-	traceLengthGauge = new(metrics.StandardGauge)
+	traceLengthMA = NewMovingAverage(100)
+	traceLengthSA = NewSlidingAverage()
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
@@ -136,16 +136,18 @@ func initVMs(c *cli.Context) []evms.Evm {
 
 }
 
+// RootsEqual executes the test on the given path on all vms, and returns true
+// if they all report the same post stateroot.
 func RootsEqual(path string, c *cli.Context) (bool, error) {
 	var (
-		vms = initVMs(c)
-		wg  sync.WaitGroup
+		vms   = initVMs(c)
+		wg    sync.WaitGroup
+		roots = make([]string, len(vms))
+		errs  = make([]error, len(vms))
 	)
 	if len(vms) < 1 {
 		return false, fmt.Errorf("No vms specified!")
 	}
-	roots := make([]string, len(vms))
-	errs := make([]error, len(vms))
 	wg.Add(len(vms))
 	for i, vm := range vms {
 		go func(index int, vm evms.Evm) {
@@ -162,14 +164,14 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 		}
 	}
 	for _, root := range roots[1:] {
-		if root != roots[0] {
-			// Consensus error
+		if root != roots[0] { // Consensus error
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
+// RunTests runs all tests in paths, on all clients.
 func RunTests(paths []string, c *cli.Context) error {
 	var (
 		vms     = initVMs(c)
@@ -195,18 +197,19 @@ func RunTests(paths []string, c *cli.Context) error {
 		// Kick off the binaries
 		var wg sync.WaitGroup
 		wg.Add(len(vms))
-
+		var commands = make([]string, len(vms))
 		for i, vm := range vms {
-			go func(evm evms.Evm, out io.Writer) {
+			go func(evm evms.Evm, i int) {
 				defer wg.Done()
 				t0 := time.Now()
-				if _, err := evm.RunStateTest(path, out, false); err != nil {
-					fmt.Fprintf(os.Stderr, "error running test: %v\n", err)
+				cmd, err := evm.RunStateTest(path, outputs[i], false)
+				commands[i] = cmd
+				if err != nil {
+					log.Error("Error running test", "err", err)
 					return
 				}
-				execTime := time.Since(t0)
-				log.Debug("%10v done in %v\n", evm.Name(), execTime)
-			}(vm, outputs[i])
+				log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
+			}(vm, i)
 		}
 		wg.Wait()
 		// Seek to beginning
@@ -216,15 +219,19 @@ func RunTests(paths []string, c *cli.Context) error {
 			readers = append(readers, f)
 		}
 		// Compare outputs
-		if eq, _ := evms.CompareFiles(vms, readers); !eq {
-			fmt.Printf("output files:\n")
-			for _, output := range outputs {
-				fmt.Printf(" - %v\n", output.Name())
-			}
-			return fmt.Errorf("Consensus error")
-		} else {
-			log.Debug("%v: all agree!\n", path)
+		if eq, _ := evms.CompareFiles(vms, readers); eq {
+			continue
 		}
+		out := new(strings.Builder)
+		fmt.Fprintf(out, "Consensus error\n")
+		fmt.Fprintf(out, "Testcase: %v\n", path)
+		for i, f := range outputs {
+			fmt.Fprintf(out, "- %v: %v\n", vms[i].Name(), f.Name())
+			fmt.Fprintf(out, "  - command: %v\n", commands[i])
+		}
+		fmt.Println(out)
+		return fmt.Errorf("Consensus error")
+
 	}
 	for _, f := range outputs {
 		f.Close()
@@ -254,13 +261,13 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 		go func(evm evms.Evm) {
 			defer wg.Done()
 			t0 := time.Now()
-			if _, err := evm.RunStateTest(path, noopWriter{}, true); err != nil {
-				fmt.Fprintf(os.Stderr, "error running test: %v\n", err)
+			cmd, err := evm.RunStateTest(path, noopWriter{}, true)
+			if err != nil {
+				log.Error("Error starting vm", "vm", evm.Name(), "err", err)
 				return
 			}
-			execTime := time.Since(t0)
-			if execTime > 2*time.Second {
-				fmt.Printf("%v: %10v done in %v\n", path, evm.Name(), execTime)
+			if elapsed := time.Since(t0); elapsed > 2*time.Second {
+				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", cmd)
 				atomic.StoreUint32(&slowTest, 1)
 			}
 		}(vm)
@@ -282,7 +289,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")
 	}
-	fmt.Printf("numThreads: %d\n", numThreads)
+	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
 		name:        name,
 		abort:       int64(0),
@@ -313,9 +320,6 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				testsSinceLastUpdate := n - testCount
 				testCount = n
 				timeSpent := time.Since(tStart)
-				execPerSecond := float64(uint64(time.Second)*n) / float64(timeSpent)
-				fmt.Printf("%d tests executed, in %v (%.02f tests/s), tracelength gauge: %d\n",
-					n, timeSpent, execPerSecond, traceLengthGauge.Value())
 				// Update global counter
 				globalCount := uint64(0)
 				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil {
@@ -324,10 +328,18 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 					}
 				}
 				globalCount += testsSinceLastUpdate
-
 				if err := ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755); err != nil {
-					fmt.Fprintf(os.Stderr, "error saving progress: %v\n", err)
+					log.Error("Error saving progress", "err", err)
 				}
+				log.Info("Executing",
+					"tests", n,
+					"time", common.PrettyDuration(timeSpent),
+					"test/s", fmt.Sprintf("%.01f", float64(uint64(time.Second)*n)/float64(timeSpent)),
+					"steps-WMA", fmt.Sprintf("%.01f", traceLengthMA.Avg()),
+					"steps-SMA", fmt.Sprintf("%.01f", traceLengthSA.Avg()),
+					"global", globalCount,
+				)
+
 			case <-ctx.Done():
 				return
 			}
@@ -340,7 +352,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		defer meta.wg.Done()
 		for path := range meta.removeCh {
 			if err := os.Remove(path); err != nil {
-				fmt.Fprintf(os.Stderr, "Error deleting file %v, : %v\n", path, err)
+				log.Error("Error deleting file", "file", path, "err", err)
 			}
 		}
 	}()
@@ -352,7 +364,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 			newPath := filepath.Join(filepath.Dir(path),
 				fmt.Sprintf("slowtest-%v", filepath.Base(path)))
 			if err := Copy(path, newPath); err != nil {
-				fmt.Fprintf(os.Stderr, "Error copying file file %v, : %v\n", path, err)
+				log.Error("Error copying file", "file", path, "err", err)
 			}
 		}
 	}()
@@ -363,9 +375,9 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	select {
 	case <-sigs:
 	case path := <-meta.consensusCh:
-		fmt.Printf("Possible consensus error!\nFile: %v\n", path)
+		log.Info("Possible consensus error", "file", path)
 	}
-	fmt.Printf("waiting for procs to exit\n")
+	log.Info("Waiting for processes to exit")
 	atomic.StoreInt64(&meta.abort, 1)
 	cancel()
 	meta.wg.Wait()
@@ -373,8 +385,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 }
 
 // storeTest saves a testcase to disk
-func StoreTest(location string, test *fuzzing.GeneralStateTest, testName string) (string, error) {
-
+func storeTest(location string, test *fuzzing.GeneralStateTest, testName string) (string, error) {
 	fileName := fmt.Sprintf("%v.json", testName)
 	fullPath := path.Join(location, fileName)
 
@@ -431,29 +442,31 @@ func (meta *testMeta) startTestFactories(numFactories int, generatorFn Generator
 	factories := int64(numFactories)
 	meta.wg.Add(numFactories)
 	factory := func(threadId int) {
-		defer meta.wg.Done()
+		log.Info("Test factory thread started")
 		defer func() {
 			if f := atomic.AddInt64(&factories, -1); f == 0 {
-				fmt.Printf("closing testCh\n")
+				log.Info("Last test factory exiting\n")
 				close(meta.testCh)
 			}
+			meta.wg.Done()
 		}()
 		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
 			gstMaker := generatorFn()
 			testName := fmt.Sprintf("%08d-%v-%d", i, meta.name, threadId)
 			test := gstMaker.ToGeneralStateTest(testName)
-			fileName, err := StoreTest(location, test, testName)
-			if err != nil {
-				fmt.Printf("Error: %v", err)
+			if fileName, err := storeTest(location, test, testName); err != nil {
+				log.Error("Error storing test", "err", err)
 				break
+			} else {
+				meta.testCh <- fileName
 			}
-			meta.testCh <- fileName
 		}
 	}
 	for i := 0; i < numFactories; i++ {
 		go factory(i)
 	}
 }
+
 func (meta *testMeta) startTestExecutors(numThreads int, skipTrace bool) {
 	if skipTrace {
 		meta.startNontracingTestExecutors(numThreads)
@@ -466,28 +479,29 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 	executors := int64(0)
 
 	execute := func(threadId int) {
+		log.Info("Test executor routine started", "id", threadId)
 		defer meta.wg.Done()
 		defer func() {
 			// clean-up tasks
 			if f := atomic.AddInt64(&executors, -1); f == 0 {
 				close(meta.removeCh)
 				close(meta.slowCh)
-				fmt.Printf("last executor exiting\n")
+				log.Info("Last executor exiting")
 			}
 		}()
 		// Output files are used, the vms spit out their traces to these files.
 		var outputs []*os.File
+		var commands = make([]string, len(meta.vms))
 		defer func() {
 			for _, f := range outputs {
 				f.Close()
 			}
 		}()
 		atomic.AddInt64(&executors, 1)
-		fmt.Printf("Fuzzing thread %d started\n", threadId)
 		// Open/create outputs for writing
 		for _, evm := range meta.vms {
 			if out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755); err != nil {
-				fmt.Printf("failed opening file %v", err)
+				log.Error("Failed opening file", "err", err)
 				return
 			} else {
 				outputs = append(outputs, out)
@@ -508,20 +522,21 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			var vmWg sync.WaitGroup
 			vmWg.Add(len(meta.vms))
 			for i, vm := range meta.vms {
-				go func(evm evms.Evm, out io.Writer) {
+				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
 					t0 := time.Now()
-					cmd, err := evm.RunStateTest(file, out, false)
+					cmd, err := evm.RunStateTest(file, outputs[i], false)
+					commands[i] = cmd
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "error starting vm: %v error %v\n", cmd, err)
+						log.Error("Error starting vm", "err", err, "command", cmd)
 						return
 					}
 					if execTime := time.Since(t0); execTime > 20*time.Second {
-						fmt.Printf("%10v done in %v (slow!). Cmd: %v\n", evm.Name(), execTime, cmd)
 						// Flag test as slow
+						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd)
 						atomic.StoreUint32(&slowTest, 1)
 					}
-				}(vm, outputs[i])
+				}(vm, i)
 			}
 			vmWg.Wait()
 			// All the tests are now executed, and we need to read and compare the outputs
@@ -536,17 +551,22 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			// Compare outputs
 			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
 				atomic.StoreInt64(&meta.abort, 1)
-				s := "output files: "
-				for _, f := range outputs {
-					s = fmt.Sprintf("%v %v", s, f.Name())
+
+				out := new(strings.Builder)
+				fmt.Fprintf(out, "Consensus error\n")
+				fmt.Fprintf(out, "Testcase: %v\n", file)
+				for i, f := range outputs {
+					fmt.Fprintf(out, "- %v: %v\n", meta.vms[i].Name(), f.Name())
+					fmt.Fprintf(out, "  - command: %v\n", commands[i])
 				}
-				fmt.Println(s)
+				fmt.Println(out)
 				meta.consensusCh <- file // flag as consensus-issue
 			} else if slowTest != 0 {
 				meta.slowCh <- file // flag as slow
 			} else {
 				meta.removeCh <- file // flag for removal
-				traceLengthGauge.Update(int64(len))
+				traceLengthSA.Add(len)
+				traceLengthMA.Add(len)
 			}
 		}
 	}
@@ -564,17 +584,18 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 	executors := int64(0)
 	execute := func(threadId int) {
+		log.Info("Test executor routine started")
 		defer meta.wg.Done()
 		defer func() {
 			// clean-up tasks
 			if f := atomic.AddInt64(&executors, -1); f == 0 {
 				close(meta.removeCh)
 				close(meta.slowCh)
-				fmt.Printf("last executor exiting\n")
+				log.Info("Last executor exiting")
 			}
 		}()
 		atomic.AddInt64(&executors, 1)
-		fmt.Printf("Fuzzing thread %d started\n", threadId)
+		log.Info("Fuzzing thread started", "id", threadId)
 		// Open/create outputs for writing
 		for file := range meta.testCh {
 			if atomic.LoadInt64(&meta.abort) == 1 {
@@ -592,18 +613,18 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 				go func(i int) {
 					defer vmWg.Done()
 					var (
-						t0                 = time.Now()
-						evm                = meta.vms[i]
-						root, command, err = evm.GetStateRoot(file)
+						t0             = time.Now()
+						evm            = meta.vms[i]
+						root, cmd, err = evm.GetStateRoot(file)
 					)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "error starting vm %v: error %v\n", evm.Name(), err)
+						log.Error("Error starting vm", "vm", evm.Name(), "err", err)
 						return
 					}
 					roots[i] = root
-					commands[i] = command
+					commands[i] = cmd
 					if execTime := time.Since(t0); execTime > 5*time.Second {
-						fmt.Printf("%10v done in %v (slow)", evm.Name(), execTime)
+						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd)
 						// Flag test as slow
 						atomic.StoreUint32(&slowTest, 1)
 					}

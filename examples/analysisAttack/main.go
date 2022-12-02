@@ -295,6 +295,7 @@ func convertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 }
 
 type dumbTracer struct {
+	common2.BasicTracer
 	createCount uint64
 	copyCount   uint64
 	memSize     uint64
@@ -303,12 +304,6 @@ type dumbTracer struct {
 	startGas  uint64
 	phase1Gas uint64
 	phase2Gas uint64
-}
-
-func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {
-}
-
-func (d *dumbTracer) CaptureTxEnd(restGas uint64) {
 }
 
 func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
@@ -326,19 +321,6 @@ func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 			d.phase2Gas = gas
 		}
 	}
-}
-
-func (d *dumbTracer) CaptureEnter(typ vm.OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
-}
-
-func (d *dumbTracer) CaptureExit(output []byte, gasUsed uint64, err error) {
-}
-
-func (d *dumbTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
-	fmt.Printf("CaptureFault %v\n", err)
-}
-
-func (d *dumbTracer) CaptureStart(*vm.EVM, common.Address, common.Address, bool, []byte, uint64, *big.Int) {
 }
 
 func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {

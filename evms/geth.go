@@ -161,6 +161,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
+
 		RemoveUnsupportedElems(&elem)
 		yield(&elem)
 	}

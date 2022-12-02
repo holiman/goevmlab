@@ -18,7 +18,6 @@ package evms
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -48,7 +47,7 @@ func NewBesuBatchVM(path, name string) *BesuBatchVM {
 }
 
 func (evm *BesuBatchVM) Name() string {
-	return fmt.Sprintf("besubatcj-%v", evm.name)
+	return fmt.Sprintf("besubatch-%v", evm.name)
 }
 
 // RunStateTest implements the Evm interface
@@ -143,10 +142,10 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		data := scanner.Bytes()
 		var elem logger.StructLog
 		// Besu (like Nethermind) sometimes report a negative refund
-		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+9] = byte(' ')
-		}
+		//if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
+		//	// we can just make it positive, it will be zeroed later
+		//	data[i+9] = byte(' ')
+		//}
 
 		err := json.Unmarshal(data, &elem)
 		if err != nil {

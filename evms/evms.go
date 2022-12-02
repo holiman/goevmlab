@@ -28,7 +28,7 @@ import (
 type Evm interface {
 	// RunStateTest runs the statetest on the underlying EVM, and writes
 	// the output to the given writer
-	RunStateTest(path string, writer io.Writer, skipTrace bool) (string, error)
+	RunStateTest(path string, writer io.Writer, skipTrace bool) (cmd string, err error)
 	// GetStateRoot runs the test and returns the stateroot
 	GetStateRoot(path string) (root, command string, err error)
 	// Copy takes the 'raw' output from the VM, and writes the
@@ -57,15 +57,26 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
-				fmt.Printf("diff: \n%v: %v\n%v: %v\n",
+				fmt.Printf("diff: \n%15v: %v\n%15v: %v\n",
 					refVM.Name(),
 					string(refOut.Bytes()),
-					vms[i].Name(),
+					vms[i+1].Name(),
 					string(scanner.Bytes()))
 				return false, count
 			}
 		}
 		count++
+	}
+	// The source is 'done', need to also check if the other scanners are done
+	for i, scanner := range scanners[1:] {
+		if scanner.Scan() {
+			fmt.Printf("diff: \n%15v: %v\n%15v: %v\n",
+				refVM.Name(),
+				string("--  depleted --"),
+				vms[i+1].Name(),
+				string(scanner.Bytes()))
+			return false, count
+		}
 	}
 	return true, count
 }
