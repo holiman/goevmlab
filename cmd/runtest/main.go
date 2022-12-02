@@ -54,5 +54,6 @@ func startFuzzer(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return common.RunTests(files, c)
+	_, err = common.RunTests(files, c)
+	return err
 }

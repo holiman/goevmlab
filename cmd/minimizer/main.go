@@ -32,12 +32,19 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var fullTraceFlag = &cli.BoolFlag{
+	Name: "fulltrace",
+	Usage: "If set to true, the minimizer examines the full trace, instead of just " +
+		"looking for a differing stateroot.",
+}
+
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Test-case minimizer"
 	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, fullTraceFlag)
 	app.Action = startFuzzer
 	return app
 }
@@ -101,17 +108,28 @@ func (m *codeMutator) undo() {
 }
 
 func startFuzzer(c *cli.Context) error {
-
 	if c.NArg() != 1 {
 		return fmt.Errorf("input state test file needed")
 	}
-	testPath := c.Args().First()
-
-	if consensus, err := common.RootsEqual(testPath, c); err != nil {
+	var (
+		testPath  = c.Args().First()
+		compareFn func(path string, c *cli.Context) (bool, error)
+	)
+	compareFn = common.RootsEqual
+	if c.Bool(fullTraceFlag.Name) {
+		compareFn = func(path string, c *cli.Context) (bool, error) {
+			agree, err := common.RunTests([]string{path}, c)
+			if !agree {
+				return false, nil
+			}
+			return true, err
+		}
+	}
+	if consensus, err := compareFn(testPath, c); err != nil {
 		return err
 	} else if consensus {
 		return errors.New("No consensus failure -- " +
-			"the input statetest needs to be a test which produces differing stateroot")
+			"the input statetest needs to be a test which produces a difference")
 	}
 	var (
 		gst      fuzzing.GeneralStateTest
@@ -128,16 +146,16 @@ func startFuzzer(c *cli.Context) error {
 			break
 		}
 	}
-	var identicalRoots = func() bool {
+	var inConsensus = func() bool {
 		data, _ := json.MarshalIndent(gst, "", "  ")
 		if err := ioutil.WriteFile(out, data, 0777); err != nil {
 			panic(err)
 		}
-		inConsensus, err := common.RootsEqual(out, c)
+		allAgree, err := compareFn(out, c)
 		if err != nil {
 			panic(err)
 		}
-		if !inConsensus {
+		if !allAgree {
 			fmt.Printf("Still ok! (failing testcase) ...\n")
 			if err := ioutil.WriteFile(good, data, 0777); err != nil {
 				panic(err)
@@ -145,14 +163,14 @@ func startFuzzer(c *cli.Context) error {
 		} else {
 			fmt.Printf("Not ok! (clients in consensus)...\n")
 		}
-		return inConsensus
+		return allAgree
 	}
 
 	// Try decreasing gas
 	gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
 		gst[testname].Tx.GasLimit[0] = uint64(i)
 		fmt.Printf("Testing gas %d\n", i)
-		return !identicalRoots()
+		return !inConsensus()
 	})
 	// And restore the gas again
 	gst[testname].Tx.GasLimit[0] = uint64(gas)
@@ -161,7 +179,7 @@ func startFuzzer(c *cli.Context) error {
 	for target, acc := range gst[testname].Pre {
 		delete(gst[testname].Pre, target)
 		fmt.Printf("Testing dropping %x\n", target)
-		if !identicalRoots() {
+		if !inConsensus() {
 			continue
 		}
 		fmt.Printf("oops, broke it, restoring %x\n", target)
@@ -184,7 +202,7 @@ func startFuzzer(c *cli.Context) error {
 			acc := gst[testname].Pre[target]
 			acc.Code = m.current
 			gst[testname].Pre[target] = acc
-			if !identicalRoots() {
+			if !inConsensus() {
 				fails = 0
 				continue
 			} else {
@@ -206,7 +224,7 @@ func startFuzzer(c *cli.Context) error {
 		for k, v := range acc.Storage {
 			delete(gst[testname].Pre[target].Storage, k)
 			fmt.Printf("Testing removing slot %x from %x\n", k, target)
-			if !identicalRoots() {
+			if !inConsensus() {
 				continue
 			}
 			gst[testname].Pre[target].Storage[k] = v
