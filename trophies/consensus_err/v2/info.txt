@@ -1,0 +1,9 @@
+diff: 
+geth: {"pc":27,"op":80,"gas":"0x74","gasCost":"0x0","memory":"0x","memSize":0,"stack":["0x0"],"returnStack":null,"returnData":"0x","depth":160,"refund":0,"opName":"POP","error":""}
+nethermind: {"pc":27,"op":80,"gas":"0xfc","gasCost":"0x0","memory":"0x","memSize":0,"stack":["0x1"],"returnStack":null,"returnData":"0x","depth":160,"refund":0,"opName":"POP","error":""}
+output files:  ./geth-output-0.jsonl ./nethermind-output-0.jsonl
+Possible consensus error!
+File: /tmp/00000005-storagefuzz-1.json
+waiting for procs to exit
+closing testCh
+
