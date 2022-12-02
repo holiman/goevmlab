@@ -20,8 +20,8 @@ func RemoveUnsupportedElems(elem *logger.StructLog) {
 	// https://github.com/NethermindEth/nethermind/issues/4955
 	elem.MemorySize = 0
 
-	// Unsure if this is needed. Let's see if we find a good testcase for triggering this.
-	//elem.RefundCounter = 0
+	// Nethermind does not support refundcounter
+	elem.RefundCounter = 0
 
 	// Nethermind is missing returnData
 	elem.ReturnData = nil

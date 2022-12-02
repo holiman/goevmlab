@@ -31,6 +31,7 @@ func TestVMsOutput(t *testing.T) {
 	testVmsOutput(t, "testdata/statetest1.json")
 	testVmsOutput(t, "testdata/statetest_filled.json")
 	testVmsOutput(t, "testdata/00016209-naivefuzz-0.json")
+	testVmsOutput(t, "testdata/00000006-naivefuzz-0.json")
 }
 
 func testVmsOutput(t *testing.T, testfile string) {

@@ -1,7 +1,0 @@
-[
-  {
-    "name": "00016209-naivefuzz-0_d0g0v0_",
-    "pass": false,
-    "fork": "London"
-  }
-]
