@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -28,10 +29,18 @@ import (
 // vms, using printouts from actual evm binaries. The parsed outputs should
 // not produce any differences.
 func TestVMsOutput(t *testing.T) {
-	testVmsOutput(t, "testdata/statetest1.json")
-	testVmsOutput(t, "testdata/statetest_filled.json")
-	testVmsOutput(t, "testdata/00016209-naivefuzz-0.json")
-	testVmsOutput(t, "testdata/00000006-naivefuzz-0.json")
+	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, finfo := range finfos {
+		testVmsOutput(t, filepath.Join("testdata", "traces", finfo.Name()))
+	}
+
+	//testVmsOutput(t, "testdata/statetest1.json")
+	//testVmsOutput(t, "testdata/statetest_filled.json")
+	//testVmsOutput(t, "testdata/00016209-naivefuzz-0.json")
+	//testVmsOutput(t, "testdata/00000006-naivefuzz-0.json")
 }
 
 func testVmsOutput(t *testing.T, testfile string) {
