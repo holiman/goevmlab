@@ -196,7 +196,7 @@ func RunTests(paths []string, c *cli.Context) (bool, error) {
 	}
 	for i, path := range paths {
 		if time.Since(lastReport) > 8*time.Second {
-			log.Info("Processing tests", "count", i, "remaining", len(paths)-1, "elapsed", time.Since(start), "current", path)
+			log.Info("Processing tests", "count", i, "remaining", len(paths)-i, "elapsed", time.Since(start), "current", path)
 			lastReport = time.Now()
 		}
 		// Zero out the output files and reset offset

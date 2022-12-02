@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
@@ -52,6 +53,7 @@ func initApp() *cli.App {
 var app = initApp()
 
 func main() {
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -97,7 +99,7 @@ func (m *codeMutator) proceed() bool {
 			}
 		}
 	}
-	fmt.Printf("code length: %d (was %d)\n", len(next), len(m.lastGood))
+	log.Info("Mutating code", "length", len(next), "previous", len(m.lastGood))
 	m.current = next
 	return len(next) == len(m.lastGood)
 }
@@ -169,7 +171,7 @@ func startFuzzer(c *cli.Context) error {
 	// Try decreasing gas
 	gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
 		gst[testname].Tx.GasLimit[0] = uint64(i)
-		fmt.Printf("Testing gas %d\n", i)
+		log.Info("Mutating gas", "value", i)
 		return !inConsensus()
 	})
 	// And restore the gas again
@@ -178,11 +180,11 @@ func startFuzzer(c *cli.Context) error {
 	// Try removing accounts
 	for target, acc := range gst[testname].Pre {
 		delete(gst[testname].Pre, target)
-		fmt.Printf("Testing dropping %x\n", target)
+		log.Info("Removing account", "target", target)
 		if !inConsensus() {
 			continue
 		}
-		fmt.Printf("oops, broke it, restoring %x\n", target)
+		log.Info("Restoring", "target", target)
 		gst[testname].Pre[target] = acc
 	}
 	// Try reducing code
@@ -190,7 +192,7 @@ func startFuzzer(c *cli.Context) error {
 		if len(acc.Code) == 0 {
 			continue
 		}
-		fmt.Printf("Target: %x\n", target)
+		log.Info("Reducing code", "target", target)
 		code := acc.Code
 		m := codeMutator{current: code, lastGood: code}
 		// Alright, we're in business
@@ -206,7 +208,7 @@ func startFuzzer(c *cli.Context) error {
 				fails = 0
 				continue
 			} else {
-				fmt.Printf("oops, broke it, restoring\n")
+				log.Info("Restoring change")
 				fails++
 				m.undo()
 				// restore it
@@ -218,18 +220,19 @@ func startFuzzer(c *cli.Context) error {
 			}
 		}
 	}
-	fmt.Printf("Reducing slots...\n")
+	log.Info("Reducing slots")
 	// Try removing storage
 	for target, acc := range gst[testname].Pre {
 		for k, v := range acc.Storage {
 			delete(gst[testname].Pre[target].Storage, k)
-			fmt.Printf("Testing removing slot %x from %x\n", k, target)
+			log.Info("Reducing slot", "target", target, "slot", k)
 			if !inConsensus() {
 				continue
 			}
+			log.Info("Restoring change")
 			gst[testname].Pre[target].Storage[k] = v
 		}
 	}
-
+	log.Info("Done", "result", good)
 	return nil
 }
