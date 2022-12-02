@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"bytes"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
@@ -81,7 +82,7 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
-	evm.copyUntilEnd(out, evm.stdout)
+	besuCopyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
 	return evm.cmd.String(), nil
 }
@@ -112,7 +113,7 @@ func (evm *BesuBatchVM) GetStateRoot(path string) (root, command string, err err
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := evm.copyUntilEnd(devNull{}, evm.stdout)
+	sRoot := besuCopyUntilEnd(devNull{}, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 
 }
@@ -126,11 +127,14 @@ func (d devNull) Write(p []byte) (n int, err error) {
 // Copy feed reads from the reader, does some client-specific filtering and
 // outputs BesuBatchVM onto the channel
 func (evm *BesuBatchVM) Copy(out io.Writer, input io.Reader) {
-	evm.copyUntilEnd(out, input)
+	besuCopyUntilEnd(out, input)
 }
 
-func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+type besuStateRoot struct {
+	StateRoot string `json:"postHash"`
+}
 
+func besuCopyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	// We use a larger scanner buffer for besu: it does not have a way to
@@ -141,15 +145,14 @@ func (evm *BesuBatchVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem logger.StructLog
-		// Besu (like Nethermind) sometimes report a negative refund
-		//if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-		//	// we can just make it positive, it will be zeroed later
-		//	data[i+9] = byte(' ')
-		//}
-
+		// Besu sometimes report a negative refund
+		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
+			// we can just make it positive, it will be zeroed later
+			data[i+9] = byte(' ')
+		}
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
-			fmt.Printf("besu err: %v, line\n\t%v\n", err, string(data))
+			fmt.Printf("besub err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
 		// If the output cannot be marshalled, all fields will be blanks.

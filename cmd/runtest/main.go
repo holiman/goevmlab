@@ -34,6 +34,7 @@ func initApp() *cli.App {
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Executes one test against several vms"
 	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, common.SkipTraceFlag)
 	app.Action = startFuzzer
 	return app
 }
