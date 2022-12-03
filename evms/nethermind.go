@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
@@ -55,18 +56,19 @@ func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err er
 	if err != nil {
 		return "", cmd.String(), err
 	}
-	//fmt.Printf("cmd: '%v', output: %v\n", cmd.String(),string(data))
 	marker := `{"stateRoot":"`
 	start := strings.Index(string(data), marker)
 	if start <= 0 {
-		return "", cmd.String(), errors.New("no stateroot found")
+		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+		return "", cmd.String(), errors.New("nethermind: no stateroot found")
 	}
 	end := strings.Index(string(data)[start:], `"}`)
 	if start > 0 && end > 0 {
 		root := string(data[start+len(marker) : start+end])
 		return root, cmd.String(), nil
 	}
-	return "", cmd.String(), errors.New("no stateroot found")
+	log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+	return "", cmd.String(), errors.New("nethermind: no stateroot found")
 }
 
 // RunStateTest implements the Evm interface

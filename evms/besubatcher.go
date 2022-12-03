@@ -17,33 +17,28 @@
 package evms
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"sync"
-
-	"bytes"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 // BesuBatchVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 // The BatchVM spins up one 'master' instance of the VM, and uses that to execute tests
 type BesuBatchVM struct {
-	path   string
+	BesuVM
 	cmd    *exec.Cmd // the 'master' process
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
 	mu     sync.Mutex
-	name   string // in case multiple instances are used
 }
 
 func NewBesuBatchVM(path, name string) *BesuBatchVM {
 	return &BesuBatchVM{
-		path: path,
-		name: name,
+		BesuVM: BesuVM{
+			path: path,
+			name: name,
+		},
 	}
 }
 
@@ -82,7 +77,7 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
-	besuCopyUntilEnd(out, evm.stdout)
+	evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
 	return evm.cmd.String(), nil
 }
@@ -113,77 +108,12 @@ func (evm *BesuBatchVM) GetStateRoot(path string) (root, command string, err err
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := besuCopyUntilEnd(devNull{}, evm.stdout)
+	sRoot := evm.copyUntilEnd(devNull{}, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil
-
 }
 
 type devNull struct{}
 
 func (d devNull) Write(p []byte) (n int, err error) {
 	return len(p), nil
-}
-
-// Copy feed reads from the reader, does some client-specific filtering and
-// outputs BesuBatchVM onto the channel
-func (evm *BesuBatchVM) Copy(out io.Writer, input io.Reader) {
-	besuCopyUntilEnd(out, input)
-}
-
-type besuStateRoot struct {
-	StateRoot string `json:"postHash"`
-}
-
-func besuCopyUntilEnd(out io.Writer, input io.Reader) stateRoot {
-	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	// We use a larger scanner buffer for besu: it does not have a way to
-	// disable 'returndata', which can become larger than fits into a default
-	// scanner buffer
-	buf := make([]byte, 16*1024*1024)
-	scanner.Buffer(buf, cap(buf))
-	for scanner.Scan() {
-		data := scanner.Bytes()
-		var elem logger.StructLog
-		// Besu sometimes report a negative refund
-		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+9] = byte(' ')
-		}
-		err := json.Unmarshal(data, &elem)
-		if err != nil {
-			fmt.Printf("besub err: %v, line\n\t%v\n", err, string(data))
-			continue
-		}
-		// If the output cannot be marshalled, all fields will be blanks.
-		// We can detect that through 'depth', which should never be less than 1
-		// for any actual opcode
-		if elem.Depth == 0 {
-			if stateRoot.StateRoot == "" {
-				var tempRoot besuStateRoot
-				if err := json.Unmarshal(data, &tempRoot); err == nil {
-					// Besu calls state root "postHash"
-					stateRoot.StateRoot = tempRoot.StateRoot
-				}
-			}
-			// If we have a stateroot, we're done
-			break
-		}
-		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
-		// In order to handle that, we need to drop all STOP opcodes.
-		if elem.Op == 0x0 {
-			continue
-		}
-		RemoveUnsupportedElems(&elem)
-		jsondata, _ := json.Marshal(elem)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return stateRoot
-		}
-	}
-	root, _ := json.Marshal(stateRoot)
-	if _, err := out.Write(append(root, '\n')); err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-	}
-	return stateRoot
 }

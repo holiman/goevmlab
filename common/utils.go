@@ -153,6 +153,7 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 			root, _, err := vm.GetStateRoot(path)
 			roots[index] = root
 			errs[index] = err
+			vm.Close()
 			wg.Done()
 		}(i, vm)
 	}

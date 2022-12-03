@@ -117,7 +117,17 @@ func startFuzzer(c *cli.Context) error {
 		testPath  = c.Args().First()
 		compareFn func(path string, c *cli.Context) (bool, error)
 	)
-	compareFn = common.RootsEqual
+	compareFn = func(path string, c *cli.Context) (bool, error) {
+		agree, err := common.RootsEqual(path, c)
+		// An error here might mean that e.g the gas was changed so that
+		// the intrinsic gas was made wrong, and this the tx is invalid.
+		// we can ignore that error, and report it as 'agree', triggering the
+		// revertal of whatever it was that caused it
+		if err != nil {
+			return true, nil
+		}
+		return agree, nil
+	}
 	if c.Bool(fullTraceFlag.Name) {
 		compareFn = func(path string, c *cli.Context) (bool, error) {
 			agree, err := common.RunTests([]string{path}, c)

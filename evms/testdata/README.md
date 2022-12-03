@@ -1,6 +1,23 @@
+## Testdata output
+
+This folder contains 
+ - statetests, 
+ - For each statetest: 
+   - output from vms, `stdout` and `stderr` output
+
+The statetests have been chosen because they trigger some quirk in a vm, e.g a statetest may 
+trigger a negative refund in besu. If we want to change the besu-shim at some later point, 
+when said bug has been fixed, we need to regenerate the outputs and check if the 
+tests passes. 
+
 ## Command to generate these
 
-# First set the binaries to use
+The script below, after setting the binaries to use, should recreate the outputs 
+in `traces` based on the inputs in `cases`. 
+
+```bash
+#!/bin/bash
+
 # evm="/home/martin/workspace/evm"
 # nethtest="/home/martin/workspace/nethtest"
 # besuvm="/home/martin/workspace/besu-vm"
@@ -8,7 +25,7 @@
 
 ### Geth
 
-if [[ -n "$geth" ]]; then
+if [[ -n "geth" ]]; then
     echo "geth"
     for i in ./cases/*.json; do
         $evm --json --nomemory --noreturndata statetest $i 2>/dev/null 1>./traces/$i.geth.stdout.txt
@@ -47,3 +64,4 @@ if [[ -n "$erigonvm" ]]; then
         $erigonvm --json --nomemory --noreturndata statetest $i 1>/dev/null 2>./traces/$i.erigon.stderr.txt
     done
 fi
+```
