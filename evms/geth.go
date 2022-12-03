@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
@@ -63,7 +64,8 @@ func (evm *GethEVM) GetStateRoot(path string) (root, command string, err error) 
 		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
 		return root, cmd.String(), nil
 	}
-	return "", cmd.String(), errors.New("no stateroot found")
+	log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+	return "", cmd.String(), errors.New("geth: no stateroot found")
 }
 
 // RunStateTest implements the Evm interface
