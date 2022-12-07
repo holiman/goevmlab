@@ -145,16 +145,11 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		// for any actual opcode
 		if elem.Depth == 0 {
 			/* It might be the stateroot
-			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
+			{"output":"","gasUsed":"0x2d1cc4","error":"gas uint64 overflow"}
+			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				if err := json.Unmarshal(data, &stateRoot); err == nil {
-					// geth doesn't 0x-prefix stateroot
-					if r := stateRoot.StateRoot; len(r) > 0 {
-						stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
-					}
-				}
+				json.Unmarshal(data, &stateRoot)
 			}
 			continue
 		}
