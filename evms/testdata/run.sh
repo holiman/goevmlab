@@ -38,7 +38,7 @@ if [[ -n "$nethtest" ]]; then
          1>../traces/$i.nethermind.stdout.txt
     done
     for i in *.json; do
-        $nethtest --memory --nevertrace -s --input $i \
+        $nethtest --memory --neverTrace -s --input $i \
          2>../roots/$i.nethermind.stderr.txt \
          1>../roots/$i.nethermind.stdout.txt
     done

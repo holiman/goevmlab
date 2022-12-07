@@ -56,19 +56,23 @@ func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err er
 	if err != nil {
 		return "", cmd.String(), err
 	}
+	root, err = evm.ParseStateRoot(data)
+	if err != nil {
+		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+		return "", cmd.String(), err
+	}
+	return root, cmd.String(), err
+}
+
+// getStateRoot reads the stateroot from the combined output.
+func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
 	marker := `{"stateRoot":"`
 	start := strings.Index(string(data), marker)
-	if start <= 0 {
-		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
-		return "", cmd.String(), errors.New("nethermind: no stateroot found")
+	end := start + len(marker) + 66
+	if start == -1 || end >= len(data) {
+		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
-	end := strings.Index(string(data)[start:], `"}`)
-	if start > 0 && end > 0 {
-		root := string(data[start+len(marker) : start+end])
-		return root, cmd.String(), nil
-	}
-	log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
-	return "", cmd.String(), errors.New("nethermind: no stateroot found")
+	return string(data[start+len(marker) : end]), nil
 }
 
 // RunStateTest implements the Evm interface

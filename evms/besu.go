@@ -83,14 +83,23 @@ func (vm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	if err != nil {
 		return "", cmd.String(), err
 	}
+	root, err = vm.ParseStateRoot(data)
+	if err != nil {
+		log.Error("Failed to find stateroot", "vm", vm.Name(), "cmd", cmd.String())
+		return "", cmd.String(), err
+	}
+	return root, cmd.String(), err
+}
+
+// ParseStateRoot reads the stateroot from the combined output.
+func (vm *BesuVM) ParseStateRoot(data []byte) (string, error) {
 	start := strings.Index(string(data), `"postHash":"`)
 	if start > 0 {
 		start = start + len(`"postHash":"`)
 		root := string(data[start : start+2+64])
-		return root, cmd.String(), nil
+		return root, nil
 	}
-	log.Error("Failed to find stateroot", "vm", vm.Name(), "cmd", cmd.String())
-	return "", cmd.String(), errors.New("besu: no stateroot found")
+	return "", errors.New("besu: no stateroot found")
 }
 
 // feed reads from the reader, does some geth-specific filtering and

@@ -76,8 +76,25 @@ func testVmsOutput(t *testing.T, testfile string) {
 	}
 }
 
-// TestStateRootOnly checks if the functionality to extract raw stateroot works
-func TestStateRootOnly(t *testing.T) {
+func TestStateRootGeth(t *testing.T) {
+	testStateRootOnly(t, NewGethEVM("", ""), "geth")
+}
+
+func TestStateRootBesu(t *testing.T) {
+	testStateRootOnly(t, NewBesuVM("", ""), "besu")
+}
+
+func TestStateRootErigon(t *testing.T) {
+	t.Skip("Skipped until https://github.com/ledgerwatch/erigon/issues/6244 is fixed")
+	testStateRootOnly(t, NewErigonVM("", ""), "erigon")
+}
+
+func TestStateRootNethermind(t *testing.T) {
+	t.Skip("Skipped until https://github.com/NethermindEth/nethermind/issues/4973 is fixed")
+	testStateRootOnly(t, NewNethermindVM("", ""), "nethermind")
+}
+
+func testStateRootOnly(t *testing.T, vm Evm, name string) {
 
 	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))
 	if err != nil {
@@ -90,13 +107,12 @@ func TestStateRootOnly(t *testing.T) {
 		"00016209-naivefuzz-0.json": "0x9b732142c31ee7c3c1d28a1c5f451f555524e0bb39371d94a9698000203742fb",
 		"statetest_filled.json":     "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134",
 	}
-	vm := NewGethEVM("", "")
 	for i, finfo := range finfos {
 		testfile := filepath.Join("testdata", "roots", finfo.Name())
-		stderr, _ := os.ReadFile(fmt.Sprintf("%v.geth.stderr.txt", testfile))
-		stdout, _ := os.ReadFile(fmt.Sprintf("%v.geth.stdout.txt", testfile))
+		stderr, _ := os.ReadFile(fmt.Sprintf("%v.%v.stderr.txt", testfile, name))
+		stdout, _ := os.ReadFile(fmt.Sprintf("%v.%v.stdout.txt", testfile, name))
 		combined := append(stderr, stdout...)
-		have, err := vm.getStateRoot(combined)
+		have, err := vm.ParseStateRoot(combined)
 		if err != nil {
 			t.Fatalf("case %d, %v: got error: %v", i, finfo.Name(), err)
 		}
