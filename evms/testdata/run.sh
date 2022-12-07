@@ -37,6 +37,12 @@ if [[ -n "$nethtest" ]]; then
          2>../traces/$i.nethermind.stderr.txt \
          1>../traces/$i.nethermind.stdout.txt
     done
+    for i in *.json; do
+        $$nethtest -m -s --input $i \
+         2>../roots/$i.nethermind.stderr.txt \
+         1>../roots/$i.nethermind.stdout.txt
+    done
+    cd ..
 fi
 
 
@@ -50,6 +56,12 @@ if [[ -n "$besuvm" ]]; then
           2>../traces/$i.besu.stderr.txt \
           1>../traces/$i.besu.stdout.txt
     done
+    for i in *.json; do
+        $besuvm --nomemory state-test $i \
+         2>../roots/$i.besu.stderr.txt \
+         1>../roots/$i.besu.stdout.txt
+    done
+    cd ..
 fi
 
 ### Erigon
@@ -58,8 +70,9 @@ if [[ -n "$erigonvm" ]]; then
     echo "erigon"
     cd ./cases
     for i in *.json; do
-        $erigonvm --json --nomemory --noreturndata statetest $i \
-          2>../traces/$i.erigon.stderr.txt \
-          1>../traces/$i.erigon.stdout.txt
+        $evm statetest $i \
+         2>../roots/$i.geth.stderr.txt \
+         1>../roots/$i.geth.stdout.txt
     done
+    cd ..
 fi
