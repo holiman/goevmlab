@@ -31,6 +31,8 @@ type Evm interface {
 	RunStateTest(path string, writer io.Writer, skipTrace bool) (cmd string, err error)
 	// GetStateRoot runs the test and returns the stateroot
 	GetStateRoot(path string) (root, command string, err error)
+	// ParseStateRoot reads the stateroot from the combined output.
+	ParseStateRoot([]byte) (string, error)
 	// Copy takes the 'raw' output from the VM, and writes the
 	// canonical output to the given writer
 	Copy(out io.Writer, input io.Reader)

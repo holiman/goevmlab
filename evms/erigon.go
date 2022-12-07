@@ -19,7 +19,6 @@ package evms
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -58,14 +57,23 @@ func (evm *ErigonVM) GetStateRoot(path string) (root, command string, err error)
 	if err != nil {
 		return "", cmd.String(), err
 	}
+	root, err = evm.ParseStateRoot(data)
+	if err != nil {
+		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+		return "", cmd.String(), err
+	}
+	return root, cmd.String(), err
+}
+
+// ParseStateRoot reads the stateroot from the combined output.
+func (evm *ErigonVM) ParseStateRoot(data []byte) (string, error) {
 	start := strings.Index(string(data), "mismatch: got ")
 	end := strings.Index(string(data), ", want")
 	if start > 0 && end > 0 {
 		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
-		return root, cmd.String(), nil
+		return root, nil
 	}
-	log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
-	return "", cmd.String(), errors.New("besu: no stateroot found")
+	return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 }
 
 // RunStateTest implements the Evm interface
