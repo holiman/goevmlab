@@ -92,7 +92,7 @@ func TestStateRootOnly(t *testing.T) {
 	}
 	vm := NewGethEVM("", "")
 	for i, finfo := range finfos {
-		testfile := filepath.Join("testdata", "traces", finfo.Name())
+		testfile := filepath.Join("testdata", "roots", finfo.Name())
 		stderr, _ := os.ReadFile(fmt.Sprintf("%v.geth.stderr.txt", testfile))
 		stdout, _ := os.ReadFile(fmt.Sprintf("%v.geth.stdout.txt", testfile))
 		combined := append(stderr, stdout...)

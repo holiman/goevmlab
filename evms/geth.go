@@ -67,12 +67,12 @@ func (evm *GethEVM) GetStateRoot(path string) (root, command string, err error) 
 
 // getStateRoot reads geth's stateroot from the combined output.
 func (evm *GethEVM) getStateRoot(combinedOutput []byte) (string, error) {
-	start := bytes.Index(combinedOutput, []byte(`{"stateRoot": "`))
-	end := start + 15 + 66
+	start := bytes.Index(combinedOutput, []byte(`"stateRoot": "`))
+	end := start + 14 + 66
 	if start == -1 || end >= len(combinedOutput) {
 		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
-	return string(combinedOutput[start+15 : end]), nil
+	return string(combinedOutput[start+14 : end]), nil
 }
 
 // RunStateTest implements the Evm interface
