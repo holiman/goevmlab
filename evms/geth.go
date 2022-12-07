@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
