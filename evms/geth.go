@@ -149,7 +149,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				json.Unmarshal(data, &stateRoot)
+				_ = json.Unmarshal(data, &stateRoot)
 			}
 			continue
 		}
