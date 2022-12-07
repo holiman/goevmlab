@@ -18,13 +18,12 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
@@ -58,14 +57,22 @@ func (evm *GethEVM) GetStateRoot(path string) (root, command string, err error) 
 	if err != nil {
 		return "", cmd.String(), err
 	}
-	start := strings.Index(string(data), "mismatch: got ")
-	end := strings.Index(string(data), ", want")
-	if start > 0 && end > 0 {
-		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
-		return root, cmd.String(), nil
+	root, err = evm.getStateRoot(data)
+	if err != nil {
+		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+		return "", cmd.String(), err
 	}
-	log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
-	return "", cmd.String(), errors.New("geth: no stateroot found")
+	return root, cmd.String(), err
+}
+
+// getStateRoot reads geth's stateroot from the combined output.
+func (evm *GethEVM) getStateRoot(combinedOutput []byte) (string, error) {
+	start := bytes.Index(combinedOutput, []byte(`{"stateRoot": "`))
+	end := start + 15 + 66
+	if start == -1 || end >= len(combinedOutput) {
+		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
+	}
+	return string(combinedOutput[start+15 : end]), nil
 }
 
 // RunStateTest implements the Evm interface
@@ -145,16 +152,11 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 		// for any actual opcode
 		if elem.Depth == 0 {
 			/* It might be the stateroot
-			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
+			{"output":"","gasUsed":"0x2d1cc4","error":"gas uint64 overflow"}
+			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				if err := json.Unmarshal(data, &stateRoot); err == nil {
-					// geth doesn't 0x-prefix stateroot
-					if r := stateRoot.StateRoot; len(r) > 0 {
-						stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
-					}
-				}
+				_ = json.Unmarshal(data, &stateRoot)
 			}
 			continue
 		}
