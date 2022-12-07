@@ -18,19 +18,22 @@ in `traces` based on the inputs in `cases`.
 ```bash
 #!/bin/bash
 
-# evm="/home/martin/workspace/evm"
+# evm="/home/user/go/src/github.com/ethereum/go-ethereum/cmd/evm/evm"
 # nethtest="/home/martin/workspace/nethtest"
 # besuvm="/home/martin/workspace/besu-vm"
 # erigonvm="/home/martin/workspace/erigon-evm"
 
 ### Geth
 
-if [[ -n "geth" ]]; then
+if [[ -n "$evm" ]]; then
     echo "geth"
-    for i in ./cases/*.json; do
-        $evm --json --nomemory --noreturndata statetest $i 2>/dev/null 1>./traces/$i.geth.stdout.txt
-        $evm --json --nomemory --noreturndata statetest $i 1>/dev/null 2>./traces/$i.geth.stderr.txt
+    cd ./cases
+    for i in *.json; do
+        $evm --json --nomemory --noreturndata statetest $i \
+         2>../traces/$i.geth.stderr.txt \
+         1>../traces/$i.geth.stdout.txt
     done
+    cd ..
 fi
 
 
@@ -38,9 +41,11 @@ fi
 
 if [[ -n "$nethtest" ]]; then
     echo "nethermind"
-    for i in ./cases/*.json; do
-        $nethtest -m --trace --input $1  2>/dev/null 1>./traces/$i.nethermind.stdout.txt
-        $nethtest -m --trace --input $i  1>/dev/null 2>./traces/$i.nethermind.stderr.txt
+    cd ./cases
+    for i in *.json; do
+        $nethtest -m --trace --input $1 \
+         2>../traces/$i.nethermind.stderr.txt \
+         1>../traces/$i.nethermind.stdout.txt
     done
 fi
 
@@ -49,9 +54,11 @@ fi
 
 if [[ -n "$besuvm" ]]; then
     echo "besu"
-    for i in ./cases/*.json; do
-        $besuvm --json --nomemory state-test $i 2>/dev/null 1>./traces/$i.besu.stdout.txt
-        $besuvm --json --nomemory state-test $i 1>/dev/null 2>./traces/$i.besu.stderr.txt
+    cd ./cases
+    for i in *.json; do
+        $besuvm --json --nomemory state-test $i \
+          2>../traces/$i.besu.stderr.txt \
+          1>../traces/$i.besu.stdout.txt
     done
 fi
 
@@ -59,9 +66,11 @@ fi
 
 if [[ -n "$erigonvm" ]]; then
     echo "erigon"
-    for i in ./cases/*.json; do
-        $erigonvm --json --nomemory --noreturndata statetest $i 2>/dev/null 1>./traces/$i.erigon.stdout.txt
-        $erigonvm --json --nomemory --noreturndata statetest $i 1>/dev/null 2>./traces/$i.erigon.stderr.txt
+    cd ./cases
+    for i in *.json; do
+        $erigonvm --json --nomemory --noreturndata statetest $i \
+          2>../traces/$i.erigon.stderr.txt \
+          1>../traces/$i.erigon.stdout.txt
     done
 fi
 ```

@@ -18,16 +18,14 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 // GethEVM is s Evm-interface wrapper around the `evm` binary, based on go-ethereum.
@@ -58,14 +56,22 @@ func (evm *GethEVM) GetStateRoot(path string) (root, command string, err error) 
 	if err != nil {
 		return "", cmd.String(), err
 	}
-	start := strings.Index(string(data), "mismatch: got ")
-	end := strings.Index(string(data), ", want")
-	if start > 0 && end > 0 {
-		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
-		return root, cmd.String(), nil
+	root, err = evm.getStateRoot(data)
+	if err != nil {
+		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+		return "", cmd.String(), err
 	}
-	log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
-	return "", cmd.String(), errors.New("geth: no stateroot found")
+	return root, cmd.String(), err
+}
+
+// getStateRoot reads geth's stateroot from the combined output.
+func (evm *GethEVM) getStateRoot(combinedOutput []byte) (string, error) {
+	start := bytes.Index(combinedOutput, []byte(`{"stateRoot": "`))
+	end := start + 15 + 66
+	if start == -1 || end >= len(combinedOutput) {
+		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
+	}
+	return string(combinedOutput[start+15 : end]), nil
 }
 
 // RunStateTest implements the Evm interface

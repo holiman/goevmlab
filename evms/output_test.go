@@ -36,11 +36,6 @@ func TestVMsOutput(t *testing.T) {
 	for _, finfo := range finfos {
 		testVmsOutput(t, filepath.Join("testdata", "traces", finfo.Name()))
 	}
-
-	//testVmsOutput(t, "testdata/statetest1.json")
-	//testVmsOutput(t, "testdata/statetest_filled.json")
-	//testVmsOutput(t, "testdata/00016209-naivefuzz-0.json")
-	//testVmsOutput(t, "testdata/00000006-naivefuzz-0.json")
 }
 
 func testVmsOutput(t *testing.T, testfile string) {
@@ -83,27 +78,34 @@ func testVmsOutput(t *testing.T, testfile string) {
 
 // TestStateRootOnly checks if the functionality to extract raw stateroot works
 func TestStateRootOnly(t *testing.T) {
-	t.Skip("Test is machine-specific due to bundled binaries")
-	vms := []Evm{
-		NewGethEVM("../binaries/evm", ""),
-		NewNethermindVM("../binaries/nethtest", ""),
+
+	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, vm := range vms {
-		got, _, err := vm.GetStateRoot("./testdata/statetest1.json")
+	wants := map[string]string{
+		"00000006-naivefuzz-0.json": "0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458",
+		"00003656-naivefuzz-0.json": "0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b",
+		"statetest1.json":           "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134",
+		"00016209-naivefuzz-0.json": "0x9b732142c31ee7c3c1d28a1c5f451f555524e0bb39371d94a9698000203742fb",
+		"statetest_filled.json":     "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134",
+	}
+	vm := NewGethEVM("", "")
+	for i, finfo := range finfos {
+		testfile := filepath.Join("testdata", "traces", finfo.Name())
+		stderr, _ := os.ReadFile(fmt.Sprintf("%v.geth.stderr.txt", testfile))
+		stdout, _ := os.ReadFile(fmt.Sprintf("%v.geth.stdout.txt", testfile))
+		combined := append(stderr, stdout...)
+		have, err := vm.getStateRoot(combined)
 		if err != nil {
-			t.Errorf("got error: %v", err)
-		} else if exp := "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"; got != exp {
-			t.Errorf("Wrong root, got '%v' exp '%v'", got, exp)
+			t.Fatalf("case %d, %v: got error: %v", i, finfo.Name(), err)
 		}
-		// A filled statetest
-		// It would be good to get this working too, but not as important
-		//{
-		//	got, err := g.GetStateRoot("./testdata/statetest_filled.json")
-		//	if err != nil {
-		//		t.Errorf("got error: %v", err)
-		//	}else if exp := "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"; got != exp {
-		//		t.Errorf("Wrong root, got '%v' exp '%v'", got, exp)
-		//	}
-		//}
+		want, ok := wants[finfo.Name()]
+		if !ok {
+			t.Fatalf("Test error! A new trace (%v) has been added, but the corresponding stateroot has not been added", finfo.Name())
+		}
+		if have != want {
+			t.Errorf("case %d, %v: have '%v' want '%v'", i, finfo.Name(), have, want)
+		}
 	}
 }
