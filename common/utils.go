@@ -53,6 +53,10 @@ var (
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
 	}
+	NethBatchFlag = &cli.StringSliceFlag{
+		Name:  "nethbatch",
+		Usage: "Location of nethermind 'nethtest' binary",
+	}
 	BesuFlag = &cli.StringSliceFlag{
 		Name:  "besu",
 		Usage: "Location of besu vm binary",
@@ -98,6 +102,7 @@ var (
 	VmFlags = []cli.Flag{
 		GethFlag,
 		NethermindFlag,
+		NethBatchFlag,
 		BesuFlag,
 		BesuBatchFlag,
 		ErigonFlag,
@@ -110,26 +115,30 @@ func initVMs(c *cli.Context) []evms.Evm {
 	var (
 		gethBins      = c.StringSlice(GethFlag.Name)
 		nethBins      = c.StringSlice(NethermindFlag.Name)
+		nethBatchBins = c.StringSlice(NethBatchFlag.Name)
 		besuBins      = c.StringSlice(BesuFlag.Name)
 		besuBatchBins = c.StringSlice(BesuBatchFlag.Name)
 		erigonBins    = c.StringSlice(ErigonFlag.Name)
 
 		vms []evms.Evm
 	)
-	for i, gethBin := range gethBins {
-		vms = append(vms, evms.NewGethEVM(gethBin, fmt.Sprintf("%d", i)))
+	for i, bin := range gethBins {
+		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("%d", i)))
 	}
-	for i, nethBin := range nethBins {
-		vms = append(vms, evms.NewNethermindVM(nethBin, fmt.Sprintf("%d", i)))
+	for i, bin := range nethBins {
+		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("%d", i)))
 	}
-	for i, besuBin := range besuBins {
-		vms = append(vms, evms.NewBesuVM(besuBin, fmt.Sprintf("%d", i)))
+	for i, bin := range nethBatchBins {
+		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("%d", i)))
 	}
-	for i, besuBatchBin := range besuBatchBins {
-		vms = append(vms, evms.NewBesuBatchVM(besuBatchBin, fmt.Sprintf("%d", i)))
+	for i, bin := range besuBins {
+		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("%d", i)))
 	}
-	for i, erigonBin := range erigonBins {
-		vms = append(vms, evms.NewErigonVM(erigonBin, fmt.Sprintf("%d", i)))
+	for i, bin := range besuBatchBins {
+		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("%d", i)))
+	}
+	for i, bin := range erigonBins {
+		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 
@@ -320,7 +329,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		defer meta.wg.Done()
 		var (
 			tStart    = time.Now()
-			ticker    = time.NewTicker(5 * time.Second)
+			ticker    = time.NewTicker(8 * time.Second)
 			testCount = uint64(0)
 		)
 		defer ticker.Stop()
