@@ -85,7 +85,6 @@ func TestStateRootBesu(t *testing.T) {
 }
 
 func TestStateRootErigon(t *testing.T) {
-	t.Skip("Skipped until https://github.com/ledgerwatch/erigon/issues/6244 is fixed")
 	testStateRootOnly(t, NewErigonVM("", ""), "erigon")
 }
 

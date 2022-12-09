@@ -18,15 +18,14 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 // ErigonVM is s Evm-interface wrapper around the eroigon `evm` binary
@@ -67,13 +66,12 @@ func (evm *ErigonVM) GetStateRoot(path string) (root, command string, err error)
 
 // ParseStateRoot reads the stateroot from the combined output.
 func (evm *ErigonVM) ParseStateRoot(data []byte) (string, error) {
-	start := strings.Index(string(data), "mismatch: got ")
-	end := strings.Index(string(data), ", want")
-	if start > 0 && end > 0 {
-		root := fmt.Sprintf("0x%v", string(data[start+len("mismatch: got "):end]))
-		return root, nil
+	start := bytes.Index(data, []byte(`"stateRoot": "`))
+	end := start + 14 + 66
+	if start == -1 || end >= len(data) {
+		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
-	return "", fmt.Errorf("%v: no stateroot found", evm.Name())
+	return string(data[start+14 : end]), nil
 }
 
 // RunStateTest implements the Evm interface
@@ -122,20 +120,13 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
 		if elem.Depth == 0 {
-			if stateRoot.StateRoot == "" {
-				if err := json.Unmarshal(data, &stateRoot); err == nil {
-					// geth doesn't 0x-prefix stateroot
-					if r := stateRoot.StateRoot; len(r) > 0 {
-						stateRoot.StateRoot = fmt.Sprintf("0x%v", r)
-					}
-				}
-			}
-
 			/*  Most likely one of these:
 			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
-			// For now, just ignore these
+			if stateRoot.StateRoot == "" {
+				_ = json.Unmarshal(data, &stateRoot)
+			}
 			continue
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
