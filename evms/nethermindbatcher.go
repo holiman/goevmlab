@@ -59,7 +59,7 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 		} else {
 			cmd = exec.Command(evm.path, "-x", "--trace", "-m")
 		}
-		if stdout, err = cmd.StdoutPipe(); err != nil {
+		if stdout, err = cmd.StderrPipe(); err != nil {
 			return cmd.String(), err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {

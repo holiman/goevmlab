@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
@@ -78,11 +77,10 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		stderr io.ReadCloser
 		err    error
 	)
+	cmd := exec.Command(evm.path, "--trace", "-m", "--input", path)
 	if speedTest {
-		return "", errors.New("nethermind does not support disabling json")
+		cmd = exec.Command(evm.path, "--trace", "-m", "--neverTrace", "--input", path)
 	}
-	// nethtest  --input statetest1.json --trace 1> statetest1_nethermind_stdout.jsonl
-	cmd := exec.Command(evm.path, "--input", path, "--trace", "-m")
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
 	}
