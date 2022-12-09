@@ -130,7 +130,7 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		}
 		err := json.Unmarshal(data, &elem)
 		if err != nil {
-			fmt.Printf("besub err: %v, line\n\t%v\n", err, string(data))
+			fmt.Printf("besu err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
 		// If the output cannot be marshalled, all fields will be blanks.

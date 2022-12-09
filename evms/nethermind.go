@@ -82,9 +82,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		return "", errors.New("nethermind does not support disabling json")
 	}
 	// nethtest  --input statetest1.json --trace 1> statetest1_nethermind_stdout.jsonl
-	cmd := exec.Command(evm.path, "--input", path,
-		"--trace",
-		"-m") // -m excludes memory
+	cmd := exec.Command(evm.path, "--input", path, "--trace", "-m")
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return cmd.String(), err
 	}
@@ -104,6 +102,10 @@ func (vm *NethermindVM) Close() {
 // feed reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
+	evm.copyUntilEnd(out, input)
+}
+
+func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	buf := make([]byte, 4*1024*1024)
@@ -128,6 +130,11 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 			if stateRoot.StateRoot == "" {
 				_ = json.Unmarshal(data, &stateRoot)
 			}
+			// If we have a stateroot, we're done
+			if len(stateRoot.StateRoot) > 0 {
+				break
+			}
+
 			//fmt.Printf("%v\n", string(data))
 			// For now, just ignore these
 			continue
@@ -142,12 +149,12 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 		jsondata, _ := json.Marshal(elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return
+			return stateRoot
 		}
 	}
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-		return
 	}
+	return stateRoot
 }
