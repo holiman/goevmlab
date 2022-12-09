@@ -92,8 +92,7 @@ func (vm *NethermindBatchVM) Close() {
 
 func (evm *NethermindBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path, "--nomemory", "state-test")
-		// The stateroot is delivered on stdout
+		evm.cmd = exec.Command(evm.path, "--neverTrace", "-m", "-s", "-x")
 		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
