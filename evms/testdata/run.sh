@@ -1,9 +1,9 @@
 #!/bin/bash
 
-evm="/home/user/go/src/github.com/ethereum/go-ethereum/cmd/evm/evm"
+# evm="/home/user/go/src/github.com/ethereum/go-ethereum/cmd/evm/evm"
 # nethtest="/home/martin/workspace/nethtest"
 # besuvm="/home/martin/workspace/besu-vm"
-# erigonvm="/home/martin/workspace/erigon-evm"
+# erigonvm="/home/user/go/src/github.com/ledgerwatch/erigon/build/bin/evm"
 
 ### Geth
 
@@ -71,8 +71,8 @@ if [[ -n "$erigonvm" ]]; then
     cd ./cases
     for i in *.json; do
         $erigonvm  --json --nomemory --noreturndata statetest $i \
-         2>../roots/$i.erigon.stderr.txt \
-         1>../roots/$i.erigon.stdout.txt
+         2>../traces/$i.erigon.stderr.txt \
+         1>../traces/$i.erigon.stdout.txt
     done
     for i in *.json; do
         $erigonvm statetest $i \
