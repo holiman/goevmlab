@@ -22,13 +22,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
@@ -51,7 +49,7 @@ func (evm *NethermindVM) Name() string {
 // GetStateRoot runs the test and returns the stateroot
 func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
-	cmd := exec.Command(evm.path, "-m", "-s", "-i", path)
+	cmd := exec.Command(evm.path, "--neverTrace", "-m", "-s", "-i", path)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", cmd.String(), err
@@ -66,13 +64,12 @@ func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err er
 
 // getStateRoot reads the stateroot from the combined output.
 func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
-	marker := `{"stateRoot":"`
-	start := strings.Index(string(data), marker)
-	end := start + len(marker) + 66
+	start := bytes.Index(data, []byte(`"stateRoot": "`))
+	end := start + 14 + 66
 	if start == -1 || end >= len(data) {
 		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
-	return string(data[start+len(marker) : end]), nil
+	return string(data[start+14 : end]), nil
 }
 
 // RunStateTest implements the Evm interface
@@ -114,15 +111,6 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem logger.StructLog
-
-		// Nethermind uses a hex-encoded memsize. Let's just nuke it, by renaming it
-		// TODO(@holiman) https://github.com/NethermindEth/nethermind/issues/4955
-		if i := bytes.Index(data, []byte(`"memSize":"0x`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+1] = byte('f')
-			data[i+2] = byte('o')
-			data[i+3] = byte('o')
-		}
 
 		err := json.Unmarshal(data, &elem)
 		if err != nil {

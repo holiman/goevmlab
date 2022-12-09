@@ -89,7 +89,6 @@ func TestStateRootErigon(t *testing.T) {
 }
 
 func TestStateRootNethermind(t *testing.T) {
-	t.Skip("Skipped until https://github.com/NethermindEth/nethermind/issues/4973 is fixed")
 	testStateRootOnly(t, NewNethermindVM("", ""), "nethermind")
 }
 

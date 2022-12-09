@@ -9,8 +9,9 @@ const (
 	// Nethermind does not support refundcounter
 	ClearRefunds = true
 
-	// Nethermind spits out zero memSize unless it's run with full memory output.
-	// https://github.com/NethermindEth/nethermind/issues/4955
+	// Nethermind reports the change in memory on step earlier than others. E.g.
+	// MSTORE shows the _new_ memory, besu/geth shows the old memory until the next op.
+	// This could be handled differently, e.g. clearing only on mem-expanding ops.
 	ClearMemSize = true
 
 	// Nethermind is missing returnData
