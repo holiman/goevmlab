@@ -21,6 +21,7 @@ import (
 	"io"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 // The GethBatchVM spins up one 'master' instance of the VM, and uses that to execute tests
@@ -34,7 +35,7 @@ type GethBatchVM struct {
 
 func NewGethBatchVM(path, name string) *GethBatchVM {
 	return &GethBatchVM{
-		GethEVM: GethEVM{path, name},
+		GethEVM: GethEVM{path, name, &VmStat{}},
 	}
 }
 
@@ -43,8 +44,9 @@ func (evm *GethBatchVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
 	var (
+		t0     = time.Now()
 		err    error
 		cmd    *exec.Cmd
 		stdout io.ReadCloser
@@ -57,13 +59,13 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 			cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest")
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String(), Err: err}
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String(), Err: err}
 		}
 		if err = cmd.Start(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String(), Err: err}
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -75,7 +77,13 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
-	return evm.cmd.String(), nil
+	duration, slow := evm.stats.TraceDone(t0)
+	return &tracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      cmd.String(),
+		Err:      err,
+	}
 }
 
 func (vm *GethBatchVM) Close() {

@@ -21,17 +21,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
+	"time"
+
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // ErigonVM is s Evm-interface wrapper around the eroigon `evm` binary
 type ErigonVM struct {
 	path string
 	name string // in case multiple instances are used
+	// Some metrics
+	stats *VmStat
 }
 
 func NewErigonVM(path, name string) *ErigonVM {
@@ -75,27 +79,33 @@ func (evm *ErigonVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
 	var (
+		t0     = time.Now()
 		stderr io.ReadCloser
 		err    error
-		cmd    *exec.Cmd
+		cmd    = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest", path)
 	)
 	if speedTest {
 		cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest", path)
-	} else {
-		cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String(), Err: err}
 	}
 	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String(), Err: err}
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
+	err = cmd.Wait()
 	// release resources
-	return cmd.String(), cmd.Wait()
+	duration, slow := evm.stats.TraceDone(t0)
+	return &tracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      cmd.String(),
+		Err:      err,
+	}
 }
 
 func (vm *ErigonVM) Close() {
@@ -147,4 +157,8 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		return
 	}
+}
+
+func (evm *ErigonVM) Stats() []any {
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
 }

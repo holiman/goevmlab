@@ -27,18 +27,22 @@ import (
 
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
+	"time"
 )
 
 // NimbusEVM is s Evm-interface wrapper around the `evmstate` binary, based on nimbus-eth1.
 type NimbusEVM struct {
 	path string
 	name string
+	// Some metrics
+	stats *VmStat
 }
 
 func NewNimbusEVM(path string, name string) *NimbusEVM {
 	return &NimbusEVM{
-		path: path,
-		name: name,
+		path:  path,
+		name:  name,
+		stats: &VmStat{},
 	}
 }
 
@@ -77,8 +81,9 @@ func (evm *NimbusEVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NimbusEVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *NimbusEVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
 	var (
+		t0     = time.Now()
 		stderr io.ReadCloser
 		err    error
 		cmd    *exec.Cmd
@@ -89,17 +94,24 @@ func (evm *NimbusEVM) RunStateTest(path string, out io.Writer, speedTest bool) (
 		cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "--nostorage", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String(), Err: err}
 	}
 	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String(), Err: err}
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// Nimbus returns a non-zero exit code for tests that do not pass. We just ignore that.
 	_ = cmd.Wait()
 	// release resources
-	return cmd.String(), nil
+	duration, slow := evm.stats.TraceDone(t0)
+
+	return &tracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      cmd.String(),
+		Err:      err,
+	}
 }
 
 func (vm *NimbusEVM) Close() {
@@ -143,4 +155,8 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
+}
+
+func (evm *NimbusEVM) Stats() []any {
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
 }

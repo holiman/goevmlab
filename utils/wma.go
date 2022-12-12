@@ -1,4 +1,4 @@
-package common
+package utils
 
 // MovingAverage implements a simplistic non-threadsafe windowed moving average.
 // The implementation will give erroneous values until the window is filled.

@@ -21,6 +21,7 @@ import (
 	"io"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 // The NethermindBatchVM spins up one 'master' instance of the VM, and uses that to execute tests
@@ -34,10 +35,7 @@ type NethermindBatchVM struct {
 
 func NewNethermindBatchVM(path, name string) *NethermindBatchVM {
 	return &NethermindBatchVM{
-		NethermindVM: NethermindVM{
-			path: path,
-			name: name,
-		},
+		NethermindVM: *NewNethermindVM(path, name),
 	}
 }
 
@@ -46,27 +44,26 @@ func (evm *NethermindBatchVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
 	var (
+		t0     = time.Now()
 		err    error
-		cmd    *exec.Cmd
 		stdout io.ReadCloser
 		stdin  io.WriteCloser
 	)
 	if evm.cmd == nil {
+		cmd := exec.Command(evm.path, "-x", "--trace", "-m")
 		if speedTest {
 			cmd = exec.Command(evm.path, "-x", "--trace", "-m", "--neverTrace")
-		} else {
-			cmd = exec.Command(evm.path, "-x", "--trace", "-m")
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String(), Err: err}
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String(), Err: err}
 		}
 		if err = cmd.Start(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String(), Err: err}
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -77,8 +74,13 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
-	// release resources, handle error but ignore non-zero exit codes
-	return evm.cmd.String(), nil
+	duration, slow := evm.stats.TraceDone(t0)
+	return &tracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      evm.cmd.String(),
+		Err:      err,
+	}
 }
 
 func (vm *NethermindBatchVM) Close() {
