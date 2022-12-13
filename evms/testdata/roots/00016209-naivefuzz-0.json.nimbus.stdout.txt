@@ -1,0 +1,8 @@
+[
+  {
+    "name": "00016209-naivefuzz-0",
+    "pass": false,
+    "fork": "London",
+    "error": "post state root mismatch: got 9B732142C31EE7C3C1D28A1C5F451F555524E0BB39371D94A9698000203742FB, want 0000000000000000000000000000000000000000000000000000000000000000"
+  }
+]

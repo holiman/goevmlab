@@ -50,6 +50,7 @@ func testVmsOutput(t *testing.T, testfile string) {
 		{NewNethermindVM("", ""), "", fmt.Sprintf("%v.nethermind.stderr.txt", testfile)},
 		{NewErigonVM("", ""), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
 		{NewGethEVM("", ""), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
+		{NewNimbusEVM("", ""), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
 	}
 	var readers []io.Reader
 	var vms []Evm
@@ -90,6 +91,10 @@ func TestStateRootErigon(t *testing.T) {
 
 func TestStateRootNethermind(t *testing.T) {
 	testStateRootOnly(t, NewNethermindVM("", ""), "nethermind")
+}
+
+func TestStateRootNimbus(t *testing.T) {
+	testStateRootOnly(t, NewNimbusEVM("", ""), "nimbus")
 }
 
 func testStateRootOnly(t *testing.T, vm Evm, name string) {

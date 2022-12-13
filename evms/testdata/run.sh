@@ -81,3 +81,23 @@ if [[ -n "$erigonvm" ]]; then
     done
     cd ..
 fi
+
+# Nimbus
+if [[ -n "$nimbus" ]]; then
+    echo "nimbus"
+    cd ./cases
+    # The traces
+    for i in *.json; do
+        $nimbus --json --nomemory --noreturndata --nostorage $i \
+         2>../traces/$i.nimbus.stderr.txt \
+         1>../traces/$i.nimbus.stdout.txt
+    done
+    # And the stateroots, where we invoke the evm the same way that
+    # GetStateRoot does
+    for i in *.json; do
+        $nimbus  $i \
+         2>../roots/$i.nimbus.stderr.txt \
+         1>../roots/$i.nimbus.stdout.txt
+    done
+    cd ..
+fi
