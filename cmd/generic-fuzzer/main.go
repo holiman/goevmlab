@@ -92,5 +92,5 @@ func startFuzzer(c *cli.Context) error {
 			return fn()
 		}
 	}
-	return common.ExecuteFuzzer(c, factory, "naivefuzz")
+	return common.ExecuteFuzzer(c, factory, "mixed")
 }
