@@ -103,15 +103,6 @@ func (evm *NimbusEVM) RunStateTest(path string, out io.Writer, speedTest bool) (
 func (vm *NimbusEVM) Close() {
 }
 
-type nimbusOp struct {
-	Op      string
-	Pc      uint64
-	Depth   int
-	Gas     uint64
-	Stack   []string
-	GasCost uint64
-}
-
 func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
@@ -153,5 +144,4 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
-	return
 }
