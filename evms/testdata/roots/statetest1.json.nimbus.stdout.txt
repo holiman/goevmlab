@@ -1,0 +1,9 @@
+[
+  {
+    "name": "randomStatetestmartin-Wed_10_02_29-14338-0",
+    "pass": false,
+    "stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134",
+    "fork": "Byzantium",
+    "error": "post state root mismatch: got a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134, want 0000000000000000000000000000000000000000000000000000000000000000"
+  }
+]
