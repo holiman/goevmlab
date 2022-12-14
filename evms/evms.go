@@ -48,25 +48,28 @@ type stateRoot struct {
 // CompareFiles returns true if the files are equal, along with the number of line s
 // compared
 func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
-	var count = 0
 	var scanners []*bufio.Scanner
 	for _, r := range readers {
 		scanners = append(scanners, bufio.NewScanner(r))
 	}
-	refOut := scanners[0]
-	refVM := vms[0]
+	var (
+		count    = 0
+		prevLine = ""
+		refOut   = scanners[0]
+		refVM    = vms[0]
+	)
 	for refOut.Scan() {
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
-				fmt.Printf("diff: \n%15v: %v\n%15v: %v\n",
-					refVM.Name(),
-					string(refOut.Bytes()),
-					vms[i+1].Name(),
-					string(scanner.Bytes()))
+				fmt.Printf("-------\nprev:%15v: %v\ndiff:%15v: %v\ndiff:%15v: %v\n",
+					"both", prevLine,
+					refVM.Name(), string(refOut.Bytes()),
+					vms[i+1].Name(), string(scanner.Bytes()))
 				return false, count
 			}
 		}
+		prevLine = string(refOut.Bytes())
 		count++
 	}
 	// The source is 'done', need to also check if the other scanners are done

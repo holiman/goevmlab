@@ -9,18 +9,30 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func FactorySimpleOps(fork string) func() *GstMaker {
-	return func() *GstMaker {
-		gst := BasicStateTest(fork)
-		fillSimple(gst)
-		return gst
-	}
-}
-
 func fillSimple(gst *GstMaker) {
 	dest := common.HexToAddress("0xd0de")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateSimpleOpsProgram(),
+		Balance: new(big.Int),
+		Storage: make(map[common.Hash]common.Hash),
+	})
+	// The transaction
+	gst.SetTx(&StTransaction{
+		// 8M gaslimit
+		GasLimit:   []uint64{16000000},
+		Nonce:      0,
+		Value:      []string{randHex(4)},
+		Data:       []string{randHex(100)},
+		GasPrice:   big.NewInt(0x10),
+		To:         dest.Hex(),
+		PrivateKey: pKey,
+	})
+}
+
+func fillMemOps(gst *GstMaker) {
+	dest := common.HexToAddress("0xd0de")
+	gst.AddAccount(dest, GenesisAccount{
+		Code:    generateMemoryInteractingOpsProgram(),
 		Balance: new(big.Int),
 		Storage: make(map[common.Hash]common.Hash),
 	})
@@ -65,6 +77,8 @@ var operations = []ops.OpCode{
 	ops.SAR,
 }
 
+// generateSimpleOpsProgram generates non-erroring programs with some degree
+// of interestingness on inputs for various arithmetic ops.
 func generateSimpleOpsProgram() []byte {
 
 	var p = program.NewProgram()
@@ -92,12 +106,62 @@ func generateSimpleOpsProgram() []byte {
 	return p.Bytecode()
 }
 
+var memOps = []ops.OpCode{
+	ops.KECCAK256,
+	ops.CALLDATALOAD,
+	ops.CALLDATACOPY,
+	ops.CODECOPY,
+	ops.EXTCODECOPY,
+	ops.RETURNDATACOPY,
+	ops.MLOAD,
+	ops.MSTORE,
+	ops.MSTORE8,
+	ops.RETURN,
+	ops.REVERT,
+}
+
+// generateMemoryInteractingOpsProgram generates potentially erroring programs with some degree
+// of interestingness on inputs for various arithmetic ops. These operations include
+// memory access ops, which may be OOG.
+func generateMemoryInteractingOpsProgram() []byte {
+
+	var p = program.NewProgram()
+	var stackdepth = 0
+
+	for nCases := 0; nCases < 1000; nCases++ {
+		op := ops.OpCode(memOps[rand.Intn(len(memOps))])
+
+		if stackdepth < len(op.Pops()) {
+			for i := 0; i < len(op.Pops()); i++ {
+				idx := rand.Intn(len(integers))
+				a, _ := big.NewInt(0).SetString(integers[idx], 16)
+				p.Push(a)
+				stackdepth++
+			}
+		}
+		// stack depth is sufficient now
+		if stackdepth > 1 && rand.Uint32()%2 == 0 {
+			p.Op(ops.SWAP1)
+		}
+		p.Op(op)
+		stackdepth -= len(op.Pops())
+		stackdepth += len(op.Pushes())
+		if op == ops.RETURN || op == ops.REVERT {
+			break
+		}
+	}
+	return p.Bytecode()
+}
+
 var integers = []string{
 	"0",                                    // 0,
 	"1",                                    // 1,
 	"5",                                    // 5,
 	"7",                                    // 7,
 	"111",                                  // 273,
+	"7fffffff",                             // 2147483647,
+	"80000000",                             // 2147483648,
+	"80000001",                             // 2147483649,
 	"1ce97e1ab91a",                         // 31789168638234,
 	"1fffffffffffffff",                     // 2305843009213693951,
 	"7000000000000000",                     // 8070450532247928832,

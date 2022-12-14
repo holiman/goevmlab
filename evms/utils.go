@@ -13,11 +13,13 @@ const (
 	// Nethermind reports the change in memory on step earlier than others. E.g.
 	// MSTORE shows the _new_ memory, besu/geth shows the old memory until the next op.
 	// This could be handled differently, e.g. clearing only on mem-expanding ops.
-	ClearMemSize = false
+	ClearMemSize = true
 
 	// Nethermind reports the change in memory on step earlier than others. E.g.
 	// MSTORE shows the _new_ memory, besu/geth shows the old memory until the next op.
-	// This could be handled differently, e.g. clearing only on mem-expanding ops.
+	// Unfortunately, nethermind also "forgets" the memsize when an error occurs, reporting
+	// memsize zero (see testdata/traces/stackUnderflow_nonzeroMem.json). So we use
+	// ClearMemSize instead
 	ClearMemSizeOnExpand = true
 
 	// Nethermind is missing returnData
