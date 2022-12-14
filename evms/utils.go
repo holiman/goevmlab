@@ -2,6 +2,7 @@ package evms
 
 import (
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/uint256"
 )
 
@@ -12,7 +13,12 @@ const (
 	// Nethermind reports the change in memory on step earlier than others. E.g.
 	// MSTORE shows the _new_ memory, besu/geth shows the old memory until the next op.
 	// This could be handled differently, e.g. clearing only on mem-expanding ops.
-	ClearMemSize = true
+	ClearMemSize = false
+
+	// Nethermind reports the change in memory on step earlier than others. E.g.
+	// MSTORE shows the _new_ memory, besu/geth shows the old memory until the next op.
+	// This could be handled differently, e.g. clearing only on mem-expanding ops.
+	ClearMemSizeOnExpand = true
 
 	// Nethermind is missing returnData
 	ClearReturndata = true
@@ -34,6 +40,8 @@ func RemoveUnsupportedElems(elem *logger.StructLog) {
 		elem.GasCost = 0
 	}
 	if ClearMemSize {
+		elem.MemorySize = 0
+	} else if ClearMemSizeOnExpand && ops.OpCode(elem.Op).ExpandsMem() {
 		elem.MemorySize = 0
 	}
 	if ClearRefunds {

@@ -470,3 +470,18 @@ func (op OpCode) Pushes() []string {
 func (op OpCode) Stackdelta() int {
 	return len(op.Pushes()) - len(op.Pops())
 }
+
+func (op OpCode) ExpandsMem() bool {
+	if op < KECCAK256 {
+		return false
+	}
+	switch op {
+	case KECCAK256, CALLDATALOAD, CALLDATASIZE, CALLDATACOPY, CODECOPY,
+		EXTCODECOPY, RETURNDATACOPY,
+		MLOAD, MSTORE, MSTORE8, LOG0, LOG1, LOG2, LOG3, LOG4,
+		CREATE, CALL, DELEGATECALL, CALLCODE, STATICCALL, RETURN, REVERT, CREATE2:
+		return true
+	default:
+		return false
+	}
+}
