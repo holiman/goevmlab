@@ -69,6 +69,10 @@ var (
 		Name:  "erigon",
 		Usage: "Location of erigon 'evm' binary",
 	}
+	NimbusFlag = &cli.StringSliceFlag{
+		Name:  "nimbus",
+		Usage: "Location of nimbus 'evmstate' binary",
+	}
 	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -106,6 +110,7 @@ var (
 		BesuFlag,
 		BesuBatchFlag,
 		ErigonFlag,
+		NimbusFlag,
 	}
 	traceLengthMA = NewMovingAverage(100)
 	traceLengthSA = NewSlidingAverage()
@@ -119,6 +124,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		besuBins      = c.StringSlice(BesuFlag.Name)
 		besuBatchBins = c.StringSlice(BesuBatchFlag.Name)
 		erigonBins    = c.StringSlice(ErigonFlag.Name)
+		nimBins       = c.StringSlice(NimbusFlag.Name)
 
 		vms []evms.Evm
 	)
@@ -139,6 +145,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range erigonBins {
 		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("%d", i)))
+	}
+	for i, bin := range nimBins {
+		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 
