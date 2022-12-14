@@ -1,7 +1,8 @@
-{"op":"JUMPDEST","pc":0,"depth":1,"gas":2956484,"stack":[],"gasCost":1}
-{"op":"RETURNDATASIZE","pc":1,"depth":1,"gas":2956483,"stack":[],"gasCost":2}
-{"op":"ADDRESS","pc":2,"depth":1,"gas":2956481,"stack":["0000000000000000000000000000000000000000000000000000000000000000"],"gasCost":2}
-{"op":"PUSH26","pc":3,"depth":1,"gas":2956479,"stack":["0000000000000000000000000000000000000000000000000000000000000000","000000000000000000000000c94f5374fce5edbc8e2a8697c15331677e6ebf0b"],"gasCost":3}
-{"op":"PUSH9","pc":30,"depth":1,"gas":2956476,"stack":["0000000000000000000000000000000000000000000000000000000000000000","000000000000000000000000c94f5374fce5edbc8e2a8697c15331677e6ebf0b","000000000000c940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32"],"gasCost":3}
-{"op":"MSTORE8","pc":40,"depth":1,"gas":2956473,"stack":["0000000000000000000000000000000000000000000000000000000000000000","000000000000000000000000c94f5374fce5edbc8e2a8697c15331677e6ebf0b","000000000000c940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32","0000000000000000000000000000000000000000000000b7f7c4147541c695f3"],"error":"Opcode Dispatch Error msg=Out of gas: Needed 549806145539 - Remaining 2956473 - Reason: MSTORE8: GasVeryLow + memory expansion, depth=0","gasCost":0}
-{"gas":0,"failed":true,"returnValue":""}
+{"pc":0,"op":91,"gas":"0x2d1cc4","gasCost":"0x1","memSize":0,"opName":"JUMPDEST","depth":1,"stack":[]}
+{"pc":1,"op":61,"gas":"0x2d1cc3","gasCost":"0x2","memSize":0,"opName":"RETURNDATASIZE","depth":1,"stack":[]}
+{"pc":2,"op":48,"gas":"0x2d1cc1","gasCost":"0x2","memSize":0,"opName":"ADDRESS","depth":1,"stack":["0x0"]}
+{"pc":3,"op":121,"gas":"0x2d1cbf","gasCost":"0x3","memSize":0,"opName":"PUSH26","depth":1,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b"]}
+{"pc":30,"op":104,"gas":"0x2d1cbc","gasCost":"0x3","memSize":0,"opName":"PUSH9","depth":1,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b","0xc940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32"]}
+{"pc":40,"op":83,"gas":"0x2d1cb9","gasCost":"0x0","memSize":0,"opName":"MSTORE8","depth":1,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b","0xc940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32","0xb7f7c4147541c695f3"]}
+{"failed":true,"returnValue":"","gasUsed":"0x2d1cc4","error":"Opcode Dispatch Error msg=Out of gas: Needed 549806145539 - Remaining 2956473 - Reason: MSTORE8: GasVeryLow + memory expansion, depth=0"}
+{"stateRoot":"0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}

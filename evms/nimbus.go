@@ -25,13 +25,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/uint256"
-	"math/big"
-	"strings"
 )
 
 // NimbusEVM is s Evm-interface wrapper around the `evmstate` binary, based on nimbus-eth1.
@@ -73,13 +68,12 @@ func (evm *NimbusEVM) GetStateRoot(path string) (root, command string, err error
 // ParseStateRoot reads geth's stateroot from the combined output.
 func (evm *NimbusEVM) ParseStateRoot(data []byte) (string, error) {
 
-	start := bytes.Index(data, []byte(`post state root mismatch: got `))
-	end := start + 30 + 64
+	start := bytes.Index(data, []byte(`"stateRoot": "`))
+	end := start + 14 + 66
 	if start == -1 || end >= len(data) {
 		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
-	root := strings.ToLower("0x" + string(data[start+30:end]))
-	return root, nil
+	return string(data[start+14 : end]), nil
 }
 
 // RunStateTest implements the Evm interface
@@ -128,33 +122,12 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 	scanner.Buffer(buf, cap(buf))
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		var op nimbusOp
-		err := json.Unmarshal(data, &op)
-		if err != nil {
+
+		var elem logger.StructLog
+		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("nimb err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
-		var stack []uint256.Int
-		for _, x := range op.Stack {
-			a, _ := big.NewInt(0).SetString(x, 16)
-			y := new(uint256.Int)
-			y.SetFromBig(a)
-			stack = append(stack, *y)
-		}
-		var elem = logger.StructLog{
-			Pc:      op.Pc,
-			Op:      vm.OpCode(ops.StringToOp(op.Op)),
-			Gas:     op.Gas,
-			GasCost: op.GasCost,
-			Stack:   stack,
-			Depth:   op.Depth,
-			Err:     nil,
-		}
-		//err := json.Unmarshal(data, &elem)
-		//if err != nil {
-		//	fmt.Printf("nimb err: %v, line\n\t%v\n", err, string(data))
-		//	continue
-		//}
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
