@@ -33,7 +33,7 @@ func OneOf(cases ...int) int {
 //	fmt.Printf("%x\n", c.MarshalBinary())
 //}
 
-func GenerateCallFProgram() ([]byte, int) {
+func GenerateCallFProgram(maxSections int) ([]byte, int) {
 
 	// The section is comprised of a list of metadata where the metadata index in
 	// the type section corresponds to a code section index.
@@ -53,7 +53,7 @@ func GenerateCallFProgram() ([]byte, int) {
 	for {
 		switch OneOf(1, 2, 3, 4, 5) {
 		case 1:
-			p.CallF(uint16(rand.Intn(1024)))
+			p.CallF(uint16(rand.Intn(maxSections)))
 			p.Op(ops.STOP)
 		case 2:
 			p.RetF()
