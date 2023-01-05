@@ -51,7 +51,7 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 	maxStack := 0
 	curStack := 0
 	for {
-		switch OneOf(1, 2, 3, 4, 5) {
+		switch OneOf(1, 2, 3, 4, 5, 6, 7) {
 		case 1:
 			p.CallF(uint16(rand.Intn(maxSections)))
 			p.Op(ops.STOP)
@@ -61,6 +61,14 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 			// jump to minus three
 			p.RJump(uint16(0xffff - 2))
 		case 4:
+			// jump to plus one
+			p.RJump(uint16(0))
+			p.Op(ops.STOP) // jump location
+		case 5:
+			// jump to plus one
+			p.RJump(uint16(0))
+			p.Op(ops.STOP) // jump location
+		case 6:
 			// we push one and pop one
 			p.RJumpI(0, 0)
 			if maxStack < curStack+1 {
@@ -70,7 +78,12 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 		default:
 			//p.Push0()
 			p.Push(0)
-			p.RJumpV([]uint16{0})
+			len := rand.Intn(255)
+			dests := make([]uint16, len)
+			if len > 0 && rand.Intn(4) != 0 {
+				dests[len-1] = uint16(0x10000 - 2*len - 2)
+			}
+			p.RJumpV(dests)
 			// we push one and pop one
 			if maxStack < curStack+1 {
 				maxStack = curStack + 1
