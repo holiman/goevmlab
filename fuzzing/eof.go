@@ -54,10 +54,12 @@ func GenerateCallFProgram() ([]byte, int) {
 		switch OneOf(1, 2, 3, 4, 5) {
 		case 1:
 			p.CallF(uint16(rand.Intn(1024)))
+			p.Op(ops.STOP)
 		case 2:
 			p.RetF()
 		case 3:
-			p.RJump(0)
+			// jump to minus three
+			p.RJump(uint16(0xffff - 2))
 		case 4:
 			// we push one and pop one
 			p.RJumpI(0, 0)
@@ -66,8 +68,9 @@ func GenerateCallFProgram() ([]byte, int) {
 			}
 			p.Op(ops.STOP)
 		default:
-			p.Push0()
-			p.RJumpV(0, []uint16{0})
+			//p.Push0()
+			p.Push(0)
+			p.RJumpV([]uint16{0})
 			// we push one and pop one
 			if maxStack < curStack+1 {
 				maxStack = curStack + 1

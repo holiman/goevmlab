@@ -314,13 +314,13 @@ func (p *Program) RJump(relOffset uint16) {
 // RJumpI implements RJUMPI (0x5d) - conditional relative jump
 func (p *Program) RJumpI(relOffset uint16, condition interface{}) {
 	p.Push(condition)
-	p.Op(ops.JUMPI)
+	p.Op(ops.RJUMPI)
 	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
 }
 
 // RJumpV implements RJUMPV (0x5e) - relative jump via jump table
-func (p *Program) RJumpV(c interface{}, relOffsets []uint16) {
-	p.Op(ops.RJUMP)
+func (p *Program) RJumpV(relOffsets []uint16) {
+	p.Op(ops.RJUMPV)
 	// Immediate 1: the length
 	p.add(byte(len(relOffsets)))
 	// Immediates 2...N, the offsets
