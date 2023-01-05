@@ -1,12 +1,15 @@
 package fuzzing
 
 import (
+	"fmt"
+	"math/big"
+	"math/rand"
+
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"math/rand"
 )
 
-func OneOf(cases ...int) int {
+func OneOf(cases ...any) any {
 	a := rand.Intn(len(cases))
 	return cases[a]
 }
@@ -77,8 +80,15 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 			p.Op(ops.STOP)
 		default:
 			//p.Push0()
-			p.Push(0)
 			len := rand.Intn(255)
+			p.Push(OneOf(
+				asBig("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+				asBig("0x1000000000000000000000000000000000000000000000000000000000000000"),
+				big.NewInt(int64(len)),
+				big.NewInt(int64(len-1)),
+				big.NewInt(int64(len+1)),
+			))
+			p.Push(len + 1)
 			dests := make([]uint16, len)
 			if len > 0 && rand.Intn(4) != 0 {
 				dests[len-1] = uint16(0x10000 - 2*len - 2)
@@ -93,4 +103,13 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 		break
 	}
 	return p.Bytecode(), maxStack
+}
+
+func asBig(in string) *big.Int {
+	a := new(big.Int)
+	a, ok := a.SetString(in, 0)
+	if !ok {
+		panic(fmt.Sprintf("bad input: %v", in))
+	}
+	return a
 }
