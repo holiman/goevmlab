@@ -88,7 +88,6 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 				big.NewInt(int64(len-1)),
 				big.NewInt(int64(len+1)),
 			))
-			p.Push(len + 1)
 			dests := make([]uint16, len)
 			if len > 0 && rand.Intn(4) != 0 {
 				dests[len-1] = uint16(0x10000 - 2*len - 2)
