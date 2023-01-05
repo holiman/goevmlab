@@ -17,6 +17,7 @@
 package program
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -175,10 +176,10 @@ func (p *Program) Jump(loc interface{}) {
 	p.Op(ops.JUMP)
 }
 
-func (p *Program) JumpSub(loc interface{}) {
-	p.Push(loc)
-	p.Op(ops.JUMPSUB)
-}
+//func (p *Program) JumpSub(loc interface{}) {
+//	p.Push(loc)
+//	p.Op(ops.JUMPSUB)
+//}
 
 // Jump pushes the destination and adds a JUMP
 func (p *Program) JumpIf(loc interface{}, condition interface{}) {
@@ -297,4 +298,46 @@ func (p *Program) CreateAndCall(code []byte, isCreate2 bool, callOp ops.OpCode) 
 	p.Op(callOp)
 	p.Op(ops.POP) // pop the retval
 	p.Op(ops.POP) // pop the address
+}
+
+// Push0 implements PUSH0 (0x5f)
+func (p *Program) Push0() {
+	p.Op(ops.PUSH0)
+}
+
+// RJump implements RJUMP (0x5c) - relative jump
+func (p *Program) RJump(relOffset uint16) {
+	p.Op(ops.RJUMP)
+	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
+}
+
+// RJumpI implements RJUMPI (0x5d) - conditional relative jump
+func (p *Program) RJumpI(relOffset uint16, condition interface{}) {
+	p.Push(condition)
+	p.Op(ops.JUMPI)
+	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
+}
+
+// RJumpV implements RJUMPV (0x5e) - relative jump via jump table
+func (p *Program) RJumpV(c interface{}, relOffsets []uint16) {
+	p.Op(ops.RJUMP)
+	// Immediate 1: the length
+	p.add(byte(len(relOffsets)))
+	// Immediates 2...N, the offsets
+	for _, offset := range relOffsets {
+		p.code = binary.BigEndian.AppendUint16(p.code, offset)
+	}
+}
+
+// CallF implements CALLF (0xb0) - call a function
+func (p *Program) CallF(codeSectionIndex uint16) {
+	p.Op(ops.CALLF)
+	// Has one immediate argument,code_section_index,
+	// encoded as a 16-bit unsigned big-endian value.
+	p.code = binary.BigEndian.AppendUint16(p.code, codeSectionIndex)
+}
+
+// RetF implements RETF (0xb1) - return from a function
+func (p *Program) RetF() {
+	p.Op(ops.RETF)
 }

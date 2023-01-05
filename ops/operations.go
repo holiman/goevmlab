@@ -113,114 +113,114 @@ const (
 
 // 0x50 range - 'storage' and execution.
 const (
-	POP       = OpCode(0x50)
-	MLOAD     = OpCode(0x51)
-	MSTORE    = OpCode(0x52)
-	MSTORE8   = OpCode(0x53)
-	SLOAD     = OpCode(0x54)
-	SSTORE    = OpCode(0x55)
-	JUMP      = OpCode(0x56)
-	JUMPI     = OpCode(0x57)
-	PC        = OpCode(0x58)
-	MSIZE     = OpCode(0x59)
-	GAS       = OpCode(0x5A)
-	JUMPDEST  = OpCode(0x5B)
-	BEGINSUB  = OpCode(0x5c) // Not live, used in a test
-	RETURNSUB = OpCode(0x5d) // Not live, used in a test
-	JUMPSUB   = OpCode(0x5e) // Not live, used in a test
-	PUSH0     = OpCode(0x5f) // Not live, used in a test
+	POP      = OpCode(0x50)
+	MLOAD    = OpCode(0x51)
+	MSTORE   = OpCode(0x52)
+	MSTORE8  = OpCode(0x53)
+	SLOAD    = OpCode(0x54)
+	SSTORE   = OpCode(0x55)
+	JUMP     = OpCode(0x56)
+	JUMPI    = OpCode(0x57)
+	PC       = OpCode(0x58)
+	MSIZE    = OpCode(0x59)
+	GAS      = OpCode(0x5A)
+	JUMPDEST = OpCode(0x5B)
+
+	RJUMP  = OpCode(0x5c) // Shanghai
+	RJUMPI = OpCode(0x5d) // Shanghai
+	RJUMPV = OpCode(0x5e) // Shanghai
+	PUSH0  = OpCode(0x5f) // Shanghai
 )
 
 // 0x60 through 0x7F range.
 const (
-	PUSH1 OpCode = 0x60 + iota
-	PUSH2
-	PUSH3
-	PUSH4
-	PUSH5
-	PUSH6
-	PUSH7
-	PUSH8
-	PUSH9
-	PUSH10
-	PUSH11
-	PUSH12
-	PUSH13
-	PUSH14
-	PUSH15
-	PUSH16
-	PUSH17
-	PUSH18
-	PUSH19
-	PUSH20
-	PUSH21
-	PUSH22
-	PUSH23
-	PUSH24
-	PUSH25
-	PUSH26
-	PUSH27
-	PUSH28
-	PUSH29
-	PUSH30
-	PUSH31
-	PUSH32
+	PUSH1  = OpCode(0x60)
+	PUSH2  = OpCode(0x61)
+	PUSH3  = OpCode(0x62)
+	PUSH4  = OpCode(0x63)
+	PUSH5  = OpCode(0x64)
+	PUSH6  = OpCode(0x65)
+	PUSH7  = OpCode(0x66)
+	PUSH8  = OpCode(0x67)
+	PUSH9  = OpCode(0x68)
+	PUSH10 = OpCode(0x69)
+	PUSH11 = OpCode(0x6a)
+	PUSH12 = OpCode(0x6b)
+	PUSH13 = OpCode(0x6c)
+	PUSH14 = OpCode(0x6d)
+	PUSH15 = OpCode(0x6e)
+	PUSH16 = OpCode(0x6f)
+	PUSH17 = OpCode(0x70)
+	PUSH18 = OpCode(0x71)
+	PUSH19 = OpCode(0x72)
+	PUSH20 = OpCode(0x73)
+	PUSH21 = OpCode(0x74)
+	PUSH22 = OpCode(0x75)
+	PUSH23 = OpCode(0x76)
+	PUSH24 = OpCode(0x77)
+	PUSH25 = OpCode(0x78)
+	PUSH26 = OpCode(0x79)
+	PUSH27 = OpCode(0x7a)
+	PUSH28 = OpCode(0x7b)
+	PUSH29 = OpCode(0x7c)
+	PUSH30 = OpCode(0x7d)
+	PUSH31 = OpCode(0x7e)
+	PUSH32 = OpCode(0x7f)
 )
 
 // 0x80 range
 const (
-	DUP1 OpCode = 0x80 + iota
-	DUP2
-	DUP3
-	DUP4
-	DUP5
-	DUP6
-	DUP7
-	DUP8
-	DUP9
-	DUP10
-	DUP11
-	DUP12
-	DUP13
-	DUP14
-	DUP15
-	DUP16
+	DUP1  = OpCode(0x80)
+	DUP2  = OpCode(0x81)
+	DUP3  = OpCode(0x82)
+	DUP4  = OpCode(0x83)
+	DUP5  = OpCode(0x84)
+	DUP6  = OpCode(0x85)
+	DUP7  = OpCode(0x86)
+	DUP8  = OpCode(0x87)
+	DUP9  = OpCode(0x88)
+	DUP10 = OpCode(0x89)
+	DUP11 = OpCode(0x8a)
+	DUP12 = OpCode(0x8b)
+	DUP13 = OpCode(0x8c)
+	DUP14 = OpCode(0x8d)
+	DUP15 = OpCode(0x8e)
+	DUP16 = OpCode(0x8f)
 )
 
 // 0x90 range
 const (
-	SWAP1 OpCode = 0x90 + iota
-	SWAP2
-	SWAP3
-	SWAP4
-	SWAP5
-	SWAP6
-	SWAP7
-	SWAP8
-	SWAP9
-	SWAP10
-	SWAP11
-	SWAP12
-	SWAP13
-	SWAP14
-	SWAP15
-	SWAP16
+	SWAP1  = OpCode(0x90)
+	SWAP2  = OpCode(0x91)
+	SWAP3  = OpCode(0x92)
+	SWAP4  = OpCode(0x93)
+	SWAP5  = OpCode(0x94)
+	SWAP6  = OpCode(0x95)
+	SWAP7  = OpCode(0x96)
+	SWAP8  = OpCode(0x97)
+	SWAP9  = OpCode(0x98)
+	SWAP10 = OpCode(0x99)
+	SWAP11 = OpCode(0x9a)
+	SWAP12 = OpCode(0x9b)
+	SWAP13 = OpCode(0x9c)
+	SWAP14 = OpCode(0x9d)
+	SWAP15 = OpCode(0x9e)
+	SWAP16 = OpCode(0x9f)
 )
 
 // 0xa0 range - logging ops.
 const (
-	LOG0 OpCode = 0xa0 + iota
-	LOG1
-	LOG2
-	LOG3
-	LOG4
+	LOG0 = OpCode(0xa0)
+	LOG1 = OpCode(0xa1)
+	LOG2 = OpCode(0xa2)
+	LOG3 = OpCode(0xa3)
+	LOG4 = OpCode(0xa4)
 )
 
-// unofficial opcodes used for parsing.
+// 0xb0 range
 const (
-	PUSH OpCode = 0xb0 + iota
-	DUP
-	SWAP
+	CALLF = OpCode(0xb0)
+	RETF  = OpCode(0xb1)
 )
 
 // 0xf0 range - closures.
@@ -357,11 +357,10 @@ var opCodeInfo = map[OpCode]opInfo{
 	GAS:      {"GAS", nil, []string{"current gas remaining"}},
 	JUMPDEST: {"JUMPDEST", nil, nil},
 
-	PUSH0: {"PUSH0", nil, []string{"zero"}},
-
-	//BEGINSUB:  {"BEGINSUB", nil, nil},
-	//RETURNSUB: {"RETURNSUB", nil, nil},
-	//JUMPSUB:   {"JUMPSUB", []string{"subroutine destination"}, nil},
+	RJUMP:  {"RJUMP", nil, nil},
+	RJUMPI: {"RJUMPI", []string{"cond"}, nil},
+	RJUMPV: {"RJUMPV", []string{"case"}, nil},
+	PUSH0:  {"PUSH0", nil, []string{"zero"}},
 
 	// 0x60 through 0x7F range - push.
 	PUSH1:  {"PUSH1", nil, []string{"1 byte pushed value"}},
@@ -437,6 +436,10 @@ var opCodeInfo = map[OpCode]opInfo{
 	LOG2: {"LOG2", []string{"mStart", "mSize", "topic", "topic"}, nil},
 	LOG3: {"LOG3", []string{"mStart", "mSize", "topic", "topic", "topic"}, nil},
 	LOG4: {"LOG4", []string{"mStart", "mSize", "topic", "topic", "topic", "topic"}, nil},
+
+	// 0xb0 range.
+	CALLF: {"CALLF", nil, nil},
+	RETF:  {"RETF", nil, nil},
 
 	// 0xf0 range.
 	CREATE:       {"CREATE", []string{"value", "mem offset", "mem size"}, []string{"address or zero"}},
