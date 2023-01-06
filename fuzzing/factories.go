@@ -25,7 +25,6 @@ var fillers = map[string]func(*GstMaker){
 	"precompiles":  fillPrecompileTest,
 	"simpleops":    fillSimple,
 	"sstore_sload": fillSstore,
-	"2315":         fillSubroutineTest,
 }
 
 func Factory(name, fork string) func() *GstMaker {

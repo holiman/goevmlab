@@ -19,7 +19,6 @@ package fuzzing
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"math/rand"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/holiman/goevmlab/ops"
+	"os"
 )
 
 // The sender
@@ -200,8 +200,7 @@ func (g *GstMaker) ToGeneralStateTest(name string) *GeneralStateTest {
 }
 
 func FromGeneralStateTest(name string) (*GeneralStateTest, error) {
-
-	data, err := ioutil.ReadFile(name)
+	data, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}

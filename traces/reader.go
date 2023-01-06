@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"strconv"
@@ -374,7 +373,7 @@ func ReadFile(location string) (*Traces, error) {
 		err  error
 		data []byte
 	)
-	data, err = ioutil.ReadFile(location)
+	data, err = os.ReadFile(location)
 	if err != nil {
 		return nil, err
 	}

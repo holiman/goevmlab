@@ -18,13 +18,13 @@ package traces
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path"
 	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/ops"
+	"os"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 
 // Tries to read all files in testdata/traces
 func TestReaderBasics(t *testing.T) {
-	files, err := ioutil.ReadDir(testDir)
+	files, err := os.ReadDir(testDir)
 	if err != nil {
 		t.Fatalf("error reading files: %v", err)
 	}
@@ -205,12 +205,12 @@ func TestParityVsGeth(t *testing.T) {
 func TestReEncodeTrace(t *testing.T){
 	src := path.Join(testDir, "14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json")
 	dst := path.Join(testDir, "14a4a43b4e9759aac86bb0ae7e5926850406ff1c43ea571239563ff781474ae0.json.snappy")
-	data, err := ioutil.ReadFile(src)
+	data, err := os.ReadFile(src)
 	if err != nil{
 		t.Fatal(err)
 	}
 	snapdata := snappy.Encode(nil, data)
-	err = ioutil.WriteFile(dst, snapdata, 0744)
+	err = os.WriteFile(dst, snapdata, 0744)
 	if err != nil{
 		t.Fatal(err)
 	}

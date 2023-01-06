@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"os/signal"
@@ -351,13 +350,13 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 				timeSpent := time.Since(tStart)
 				// Update global counter
 				globalCount := uint64(0)
-				if content, err := ioutil.ReadFile(".fuzzcounter"); err == nil {
+				if content, err := os.ReadFile(".fuzzcounter"); err == nil {
 					if count, err := strconv.Atoi((string(content))); err == nil {
 						globalCount = uint64(count)
 					}
 				}
 				globalCount += testsSinceLastUpdate
-				if err := ioutil.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755); err != nil {
+				if err := os.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755); err != nil {
 					log.Error("Error saving progress", "err", err)
 				}
 				log.Info("Executing",
@@ -750,7 +749,7 @@ func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 	gst := mkr.ToGeneralStateTest(name)
 	dat, _ := json.MarshalIndent(gst, "", " ")
 	fname := fmt.Sprintf("%v.json", name)
-	if err := ioutil.WriteFile(fname, dat, 0777); err != nil {
+	if err := os.WriteFile(fname, dat, 0777); err != nil {
 		return err
 	}
 	fmt.Printf("Wrote file %v\n", fname)
