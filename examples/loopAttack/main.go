@@ -19,7 +19,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -274,7 +273,7 @@ func convertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 	gst := mkr.ToGeneralStateTest(name)
 	dat, _ := json.MarshalIndent(gst, "", " ")
 	fname := fmt.Sprintf("%v.json", name)
-	if err := ioutil.WriteFile(fname, dat, 0777); err != nil {
+	if err := os.WriteFile(fname, dat, 0777); err != nil {
 		return err
 	}
 	fmt.Printf("Wrote file %v\n", fname)
