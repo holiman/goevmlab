@@ -29,9 +29,9 @@ func TestSanity(t *testing.T) {
 
 	for i := 0; i < 256; i++ {
 
-		// Geth has some 'virtual' opcodes: POP, PUSH, DUP and SWAP
+		// We have the EOF opcodes defined, geth doesn't yet.
 		switch i {
-		case 0x50, 0xb0, 0xb1, 0xb2:
+		case 0x5c, 0x5d, 0x5e, 0xb0, 0xb1:
 			continue
 
 		}
