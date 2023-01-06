@@ -315,7 +315,7 @@ func (p *Program) RJump(relOffset uint16) {
 func (p *Program) RJumpI(relOffset uint16, condition interface{}) {
 	p.Push(condition)
 	p.Op(ops.RJUMPI)
-	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
+	p.AddAll([]byte{byte(relOffset >> 8), byte(relOffset)})
 }
 
 // RJumpV implements RJUMPV (0x5e) - relative jump via jump table
@@ -325,16 +325,16 @@ func (p *Program) RJumpV(relOffsets []uint16) {
 	p.add(byte(len(relOffsets)))
 	// Immediates 2...N, the offsets
 	for _, offset := range relOffsets {
-		p.code = binary.BigEndian.AppendUint16(p.code, offset)
+		p.AddAll([]byte{byte(offset >> 8), byte(offset)})
 	}
 }
 
 // CallF implements CALLF (0xb0) - call a function
-func (p *Program) CallF(codeSectionIndex uint16) {
+func (p *Program) CallF(i uint16) {
 	p.Op(ops.CALLF)
 	// Has one immediate argument,code_section_index,
 	// encoded as a 16-bit unsigned big-endian value.
-	p.code = binary.BigEndian.AppendUint16(p.code, codeSectionIndex)
+	p.AddAll([]byte{byte(i >> 8), byte(i)})
 }
 
 // RetF implements RETF (0xb1) - return from a function
