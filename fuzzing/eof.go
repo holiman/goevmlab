@@ -55,53 +55,53 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 	var p = program.NewProgram()
 	maxStack := 0
 	curStack := 0
-	for {
-		switch oneOf(1, 2, 3, 4, 5, 6, 7) {
-		case 1:
-			p.CallF(uint16(rand.Intn(maxSections)))
-			p.Op(ops.STOP)
-		case 2:
-			p.RetF()
-		case 3:
-			// jump to minus three
-			p.RJump(uint16(0xffff - 2))
-		case 4:
-			// jump to plus one
-			p.RJump(uint16(0))
-			p.Op(ops.STOP) // jump location
-		case 5:
-			// jump to plus one
-			p.RJump(uint16(0))
-			p.Op(ops.STOP) // jump location
-		case 6:
-			// we push one and pop one
-			p.RJumpI(0, 0)
-			if maxStack < curStack+1 {
-				maxStack = curStack + 1
-			}
-			p.Op(ops.STOP)
-		default:
-			//p.Push0()
-			len := rand.Intn(255)
-			p.Push(oneOf(
-				asBig("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
-				asBig("0x1000000000000000000000000000000000000000000000000000000000000000"),
-				big.NewInt(int64(len)),
-				big.NewInt(int64(len-1)),
-				big.NewInt(int64(len+1)),
-			))
-			dests := make([]uint16, len)
-			if len > 0 && rand.Intn(4) != 0 {
-				dests[len-1] = uint16(0x10000 - 2*len - 2)
-			}
-			p.RJumpV(dests)
-			// we push one and pop one
-			if maxStack < curStack+1 {
-				maxStack = curStack + 1
-			}
-			p.Op(ops.STOP)
+	//for {
+	switch oneOf(1, 2, 3, 4, 5, 6, 7) {
+	case 1:
+		p.CallF(uint16(rand.Intn(maxSections)))
+		p.Op(ops.STOP)
+	case 2:
+		p.RetF()
+	case 3:
+		// jump to minus three
+		p.RJump(uint16(0xffff - 2))
+	case 4:
+		// jump to plus one
+		p.RJump(uint16(0))
+		p.Op(ops.STOP) // jump location
+	case 5:
+		// jump to plus one
+		p.RJump(uint16(0))
+		p.Op(ops.STOP) // jump location
+	case 6:
+		// we push one and pop one
+		p.RJumpI(0, 0)
+		if maxStack < curStack+1 {
+			maxStack = curStack + 1
 		}
-		break
+		p.Op(ops.STOP)
+	default:
+		//p.Push0()
+		len := rand.Intn(255)
+		p.Push(oneOf(
+			asBig("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+			asBig("0x1000000000000000000000000000000000000000000000000000000000000000"),
+			big.NewInt(int64(len)),
+			big.NewInt(int64(len-1)),
+			big.NewInt(int64(len+1)),
+		))
+		dests := make([]uint16, len)
+		if len > 0 && rand.Intn(4) != 0 {
+			dests[len-1] = uint16(0x10000 - 2*len - 2)
+		}
+		p.RJumpV(dests)
+		// we push one and pop one
+		if maxStack < curStack+1 {
+			maxStack = curStack + 1
+		}
+		p.Op(ops.STOP)
 	}
+	//break
+	//}
 	return p.Bytecode(), maxStack
 }
