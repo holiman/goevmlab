@@ -1,3 +1,19 @@
+// Copyright 2023 Martin Holst Swende
+// This file is part of the goevmlab library.
+//
+// The library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
+
 package fuzzing
 
 import (
@@ -9,32 +25,18 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func OneOf(cases ...any) any {
-	a := rand.Intn(len(cases))
-	return cases[a]
+func oneOf(cases ...any) any {
+	return cases[rand.Intn(len(cases))]
 }
 
-//
-//func generateEofContainer(rnd RandSource) {
-//	var c vm.Container
-//	numCodes := 1024
-//
-//	for i := 0; i < numCodes; i++ {
-//		code, maxStack := genCallFProgram()
-//		c.Code = append(c.Code, code)
-//		var metadata = &vm.FunctionMetadata{
-//			Input:          uint8(0),
-//			Output:         uint8(0),
-//			MaxStackHeight: uint16(maxStack),
-//		}
-//		if i == 0 {
-//			metadata.Input = 0
-//			metadata.Output = 0
-//		}
-//		c.Types = append(c.Types, metadata)
-//	}
-//	fmt.Printf("%x\n", c.MarshalBinary())
-//}
+func asBig(in string) *big.Int {
+	a := new(big.Int)
+	a, ok := a.SetString(in, 0)
+	if !ok {
+		panic(fmt.Sprintf("bad input: %v", in))
+	}
+	return a
+}
 
 func GenerateCallFProgram(maxSections int) ([]byte, int) {
 
@@ -54,7 +56,7 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 	maxStack := 0
 	curStack := 0
 	for {
-		switch OneOf(1, 2, 3, 4, 5, 6, 7) {
+		switch oneOf(1, 2, 3, 4, 5, 6, 7) {
 		case 1:
 			p.CallF(uint16(rand.Intn(maxSections)))
 			p.Op(ops.STOP)
@@ -102,13 +104,4 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 		break
 	}
 	return p.Bytecode(), maxStack
-}
-
-func asBig(in string) *big.Int {
-	a := new(big.Int)
-	a, ok := a.SetString(in, 0)
-	if !ok {
-		panic(fmt.Sprintf("bad input: %v", in))
-	}
-	return a
 }
