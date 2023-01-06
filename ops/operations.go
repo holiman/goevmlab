@@ -27,6 +27,18 @@ type OpCode byte
 func (op OpCode) IsPush() bool {
 	return op >= PUSH1 && op <= PUSH32
 }
+
+// HasImmediate returns true if the op has immediate after the op.
+func (op OpCode) HasImmediate() bool {
+	switch {
+	case op >= PUSH1 && op <= PUSH32:
+		return true
+	case op == RJUMP || op == RJUMPI || op == RJUMPV:
+		return true
+	}
+	return false
+}
+
 func (op OpCode) IsCall() bool {
 	return op == CALL ||
 		op == DELEGATECALL ||

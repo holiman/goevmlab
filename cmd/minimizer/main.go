@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -160,7 +159,7 @@ func startFuzzer(c *cli.Context) error {
 	}
 	var inConsensus = func() bool {
 		data, _ := json.MarshalIndent(gst, "", "  ")
-		if err := ioutil.WriteFile(out, data, 0777); err != nil {
+		if err := os.WriteFile(out, data, 0777); err != nil {
 			panic(err)
 		}
 		allAgree, err := compareFn(out, c)
@@ -169,7 +168,7 @@ func startFuzzer(c *cli.Context) error {
 		}
 		if !allAgree {
 			log.Info("Change ok")
-			if err := ioutil.WriteFile(good, data, 0777); err != nil {
+			if err := os.WriteFile(good, data, 0777); err != nil {
 				panic(err)
 			}
 		} else {

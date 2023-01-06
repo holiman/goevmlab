@@ -101,7 +101,6 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 			}
 			p.Op(ops.STOP)
 		}
-		break
 	}
 	return p.Bytecode(), maxStack
 }
