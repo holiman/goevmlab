@@ -83,7 +83,7 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 		default:
 			//p.Push0()
 			len := rand.Intn(255)
-			p.Push(OneOf(
+			p.Push(oneOf(
 				asBig("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
 				asBig("0x1000000000000000000000000000000000000000000000000000000000000000"),
 				big.NewInt(int64(len)),
