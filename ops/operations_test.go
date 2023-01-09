@@ -80,3 +80,52 @@ func TestSanity(t *testing.T) {
 		}
 	}
 }
+
+/*
+*
+// This check can only be executed if the go-ethereum codebase
+// is refactored a bit, to make the following public:
+func TestForkOpcodes(t *testing.T) {
+	testForkOpcodes(t, "london", ValidLondonOpCodes)
+	testForkOpcodes(t, "merge", ValidMergeOpCodes)
+}
+func testForkOpcodes(t *testing.T, fork string, ourOps []OpCode) {
+	ctor := vm.LookupInstructionSet(fork)
+	jt := ctor()
+	for op, gethOp := range jt {
+		if !gethOp.Valid() {
+			continue
+		}
+		found := false
+		for _, ourOp := range ourOps {
+			if int(ourOp) == op {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("missing operation %#x %v in fork %v", op, vm.OpCode(op), fork)
+		}
+	}
+	for _, ourOp := range ourOps {
+		gethOp := vm.OpCode(ourOp)
+		{
+			exp, got := gethOp.String(), ourOp.String()
+			if exp != got {
+				t.Errorf("op got %v expected %v", got, exp)
+			}
+		}
+		gotPops := len(ourOp.Pops())
+		geth_instr := jt[gethOp]
+		min, max := geth_instr.Stack()
+
+		if gotPops != min {
+			t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, min)
+		}
+		havePush := len(ourOp.Pushes())
+		wantPush := 1024 - max + min
+		if havePush != wantPush {
+			t.Errorf("op %v push wrong, us: %d, geth: %d", ourOp.String(), havePush, wantPush)
+		}
+	}
+}
+*/
