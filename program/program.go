@@ -128,6 +128,21 @@ func (p *Program) Call(gas *big.Int, address, value, inOffset, inSize, outOffset
 	p.Op(ops.CALL)
 }
 
+// DelegateCall is a convenience function to make a delegatecall
+func (p *Program) DelegateCall(gas *big.Int, address, inOffset, inSize, outOffset, outSize interface{}) {
+	p.Push(outSize)
+	p.Push(outOffset)
+	p.Push(inSize)
+	p.Push(inOffset)
+	p.Push(address)
+	if gas == nil {
+		p.Op(ops.GAS)
+	} else {
+		p.pushBig(gas)
+	}
+	p.Op(ops.DELEGATECALL)
+}
+
 // StaticCall is a convenience function to make a staticcall
 func (p *Program) StaticCall(gas *big.Int, address, inOffset, inSize, outOffset, outSize interface{}) {
 	p.Push(outSize)
