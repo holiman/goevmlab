@@ -29,9 +29,14 @@ import (
 )
 
 var (
-	targetFlag = &cli.StringSliceFlag{
-		Name:  "target",
-		Usage: "fuzzing-target",
+	engineFlag = &cli.StringSliceFlag{
+		Name:  "engine",
+		Usage: "fuzzing-engine",
+	}
+	forkFlag = &cli.StringFlag{
+		Name:  "fork",
+		Usage: "what fork to use",
+		Value: "London",
 	}
 	app = initApp()
 )
@@ -46,7 +51,8 @@ func initApp() *cli.App {
 		common.SkipTraceFlag,
 		common.ThreadFlag,
 		common.LocationFlag,
-		targetFlag,
+		engineFlag,
+		forkFlag,
 	)
 	app.Action = startFuzzer
 	return app
@@ -61,16 +67,17 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	fNames := c.StringSlice(targetFlag.Name)
+	fNames := c.StringSlice(engineFlag.Name)
+	fork := c.String(forkFlag.Name)
 	// At this point, we only do one at a time
 	if len(fNames) == 0 {
-		fmt.Printf("At least one fuzzer target needed. ")
+		fmt.Printf("At least one fuzzer engine needed. ")
 		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
-		return errors.New("missing target")
+		return errors.New("missing engine")
 	}
 	var factory common.GeneratorFn
 	if len(fNames) == 1 {
-		factory = fuzzing.Factory(fNames[0], "London")
+		factory = fuzzing.Factory(fNames[0], fork)
 		if factory == nil {
 			return fmt.Errorf("unknown target %v", fNames[0])
 		}
@@ -78,7 +85,7 @@ func startFuzzer(c *cli.Context) error {
 		// Need to put together a meta-factory
 		var factories []common.GeneratorFn
 		for _, fName := range fNames {
-			if f := fuzzing.Factory(fName, "London"); f == nil {
+			if f := fuzzing.Factory(fName, fork); f == nil {
 				return fmt.Errorf("unknown target %v", fName)
 			} else {
 				factories = append(factories, f)
