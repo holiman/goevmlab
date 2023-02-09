@@ -9,14 +9,6 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func FactoryPrecompileTest(fork string) func() *GstMaker {
-	return func() *GstMaker {
-		gst := BasicStateTest(fork)
-		fillPrecompileTest(gst)
-		return gst
-	}
-}
-
 func fillPrecompileTest(gst *GstMaker) {
 	// Add a contract which calls a precompile
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
@@ -57,8 +49,9 @@ func randCallPrecompile() []byte {
 	}
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
 	p.AddAll(p2)
-	// pop the ret value
-	p.Op(ops.POP)
+	// store the returnvalue ot slot 1337
+	p.Push(0x1337)
+	p.Op(ops.SSTORE)
 	// Store the output in some slot, to make sure the stateroot changes
 	p.MemToStorage(0, 64, 0)
 	return p.Bytecode()

@@ -185,6 +185,7 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 			return false, nil
 		}
 	}
+	log.Info("Roots identical", "root", roots[0])
 	return true, nil
 }
 

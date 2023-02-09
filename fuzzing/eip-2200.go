@@ -7,15 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// Factory2200 returns a 'factory' which creates EIP-2200-tests on the given fork.
-func Factory2200(fork string) func() *GstMaker {
-	return func() *GstMaker {
-		gst := BasicStateTest(fork)
-		fillSstore(gst)
-		return gst
-	}
-}
-
 func fillSstore(gst *GstMaker) {
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{

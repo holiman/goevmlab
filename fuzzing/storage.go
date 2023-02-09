@@ -105,8 +105,8 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 			p.Push(addrGen())
 			p.Op(ops.SELFDESTRUCT)
 		default:
-			p.Push(0)
-			p.Push(0)
+			p.Push(32) //len
+			p.Push(0)  //offset
 			if r%2 == 0 {
 				p.Op(ops.RETURN)
 			} else {
