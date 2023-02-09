@@ -108,6 +108,28 @@ func (m *codeMutator) undo() {
 	m.current = m.lastGood
 }
 
+type naiveCodeMutator struct {
+	current  []byte
+	lastGood []byte
+}
+
+// proceed tells the mutator to continue one mutation
+// returns 'true' is the mutator is exhausted
+func (m *naiveCodeMutator) proceed() bool {
+	m.lastGood = m.current
+	// Now mutate current
+	var next []byte = make([]byte, len(m.current)*2/3) // Remove one third
+	copy(next, m.lastGood)
+	log.Info("Mutating code #1", "length", len(next), "previous", len(m.lastGood))
+	m.current = next
+	return len(next) == len(m.lastGood)
+}
+
+// undo tells the mutator to revert the last change
+func (m *naiveCodeMutator) undo() {
+	m.current = m.lastGood
+}
+
 func startFuzzer(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return fmt.Errorf("input state test file needed")
@@ -196,6 +218,40 @@ func startFuzzer(c *cli.Context) error {
 		log.Info("Restoring", "target", target)
 		gst[testname].Pre[target] = acc
 	}
+	// Try reducing code the naive way
+	for target, acc := range gst[testname].Pre {
+		if len(acc.Code) == 0 {
+			continue
+		}
+		log.Info("Reducing code #1", "target", target)
+		code := acc.Code
+		m := naiveCodeMutator{current: code, lastGood: code}
+		// Alright, we're in business
+		fails := 0
+		for {
+			if exhausted := m.proceed(); exhausted {
+				break
+			}
+			acc := gst[testname].Pre[target]
+			acc.Code = m.current
+			gst[testname].Pre[target] = acc
+			if !inConsensus() {
+				fails = 0
+				continue
+			} else {
+				log.Info("Restoring change")
+				fails++
+				m.undo()
+				// restore it
+				acc.Code = m.current
+				gst[testname].Pre[target] = acc
+				if fails > 5 {
+					break
+				}
+			}
+		}
+	}
+
 	// Try reducing code
 	for target, acc := range gst[testname].Pre {
 		if len(acc.Code) == 0 {
