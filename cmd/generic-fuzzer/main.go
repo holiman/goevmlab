@@ -66,10 +66,11 @@ func main() {
 	}
 }
 
-func startFuzzer(c *cli.Context) error {
-	fNames := c.StringSlice(engineFlag.Name)
-	fork := c.String(forkFlag.Name)
-	// At this point, we only do one at a time
+func startFuzzer(ctx *cli.Context) error {
+	var (
+		fNames = ctx.StringSlice(engineFlag.Name)
+		fork   = ctx.String(forkFlag.Name)
+	)
 	if len(fNames) == 0 {
 		fmt.Printf("At least one fuzzer engine needed. ")
 		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
@@ -99,5 +100,5 @@ func startFuzzer(c *cli.Context) error {
 			return fn()
 		}
 	}
-	return common.ExecuteFuzzer(c, factory, "mixed")
+	return common.ExecuteFuzzer(ctx, factory, "mixed")
 }
