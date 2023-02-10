@@ -1,0 +1,2 @@
+{"pc":15337,"op":26,"gas":"0x22","gasCost":"0x0","memSize":0,"stack":["0x10000000000000000","0x77676767676760000000000000001002e000000000000040000000e000000000","0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","0x0","0x0"],"depth":1,"refund":0,"opName":"BYTE"}
+{}
