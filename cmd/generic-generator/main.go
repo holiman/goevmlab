@@ -32,9 +32,14 @@ import (
 )
 
 var (
-	targetFlag = &cli.StringSliceFlag{
-		Name:  "target",
-		Usage: "fuzzing-target",
+	engineFlag = &cli.StringSliceFlag{
+		Name:  "engine",
+		Usage: "fuzzing-engine",
+	}
+	forkFlag = &cli.StringFlag{
+		Name:  "fork",
+		Usage: "What fork to use (London, Merge, Byzantium, Shanghai, etc)",
+		Value: "Merge",
 	}
 	app = initApp()
 )
@@ -49,7 +54,8 @@ func initApp() *cli.App {
 		common.LocationFlag,
 		common.CountFlag,
 		common.TraceFlag,
-		targetFlag,
+		engineFlag,
+		forkFlag,
 	}
 	app.Action = generate
 	return app
@@ -75,7 +81,8 @@ type config struct {
 
 func generate(ctx *cli.Context) error {
 	var (
-		fork     = "London"
+		fNames   = ctx.StringSlice(engineFlag.Name)
+		fork     = ctx.String(forkFlag.Name)
 		prefix   = ""
 		count    = ctx.Int(common.CountFlag.Name)
 		location = ctx.String(common.LocationFlag.Name)
@@ -86,19 +93,34 @@ func generate(ctx *cli.Context) error {
 	if ctx.IsSet(common.PrefixFlag.Name) {
 		prefix = fmt.Sprintf("%v-", ctx.String(common.PrefixFlag.Name))
 	}
-	fNames := ctx.StringSlice(targetFlag.Name)
-	// At this point, we only do one at a time
 	if len(fNames) == 0 {
-		log.Error("At least one fuzzer target needed. ", "available", fuzzing.FactoryNames())
-		return errors.New("missing target")
+		fmt.Printf("At least one fuzzer engine needed. ")
+		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
+		return errors.New("missing engine")
 	}
-	if len(fNames) > 1 {
-		log.Info("Only one target supported\n")
-	}
-	factory := fuzzing.Factory(fNames[0], "London")
-	if factory == nil {
-		log.Error("Unknown target needed. ", "target", fNames[0], "available", fuzzing.FactoryNames())
-		return fmt.Errorf("unknown target %v", fNames[0])
+	var factory common.GeneratorFn
+	if len(fNames) == 1 {
+		factory = fuzzing.Factory(fNames[0], fork)
+		if factory == nil {
+			return fmt.Errorf("unknown target %v", fNames[0])
+		}
+	} else {
+		// Need to put together a meta-factory
+		var factories []common.GeneratorFn
+		for _, fName := range fNames {
+			if f := fuzzing.Factory(fName, fork); f == nil {
+				return fmt.Errorf("unknown target %v", fName)
+			} else {
+				factories = append(factories, f)
+			}
+			log.Info("Added factory", "name", fName)
+		}
+		index := 0
+		factory = func() *fuzzing.GstMaker {
+			fn := factories[index%len(factories)]
+			index++
+			return fn()
+		}
 	}
 	return createTests(&config{
 		fork:     fork,

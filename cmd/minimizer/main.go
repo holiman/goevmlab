@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
-	"github.com/holiman/goevmlab/ops"
 	"github.com/urfave/cli/v2"
 )
 
@@ -57,55 +55,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-type codeMutator struct {
-	current  []byte
-	lastGood []byte
-}
-
-// proceed tells the mutator to continue one mutation
-// returns 'true' is the mutator is exhausted
-func (m *codeMutator) proceed() bool {
-	m.lastGood = m.current
-	// Now mutate current
-	var next []byte
-	max := ops.InstructionCount(m.lastGood)
-	removed := 0
-	for removed == 0 {
-		cutPoint := rand.Intn(max)
-		next = make([]byte, 0)
-		it := ops.NewInstructionIterator(m.lastGood)
-		for it.Next() {
-			if removed == 0 && it.PC() > uint64(cutPoint) {
-				// Remove until the stack balances out
-				delta := 0
-				for {
-					removed += 1
-					delta += it.Op().Stackdelta()
-					if delta == 0 {
-						break
-					}
-					// Skip next one too
-					if !it.Next() {
-						break
-					}
-				}
-			}
-			next = append(next, byte(it.Op()))
-			if arg := it.Arg(); arg != nil {
-				next = append(next, arg...)
-			}
-		}
-	}
-	log.Info("Mutating code", "length", len(next), "previous", len(m.lastGood))
-	m.current = next
-	return len(next) == len(m.lastGood)
-}
-
-// undo tells the mutator to revert the last change
-func (m *codeMutator) undo() {
-	m.current = m.lastGood
 }
 
 func startFuzzer(c *cli.Context) error {
@@ -139,8 +88,12 @@ func startFuzzer(c *cli.Context) error {
 	if consensus, err := compareFn(testPath, c); err != nil {
 		return err
 	} else if consensus {
-		return errors.New("No consensus failure -- " +
-			"the input statetest needs to be a test which produces a difference")
+		msg := "No consensus failure -- the input statetest needs to be a test which produces a difference"
+		if !c.Bool(fullTraceFlag.Name) {
+			msg = "No consensus failure -- the input statetest needs to be a test which produces a difference.\n" +
+				"(Perhaps retry with --fulltTrace enabled?)"
+		}
+		return errors.New(msg)
 	}
 	var (
 		gst      fuzzing.GeneralStateTest
@@ -196,6 +149,40 @@ func startFuzzer(c *cli.Context) error {
 		log.Info("Restoring", "target", target)
 		gst[testname].Pre[target] = acc
 	}
+	// Try reducing code the naive way
+	for target, acc := range gst[testname].Pre {
+		if len(acc.Code) == 0 {
+			continue
+		}
+		log.Info("Reducing code #1", "target", target)
+		code := acc.Code
+		m := naiveCodeMutator{current: code, lastGood: code}
+		// Alright, we're in business
+		fails := 0
+		for {
+			if exhausted := m.proceed(); exhausted {
+				break
+			}
+			acc := gst[testname].Pre[target]
+			acc.Code = m.current
+			gst[testname].Pre[target] = acc
+			if !inConsensus() {
+				fails = 0
+				continue
+			} else {
+				log.Info("Restoring change")
+				fails++
+				m.undo()
+				// restore it
+				acc.Code = m.current
+				gst[testname].Pre[target] = acc
+				if fails > 5 {
+					break
+				}
+			}
+		}
+	}
+
 	// Try reducing code
 	for target, acc := range gst[testname].Pre {
 		if len(acc.Code) == 0 {

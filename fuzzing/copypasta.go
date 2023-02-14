@@ -130,7 +130,7 @@ type stIndex struct {
 type stEnv struct {
 	Coinbase     common.Address `json:"currentCoinbase"   gencodec:"required"`
 	Difficulty   *big.Int       `json:"currentDifficulty" gencodec:"optional"`
-	Random       *common.Hash   `json:"currentRandom"     gencodec:"optional"`
+	Random       *common.Hash   `json:"currentRandom,omitempty"     gencodec:"optional"`
 	GasLimit     uint64         `json:"currentGasLimit"   gencodec:"required"`
 	Number       uint64         `json:"currentNumber"     gencodec:"required"`
 	Timestamp    uint64         `json:"currentTimestamp"  gencodec:"required"`

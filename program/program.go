@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/goevmlab/ops"
+	"github.com/holiman/uint256"
 	"math/big"
 )
 
@@ -78,6 +79,10 @@ func (p *Program) Push(val interface{}) *Program {
 		p.pushBig(new(big.Int).SetUint64(uint64(v)))
 	case *big.Int:
 		p.pushBig(v)
+	case *uint256.Int:
+		p.pushBig(v.ToBig())
+	case uint256.Int:
+		p.pushBig(v.ToBig())
 	case common.Address:
 		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
 	case *common.Address:

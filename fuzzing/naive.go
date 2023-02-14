@@ -58,7 +58,7 @@ func randomBytecode() []byte {
 	p.Push(0xffff)
 	for {
 		op := ops.OpCode(next())
-		if !ops.IsDefined(op) {
+		if !ops.IsValid(op) {
 			continue
 		}
 		p.Op(op)

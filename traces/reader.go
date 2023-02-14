@@ -124,6 +124,11 @@ func (t *TraceLine) CallStack() []*callInfo {
 	return t.callStack
 }
 
+func (t *TraceLine) Source() string {
+	x, _ := json.Marshal(t.log)
+	return string(x)
+}
+
 func (t *TraceLine) Equals(other *TraceLine) bool {
 	if t.Op() != other.Op() ||
 		t.log.Pc != other.log.Pc ||
