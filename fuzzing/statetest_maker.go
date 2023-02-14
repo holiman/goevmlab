@@ -18,71 +18,19 @@ package fuzzing
 
 import (
 	"encoding/json"
-	"io"
-	"math/big"
-	"math/rand"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
-	"github.com/holiman/goevmlab/ops"
+	"io"
+	"math/big"
 	"os"
 )
 
 // The sender
 var sender = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
 var pKey = hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
-
-var randomAddresses = []common.Address{
-	// Some random accounts
-	common.HexToAddress("ffffffffffffffffffffffffffffffffffffffff"),
-	common.HexToAddress("1000000000000000000000000000000000000000"),
-	common.HexToAddress("b94f5374fce5edbc8e2a8697c15331677e6ebf0b"),
-	common.HexToAddress("c94f5374fce5edbc8e2a8697c15331677e6ebf0b"),
-	common.HexToAddress("d94f5374fce5edbc8e2a8697c15331677e6ebf0b"),
-}
-
-var precompiles = []common.Address{
-	// Some precompiles
-	common.HexToAddress("0000000000000000000000000000000000000001"),
-	common.HexToAddress("0000000000000000000000000000000000000002"),
-	common.HexToAddress("0000000000000000000000000000000000000003"),
-	common.HexToAddress("0000000000000000000000000000000000000004"),
-	common.HexToAddress("0000000000000000000000000000000000000005"),
-	common.HexToAddress("0000000000000000000000000000000000000006"),
-	common.HexToAddress("0000000000000000000000000000000000000007"),
-	common.HexToAddress("0000000000000000000000000000000000000008"),
-	common.HexToAddress("0000000000000000000000000000000000000005"),
-	common.HexToAddress("0000000000000000000000000000000000000006"),
-	common.HexToAddress("0000000000000000000000000000000000000007"),
-	common.HexToAddress("0000000000000000000000000000000000000008"),
-	common.HexToAddress("0000000000000000000000000000000000000009"),
-}
-
-var allAddresses []common.Address
-
-// We don't use all opcodes, only
-// - valid opcodes,
-// - not all push,
-//   - only push1, push2 and push20
-var usedOpCodes []ops.OpCode
-
-func init() {
-	allAddresses = append(allAddresses, randomAddresses...)
-	allAddresses = append(allAddresses, precompiles...)
-	usedOpCodes = ops.ValidOpcodes
-	for _, op := range ops.ValidOpcodes {
-		if op > ops.PUSH2 || op <= ops.PUSH19 {
-			continue
-		}
-		if op >= ops.PUSH21 || op <= ops.PUSH32 {
-			continue
-		}
-		usedOpCodes = append(usedOpCodes, op)
-	}
-}
 
 // GstMaker is a construct to generate General State Tests
 type GstMaker struct {
@@ -148,28 +96,6 @@ func (g *GstMaker) SetCode(address common.Address, code []byte) {
 func (g *GstMaker) SetResult(root, logs common.Hash) {
 	g.root = root
 	g.logs = logs
-}
-
-// randomFillGenesisAlloc fills the state with some random data
-// and returns a destination account which has code
-func (g *GstMaker) randomFillGenesisAlloc() *common.Address {
-	// Add at least one that we can invoke
-	nAccounts := 1 + rand.Intn(len(randomAddresses)-1)
-	var dest *common.Address
-	for i := 0; i < nAccounts; i++ {
-		code := RandCallBlake()
-		address := randomAddresses[i]
-		if dest == nil {
-			dest = &address
-		}
-		g.AddAccount(address, GenesisAccount{
-			Nonce:   uint64(rand.Intn(500)),
-			Balance: big.NewInt(int64(rand.Intn(500000))),
-			Code:    code,
-			Storage: make(map[common.Hash]common.Hash),
-		})
-	}
-	return dest
 }
 
 func (g *GstMaker) SetTx(tx *StTransaction) {
@@ -278,28 +204,4 @@ func AddTransaction(dest *common.Address, gst *GstMaker) {
 		PrivateKey: pKey,
 	}
 	gst.SetTx(tx)
-}
-
-// GenerateStateTest generates a random state tests
-func GenerateStateTest(name string) *GeneralStateTest {
-	gst := BasicStateTest("Istanbul")
-	// add some random accounts
-	dest := gst.randomFillGenesisAlloc()
-	// The transaction
-	{
-		tx := &StTransaction{
-			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
-			Nonce:      0,
-			Value:      []string{randHex(4)},
-			Data:       []string{randHex(100)},
-			GasPrice:   big.NewInt(0x10),
-			PrivateKey: pKey,
-		}
-		if dest != nil {
-			tx.To = dest.Hex()
-		}
-		gst.SetTx(tx)
-	}
-	return gst.ToGeneralStateTest(name)
 }

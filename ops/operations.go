@@ -138,9 +138,9 @@ const (
 	GAS      = OpCode(0x5A)
 	JUMPDEST = OpCode(0x5B)
 
-	RJUMP  = OpCode(0x5c) // Shanghai
-	RJUMPI = OpCode(0x5d) // Shanghai
-	RJUMPV = OpCode(0x5e) // Shanghai
+	RJUMP  = OpCode(0x5c) // Cancun
+	RJUMPI = OpCode(0x5d) // Cancun
+	RJUMPV = OpCode(0x5e) // Cancun
 	PUSH0  = OpCode(0x5f) // Shanghai
 )
 
@@ -263,6 +263,14 @@ func IsDefined(op OpCode) bool {
 	return ok
 }
 
+func IsValid(op OpCode) bool {
+	if op == RJUMP || op == RJUMPV || op == RJUMPI {
+		return false
+	}
+	_, ok := opCodeInfo[op]
+	return ok
+}
+
 // stringToOp is a mapping from strings to OpCode
 var stringToOp map[string]OpCode
 
@@ -273,7 +281,17 @@ func init() {
 	stringToOp = make(map[string]OpCode)
 
 	for k, elem := range opCodeInfo {
+
 		stringToOp[elem.name] = k
+		if k == RJUMP {
+			continue
+		}
+		if k == RJUMPV {
+			continue
+		}
+		if k == RJUMPI {
+			continue
+		}
 		ValidOpcodes = append(ValidOpcodes, k)
 	}
 

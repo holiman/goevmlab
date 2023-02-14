@@ -19,26 +19,15 @@ package fuzzing
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/holiman/goevmlab/evms"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 )
-
-func TestGenerator(t *testing.T) {
-	st := GenerateStateTest("randoTest")
-
-	_, err := json.MarshalIndent(st, "", " ")
-	if err != nil {
-		t.Fatal(err)
-	}
-}
 
 var binMu sync.Mutex
 
@@ -108,51 +97,4 @@ func testCompare(a, b evms.Evm, testfile string) error {
 		return fmt.Errorf("diffs encountered")
 	}
 	return nil
-}
-
-func TestFuzzing(t *testing.T) {
-	t.Skip("Test is machine-specific due to bundled binaries")
-
-	testFuzzing := func(t *testing.T) error {
-		setupBinaries(t)
-
-		testName := "some_rando_test"
-		fileName := fmt.Sprintf("%v.json", testName)
-		p := path.Join(os.TempDir(), fileName)
-		f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
-		if err != nil {
-			t.Fatal(err)
-		}
-		gst := GenerateStateTest(testName)
-		encoder := json.NewEncoder(f)
-		encoder.SetIndent("", " ")
-		if err = encoder.Encode(gst); err != nil {
-			f.Close()
-			t.Fatal(err)
-		}
-		f.Close()
-		geth := evms.NewGethEVM("../binaries/evm", "")
-		nethermind := evms.NewNethermindVM("../binaries/parity-evm", "")
-		return testCompare(geth, nethermind, p)
-	}
-
-	if err := testFuzzing(t); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func BenchmarkGeneratorWithMarshalling(b *testing.B) {
-	/*
-		With indent:
-		BenchmarkGeneratorWithMarshalling-6   	   30000	     38208 ns/op
-		Without indent:
-		BenchmarkGeneratorWithMarshalling-6   	   50000	     22710 ns/op
-	*/
-
-	for i := 0; i < b.N; i++ {
-		st := GenerateStateTest("randoTest")
-		if _, err := json.Marshal(st); err != nil {
-			b.Fatal(err)
-		}
-	}
 }
