@@ -1,3 +1,5 @@
+### Consensus error
+
 This is a consensus error affecting `nimbus-eth1`, and the `BYTE` operation. 
 
 ```
@@ -61,3 +63,7 @@ BYTE(0x80000000000000000000000000000001, 0x1f00000000000000000000000000000020000
  -> 0x1f (evmstate)
 ```
 
+
+### Fix 
+
+This was fixed in [#1464](https://github.com/status-im/nimbus-eth1/pull/1464)
