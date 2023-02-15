@@ -29,10 +29,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
 func main() {
@@ -64,8 +64,8 @@ func runit() error {
 		big.NewInt(0),   // value
 		big.NewInt(0),   // inoffset
 		big.NewInt(128), // insize
-		big.NewInt(0), // outoffset
-		big.NewInt(32), // outsize
+		big.NewInt(0),   // outoffset
+		big.NewInt(32),  // outsize
 	)
 	a.Op(ops.POP)
 	// Move the output (mem 0:32) into the stack
@@ -107,8 +107,6 @@ func runit() error {
 		State:       statedb,
 		GasLimit:    gas,
 		Difficulty:  big.NewInt(0x200000),
-		Time:        new(big.Int).SetUint64(0),
-		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(1),
 		ChainConfig: ruleset,
 		EVMConfig: vm.Config{

@@ -101,8 +101,6 @@ func runit() error {
 		State:       statedb,
 		GasLimit:    10000000,
 		Difficulty:  big.NewInt(0x200000),
-		Time:        new(big.Int).SetUint64(0),
-		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(1),
 		ChainConfig: &params.ChainConfig{
 			ChainID:             big.NewInt(1),

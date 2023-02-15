@@ -204,8 +204,6 @@ Fork: %v
 		State:       statedb,
 		GasLimit:    gas,
 		Difficulty:  big.NewInt(0x200000),
-		Time:        new(big.Int).SetUint64(0),
-		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(1),
 		ChainConfig: ruleset,
 		EVMConfig: vm.Config{
@@ -322,7 +320,7 @@ func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 	}
 }
 
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
+func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
 	fmt.Printf(`
 # Stats
 

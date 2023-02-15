@@ -231,8 +231,10 @@ const (
 
 // 0xb0 range
 const (
-	CALLF = OpCode(0xb0)
-	RETF  = OpCode(0xb1)
+	CALLF  = OpCode(0xb0)
+	RETF   = OpCode(0xb1)
+	TLOAD  = OpCode(0xb3)
+	TSTORE = OpCode(0xb4)
 )
 
 // 0xf0 range - closures.
@@ -290,6 +292,18 @@ func init() {
 			continue
 		}
 		if k == RJUMPI {
+			continue
+		}
+		if k == CALLF {
+			continue
+		}
+		if k == RETF {
+			continue
+		}
+		if k == TSTORE {
+			continue
+		}
+		if k == TLOAD {
 			continue
 		}
 		ValidOpcodes = append(ValidOpcodes, k)

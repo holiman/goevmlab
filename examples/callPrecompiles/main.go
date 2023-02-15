@@ -107,8 +107,6 @@ func runit() error {
 		State:       statedb,
 		GasLimit:    10000000,
 		Difficulty:  big.NewInt(0x200000),
-		Time:        new(big.Int).SetUint64(0),
-		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(1),
 		ChainConfig: &params.ChainConfig{
 			ChainID:             big.NewInt(1),
@@ -160,7 +158,7 @@ func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Ad
 	fmt.Printf("	to: %v\n", to.Hex())
 }
 
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
+func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
 	fmt.Printf("\nCaptureEnd\n")
 	fmt.Printf("Counter: %d\n", d.counter)
 }
