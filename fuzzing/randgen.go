@@ -19,13 +19,14 @@ package fuzzing
 import (
 	crand "crypto/rand"
 	"encoding/binary"
+	"math"
+	"math/big"
+	"math/rand"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"math"
-	"math/big"
-	"math/rand"
 )
 
 type memFunc func() (offset, size interface{})
