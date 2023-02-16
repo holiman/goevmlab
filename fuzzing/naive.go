@@ -1,8 +1,8 @@
 package fuzzing
 
 import (
+	"crypto/rand"
 	"math/big"
-	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/ops"
