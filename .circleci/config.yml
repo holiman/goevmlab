@@ -18,6 +18,7 @@ jobs:
       - run:
           name: "Lint"
           command: golangci-lint run
+          resource_class: large
       - run:
           name: "Test"
           command: go test -v ./...
@@ -27,7 +28,6 @@ jobs:
       - run:
           name: "Build all cmds"
           command: go build -v ./cmd/...
-
 workflows:
   version: 2
   goevmlab:
