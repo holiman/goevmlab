@@ -1,6 +1,7 @@
 package fuzzing
 
 import (
+	crand "crypto/rand"
 	"math/big"
 	"math/rand"
 
@@ -34,7 +35,7 @@ func randCallPrecompile() []byte {
 	// fill the memory
 	p := program.NewProgram()
 	data := make([]byte, 1024)
-	rand.Read(data)
+	_, _ = crand.Read(data)
 	p.Mstore(data, 0)
 	memInFn := func() (offset, size interface{}) {
 		offset, size = 0, rand.Uint32()%uint32(len(data))

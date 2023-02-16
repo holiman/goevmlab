@@ -17,7 +17,7 @@
 package fuzzing
 
 import (
-	crypto "crypto/rand"
+	crand "crypto/rand"
 	"math/big"
 	"math/rand"
 
@@ -107,7 +107,7 @@ func NewG1Add() []byte {
 func NewG1Mul() []byte {
 	a := NewG1Point()
 	mul := make([]byte, 32)
-	rand.Read(mul)
+	_, _ = crand.Read(mul)
 	return append(a, mul...)
 }
 
@@ -130,7 +130,7 @@ func NewG2Add() []byte {
 func NewG2Mul() []byte {
 	a := NewG2Point()
 	mul := make([]byte, 32)
-	rand.Read(mul)
+	_, _ = crand.Read(mul)
 	return append(a, mul...)
 }
 
@@ -209,7 +209,7 @@ func NewPairing() []byte {
 }
 
 func NewFieldElement() []byte {
-	ret, err := crypto.Int(reader, modulo)
+	ret, err := crand.Int(reader, modulo)
 	if err != nil {
 		panic(err)
 	}

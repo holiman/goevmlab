@@ -17,14 +17,14 @@
 package fuzzing
 
 import (
+	crand "crypto/rand"
 	"encoding/binary"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math"
 	"math/big"
 	"math/rand"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
 )
@@ -32,15 +32,11 @@ import (
 type memFunc func() (offset, size interface{})
 type valFunc func() interface{}
 
-func init() {
-	rand.Seed(time.Now().Unix())
-}
-
 // randHex produces some random hex data
 func randHex(maxSize int) string {
 	size := rand.Intn(maxSize)
 	b := make([]byte, size)
-	rand.Read(b)
+	_, _ = crand.Read(b)
 	return hexutil.Encode(b)
 }
 
@@ -50,7 +46,7 @@ func randHex(maxSize int) string {
 func randInt(chanceOfZero, chanceOfSmall byte) valFunc {
 	return func() interface{} {
 		b := make([]byte, 4)
-		rand.Read(b)
+		_, _ = crand.Read(b)
 		// Zero or not?
 		if b[0] < chanceOfZero {
 			return big.NewInt(0)
@@ -59,7 +55,7 @@ func randInt(chanceOfZero, chanceOfSmall byte) valFunc {
 			return (new(big.Int)).SetBytes(b[2:3])
 		}
 		val := make([]byte, 32)
-		rand.Read(val)
+		_, _ = crand.Read(val)
 		return (new(big.Int)).SetBytes(val)
 	}
 }
@@ -141,7 +137,7 @@ func randomBlakeArgs() []byte {
 	//params are
 	var rounds uint32
 	data := make([]byte, 214)
-	rand.Read(data)
+	_, _ = crand.Read(data)
 	// Now, modify the rounds, and the 'f'
 	// rounds should be below 1024 for the most part
 	rounds = uint32(math.Abs(1024 * rand.ExpFloat64()))
