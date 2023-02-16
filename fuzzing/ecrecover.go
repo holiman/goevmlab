@@ -53,7 +53,7 @@ func randCallECRecover() []byte {
 	rounds := rand.Int31n(10000)
 	for i := int32(0); i < rounds; i++ {
 		data := make([]byte, 128)
-		crand.Read(data)
+		_, _ = crand.Read(data)
 		p.Mstore(data, 0)
 		memInFn := func() (offset, size interface{}) {
 			offset, size = 0, 128

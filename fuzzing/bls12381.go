@@ -107,7 +107,7 @@ func NewG1Add() []byte {
 func NewG1Mul() []byte {
 	a := NewG1Point()
 	mul := make([]byte, 32)
-	crand.Read(mul)
+	_, _ = crand.Read(mul)
 	return append(a, mul...)
 }
 
@@ -130,7 +130,7 @@ func NewG2Add() []byte {
 func NewG2Mul() []byte {
 	a := NewG2Point()
 	mul := make([]byte, 32)
-	crand.Read(mul)
+	_, _ = crand.Read(mul)
 	return append(a, mul...)
 }
 

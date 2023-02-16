@@ -37,13 +37,13 @@ func fillNaive(gst *GstMaker) {
 // randomBytecode returns a pretty simplistic bytecode, 1024 ops.
 func randomBytecode() []byte {
 	b := make([]byte, 1024)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	i := 0
 	var next = func() byte {
 		x := b[i]
 		i++
 		if i >= len(b) {
-			rand.Read(b)
+			_, _ = rand.Read(b)
 			i = 0
 		}
 		return x

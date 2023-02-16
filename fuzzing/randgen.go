@@ -36,7 +36,7 @@ type valFunc func() interface{}
 func randHex(maxSize int) string {
 	size := rand.Intn(maxSize)
 	b := make([]byte, size)
-	crand.Read(b)
+	_, _ = crand.Read(b)
 	return hexutil.Encode(b)
 }
 
@@ -46,7 +46,7 @@ func randHex(maxSize int) string {
 func randInt(chanceOfZero, chanceOfSmall byte) valFunc {
 	return func() interface{} {
 		b := make([]byte, 4)
-		crand.Read(b)
+		_, _ = crand.Read(b)
 		// Zero or not?
 		if b[0] < chanceOfZero {
 			return big.NewInt(0)
@@ -55,7 +55,7 @@ func randInt(chanceOfZero, chanceOfSmall byte) valFunc {
 			return (new(big.Int)).SetBytes(b[2:3])
 		}
 		val := make([]byte, 32)
-		crand.Read(val)
+		_, _ = crand.Read(val)
 		return (new(big.Int)).SetBytes(val)
 	}
 }
@@ -137,7 +137,7 @@ func randomBlakeArgs() []byte {
 	//params are
 	var rounds uint32
 	data := make([]byte, 214)
-	crand.Read(data)
+	_, _ = crand.Read(data)
 	// Now, modify the rounds, and the 'f'
 	// rounds should be below 1024 for the most part
 	rounds = uint32(math.Abs(1024 * rand.ExpFloat64()))

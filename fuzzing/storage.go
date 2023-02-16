@@ -84,7 +84,7 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 			p.Op(ops.POP)
 		case r < 50: // 30% chance of well-formed opcode
 			b := make([]byte, 10)
-			crand.Read(b)
+			_, _ = crand.Read(b)
 			for i := 0; i < len(b); i++ {
 				if op := ops.OpCode(b[i]); ops.IsDefined(op) {
 					p.Op(op)
