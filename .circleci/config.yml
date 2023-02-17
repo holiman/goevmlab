@@ -17,7 +17,7 @@ jobs:
       - checkout
       - run:
           name: "Lint"
-          command: golangci-lint cache clean &&  golangci-lint run
+          command: golangci-lint run --timeout 120s
           resource_class: large
       - run:
           name: "Test"
