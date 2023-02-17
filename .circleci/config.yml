@@ -17,7 +17,7 @@ jobs:
       - checkout
       - run:
           name: "Lint"
-          command: golangci-lint run
+          command: GO111MODULE=off golangci-lint run
           resource_class: large
       - run:
           name: "Test"
