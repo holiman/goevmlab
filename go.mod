@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	github.com/ethereum/go-ethereum v1.11.0
-	github.com/gdamore/tcell/v2 v2.5.3
+	github.com/gdamore/tcell/v2 v2.5.4
 	github.com/golang/snappy v0.0.4
 	github.com/holiman/uint256 v1.2.1
-	github.com/rivo/tview v0.0.0-20221117065207-09f052e6ca98
+	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
 	github.com/urfave/cli/v2 v2.23.5
 	golang.org/x/crypto v0.3.0
 )
