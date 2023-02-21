@@ -52,12 +52,12 @@ if [[ -n "$besuvm" ]]; then
     echo "besu"
     cd ./cases
     for i in *.json; do
-        $besuvm --json --nomemory state-test $i \
+        $besuvm --json --nomemory --notime state-test $i \
           2>../traces/$i.besu.stderr.txt \
           1>../traces/$i.besu.stdout.txt
     done
     for i in *.json; do
-        $besuvm --nomemory state-test $i \
+        $besuvm --nomemory --notime state-test $i \
          2>../roots/$i.besu.stderr.txt \
          1>../roots/$i.besu.stdout.txt
     done

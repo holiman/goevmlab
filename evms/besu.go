@@ -55,9 +55,9 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (str
 		stdout io.ReadCloser
 	)
 	if speedTest {
-		cmd = exec.Command(evm.path, "--nomemory", "state-test", path)
+		cmd = exec.Command(evm.path, "--nomemory", "--notime", "state-test", path)
 	} else {
-		cmd = exec.Command(evm.path, "--nomemory", "--json",
+		cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json",
 			"state-test", path) // exclude memory
 	}
 	if stdout, err = cmd.StdoutPipe(); err != nil {
@@ -77,7 +77,7 @@ func (vm *BesuVM) Close() {}
 
 func (vm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	// Run without tracing
-	cmd := exec.Command(vm.path, "--nomemory", "state-test", path)
+	cmd := exec.Command(vm.path, "--nomemory", "--notime", "state-test", path)
 
 	data, err := cmd.CombinedOutput()
 	if err != nil {
