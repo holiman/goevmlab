@@ -167,3 +167,12 @@ func ValidOpcodesInFork(fork string) ([]OpCode, error) {
 func (f Fork) RandomOp(rnd byte) OpCode {
 	return f.ValidOpcodes[int(rnd)%len(f.ValidOpcodes)]
 }
+
+func LookupFork(fork string) *Fork {
+	for _, f := range forks {
+		if f.Name == fork {
+			return &f
+		}
+	}
+	return nil
+}

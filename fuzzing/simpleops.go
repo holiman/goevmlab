@@ -9,7 +9,7 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func fillSimple(gst *GstMaker) {
+func fillSimple(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateSimpleOpsProgram(),
@@ -29,7 +29,7 @@ func fillSimple(gst *GstMaker) {
 	})
 }
 
-func fillMemOps(gst *GstMaker) {
+func fillMemOps(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateMemoryInteractingOpsProgram(),
