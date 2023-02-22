@@ -56,7 +56,7 @@ func NewGstMaker() *GstMaker {
 			Timestamp:  0x03e8,
 			BaseFee:    big.NewInt(0x10),
 			// Keccak256([]byte{'0'}) see https://github.com/hyperledger/besu/issues/5122
-			PreviousHash: common.HexToHash("0x44852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d"),
+			PreviousHash: common.HexToHash("0x044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d"),
 		},
 		pre: &alloc,
 	}
