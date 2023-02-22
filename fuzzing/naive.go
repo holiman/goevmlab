@@ -54,18 +54,15 @@ func randomBytecode(f *ops.Fork) []byte {
 		return x
 	}
 	p := program.NewProgram()
-	p.Push(0)
-	p.Push(1)
-	p.Push(1)
-	p.Push(2)
-	p.Push(2)
-	p.Push(500)
-	p.Push(0xffff)
-	for {
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	for len(p.Bytecode()) < 1024 {
 		p.Op(f.RandomOp(next()))
-		if len(p.Bytecode()) > 1024 {
-			break
-		}
 	}
 	return p.Bytecode()
 }
