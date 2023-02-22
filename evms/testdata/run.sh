@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# evm="/home/user/go/src/github.com/ethereum/go-ethereum/cmd/evm/evm"
+# evm="/home/martin/workspace/evm"
 # nethtest="/home/martin/workspace/nethtest"
 # besuvm="/home/martin/workspace/besu-vm"
-# erigonvm="/home/user/go/src/github.com/ledgerwatch/erigon/build/bin/evm"
+# erigonvm="/home/martin/workspace/erigon-evm"
+# nimbus="/home/martin/workspace/evmstate"
 
 ### Geth
 
