@@ -1,0 +1,9 @@
+[
+  {
+    "name": "00000936-mixed-1",
+    "pass": false,
+    "stateRoot": "0xd14c10ed22a1cfb642e374be985ac581c39f3969bd59249e0405aca3beb47a47",
+    "fork": "Shanghai",
+    "error": "post state root mismatch: got d14c10ed22a1cfb642e374be985ac581c39f3969bd59249e0405aca3beb47a47, want 0000000000000000000000000000000000000000000000000000000000000000"
+  }
+]

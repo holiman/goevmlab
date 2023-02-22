@@ -9,5 +9,5 @@
 {"pc":17,"op":54,"gas":"0x79b4a4","gasCost":"0x2","memory":"0x","memSize":32,"stack":["0x0","0x1"],"returnStack":null,"returnData":"0x","depth":1,"refund":0,"opName":"CALLDATASIZE","error":""}
 {"pc":18,"op":145,"gas":"0x79b4a2","gasCost":"0x3","memory":"0x","memSize":32,"stack":["0x0","0x1","0x12"],"returnStack":null,"returnData":"0x","depth":1,"refund":0,"opName":"SWAP2","error":""}
 {"pc":19,"op":142,"gas":"0x79b49f","gasCost":"0x3","memory":"0x","memSize":32,"stack":["0x12","0x1","0x0"],"returnStack":null,"returnData":"0x","depth":1,"refund":0,"opName":"DUP15","error":"stack underflow (3 \u003c=\u003e 15)"}
-{"output":"","gasUsed":"0x79bee4","time":158112,"error":"stack underflow (3 \u003c=\u003e 15)"}
+{"output":"","gasUsed":"0x79bee4","error":"stack underflow (3 \u003c=\u003e 15)"}
 {"stateRoot": "0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4"}

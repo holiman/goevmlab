@@ -56,9 +56,9 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	)
 	if evm.cmd == nil {
 		if speedTest {
-			cmd = exec.Command(evm.path, "--nomemory", "state-test")
+			cmd = exec.Command(evm.path, "--nomemory", "--notime", "state-test")
 		} else {
-			cmd = exec.Command(evm.path, "--nomemory", "--json", "state-test")
+			cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test")
 		}
 		if stdout, err = cmd.StdoutPipe(); err != nil {
 			return cmd.String(), err
@@ -93,7 +93,7 @@ func (vm *BesuBatchVM) Close() {
 
 func (evm *BesuBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path, "--nomemory", "state-test")
+		evm.cmd = exec.Command(evm.path, "--nomemory", "--notime", "state-test")
 		// The stateroot is delivered on stdout
 		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
 			return "", evm.cmd.String(), err

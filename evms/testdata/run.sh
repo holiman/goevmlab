@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# evm="/home/user/go/src/github.com/ethereum/go-ethereum/cmd/evm/evm"
+# evm="/home/martin/workspace/evm"
 # nethtest="/home/martin/workspace/nethtest"
 # besuvm="/home/martin/workspace/besu-vm"
-# erigonvm="/home/user/go/src/github.com/ledgerwatch/erigon/build/bin/evm"
+# erigonvm="/home/martin/workspace/erigon-evm"
+# nimbus="/home/martin/workspace/evmstate"
 
 ### Geth
 
@@ -52,12 +53,12 @@ if [[ -n "$besuvm" ]]; then
     echo "besu"
     cd ./cases
     for i in *.json; do
-        $besuvm --json --nomemory state-test $i \
+        $besuvm --json --nomemory --notime state-test $i \
           2>../traces/$i.besu.stderr.txt \
           1>../traces/$i.besu.stdout.txt
     done
     for i in *.json; do
-        $besuvm --nomemory state-test $i \
+        $besuvm --nomemory --notime state-test $i \
          2>../roots/$i.besu.stderr.txt \
          1>../roots/$i.besu.stdout.txt
     done
