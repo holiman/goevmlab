@@ -33,11 +33,11 @@
 {"pc":12,"op":0,"gas":"0x12eb","gasCost":"0x0","memory":"0x","memSize":0,"stack":["0x0","0x0"],"returnStack":null,"returnData":"0x","depth":4,"refund":0,"opName":"STOP","error":""}
 {"pc":12,"op":80,"gas":"0x1339","gasCost":"0x2","memory":"0x","memSize":0,"stack":["0x1"],"returnStack":null,"returnData":"0x","depth":3,"refund":0,"opName":"POP","error":""}
 {"pc":13,"op":96,"gas":"0x1337","gasCost":"0x3","memory":"0x","memSize":0,"stack":[],"returnStack":null,"returnData":"0x","depth":3,"refund":0,"opName":"PUSH1","error":""}
-{"pc":15,"op":253,"gas":"0x1334","gasCost":"0x3","memory":"0x","memSize":0,"stack":["0x0"],"returnStack":null,"returnData":"0x","depth":3,"refund":0,"opName":"REVERT","error":"stack underflow (1 \u003c=\u003e 2)"}
+{"pc":15,"op":253,"gas":"0x1334","gasCost":"0x0","memory":"0x","memSize":0,"stack":["0x0"],"returnStack":null,"returnData":"0x","depth":3,"refund":0,"opName":"REVERT","error":"stack underflow (1 \u003c=\u003e 2)"}
 {"pc":19,"op":96,"gas":"0x79","gasCost":"0x3","memory":"0x","memSize":0,"stack":["0x0"],"returnStack":null,"returnData":"0x","depth":2,"refund":4800,"opName":"PUSH1","error":""}
 {"pc":21,"op":84,"gas":"0x76","gasCost":"0x834","memory":"0x","memSize":0,"stack":["0x0","0x3"],"returnStack":null,"returnData":"0x","depth":2,"refund":4800,"opName":"SLOAD","error":"out of gas"}
 {"pc":12,"op":80,"gas":"0xf4","gasCost":"0x2","memory":"0x","memSize":0,"stack":["0x0"],"returnStack":null,"returnData":"0x","depth":1,"refund":0,"opName":"POP","error":""}
 {"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memory":"0x","memSize":0,"stack":[],"returnStack":null,"returnData":"0x","depth":1,"refund":0,"opName":"PUSH1","error":""}
 {"pc":15,"op":84,"gas":"0xef","gasCost":"0x834","memory":"0x","memSize":0,"stack":["0x3"],"returnStack":null,"returnData":"0x","depth":1,"refund":0,"opName":"SLOAD","error":"out of gas"}
-{"output":"","gasUsed":"0x4757","time":305370,"error":"out of gas"}
+{"output":"","gasUsed":"0x4757","error":"out of gas"}
 {"stateRoot": "0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b"}
