@@ -1,1 +1,1 @@
-{"output":"","gasUsed":"0x99df","time":40141532,"Mgps":"0.981","test":"00003656-naivefuzz-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
+{"output":"","gasUsed":"0x99df","test":"00003656-naivefuzz-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
