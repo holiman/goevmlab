@@ -16,7 +16,10 @@
 
 package ops
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+)
 
 type Fork struct {
 	Name              string
@@ -123,8 +126,39 @@ var (
 			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
 			SELFDESTRUCT},
 	}
-
-	Forks = []Fork{
-		istanbul, berlin, london, merged, shanghai,
+	cancun = Fork{
+		Name:              "Cancun",
+		ActivePrecompiles: nil,
+		ValidOpcodes: []OpCode{
+			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
+			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
+			KECCAK256,
+			ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CALLDATACOPY, CODESIZE, CODECOPY, GASPRICE, EXTCODESIZE, EXTCODECOPY, RETURNDATASIZE, RETURNDATACOPY, EXTCODEHASH, BLOCKHASH,
+			COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE,
+			POP, MLOAD, MSTORE, MSTORE8, SLOAD, SSTORE, JUMP, JUMPI, PC, MSIZE, GAS, JUMPDEST,
+			RJUMPI, RJUMPV, RJUMP, // New for Cancun
+			PUSH0, PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16,
+			PUSH17, PUSH18, PUSH19, PUSH20, PUSH21, PUSH22, PUSH23, PUSH24, PUSH25, PUSH26, PUSH27, PUSH28, PUSH29, PUSH30, PUSH31, PUSH32,
+			DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16,
+			SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16,
+			LOG0, LOG1, LOG2, LOG3, LOG4,
+			CALLF, RETF, // New for Cancun
+			TLOAD, TSTORE, // New for Cancun
+			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
+			SELFDESTRUCT},
+	}
+	forks = []Fork{
+		istanbul, berlin, london, merged, shanghai, cancun,
 	}
 )
+
+// ValidOpcodesInFork returns the set of valid opcodes for the given fork, or
+// error if the fork is not defined.
+func ValidOpcodesInFork(fork string) ([]OpCode, error) {
+	for _, f := range forks {
+		if f.Name == fork {
+			return f.ValidOpcodes, nil
+		}
+	}
+	return nil, fmt.Errorf("fork %v not defined", fork)
+}
