@@ -162,3 +162,8 @@ func ValidOpcodesInFork(fork string) ([]OpCode, error) {
 	}
 	return nil, fmt.Errorf("fork %v not defined", fork)
 }
+
+// RandomOp returns a random (valid) opcode
+func (f Fork) RandomOp(rnd byte) OpCode {
+	return f.ValidOpcodes[int(rnd)%len(f.ValidOpcodes)]
+}
