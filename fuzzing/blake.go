@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func fillBlake(gst *GstMaker) {
+func fillBlake(gst *GstMaker, fork string) {
 	// Add a contract which calls blake
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{

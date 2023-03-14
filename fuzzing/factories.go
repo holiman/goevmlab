@@ -17,7 +17,7 @@
 package fuzzing
 
 // fillers is a mapping of names to functions that can fill a statetest.
-var fillers = map[string]func(*GstMaker){
+var fillers = map[string]func(*GstMaker, string){
 	"ecrecover":    fillEcRecover,
 	"naive":        fillNaive,
 	"blake":        fillBlake,
@@ -32,7 +32,7 @@ func Factory(name, fork string) func() *GstMaker {
 	if filler, ok := fillers[name]; ok {
 		return func() *GstMaker {
 			gst := BasicStateTest(fork)
-			filler(gst)
+			filler(gst, fork)
 			return gst
 		}
 	}

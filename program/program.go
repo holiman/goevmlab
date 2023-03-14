@@ -207,11 +207,11 @@ func (p *Program) Size() int {
 	return len(p.code)
 }
 
-// InputToMemory stores the input (calldata) to memory
+// InputToMemory stores the input (calldata) to memory as address (20 bytes).
 func (p *Program) InputAddressToStack(inputOffset uint32) {
 	p.Push(inputOffset)
 	p.Op(ops.CALLDATALOAD) // Loads [n -> n + 32] of input data to stack top
-	mask, ok := big.NewInt(0).SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	mask, ok := big.NewInt(0).SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	if !ok {
 		panic("whoa")
 	}

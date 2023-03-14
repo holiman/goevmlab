@@ -47,7 +47,7 @@ var precompilesBLS = []blsPrec{
 	{17, NewFP2toG2, 256}, // FP2 to G2
 }
 
-func fillBls(gst *GstMaker) {
+func fillBls(gst *GstMaker, fork string) {
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca110b15012381")
 	code := RandCallBLS()

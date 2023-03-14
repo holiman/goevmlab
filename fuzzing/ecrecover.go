@@ -26,7 +26,7 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func fillEcRecover(gst *GstMaker) {
+func fillEcRecover(gst *GstMaker, fork string) {
 	// Add a contract which calls BLS
 	dest := common.HexToAddress("0x00ca11ec5ec04e5")
 	gst.AddAccount(dest, GenesisAccount{

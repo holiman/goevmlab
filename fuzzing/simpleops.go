@@ -9,10 +9,14 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func fillSimple(gst *GstMaker) {
+func fillSimple(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
+	forkDef := ops.LookupFork(fork)
+	if forkDef == nil {
+		panic("bad fork")
+	}
 	gst.AddAccount(dest, GenesisAccount{
-		Code:    generateSimpleOpsProgram(),
+		Code:    generateSimpleOpsProgram(forkDef),
 		Balance: new(big.Int),
 		Storage: make(map[common.Hash]common.Hash),
 	})
@@ -29,7 +33,7 @@ func fillSimple(gst *GstMaker) {
 	})
 }
 
-func fillMemOps(gst *GstMaker) {
+func fillMemOps(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateMemoryInteractingOpsProgram(),
@@ -79,7 +83,7 @@ var operations = []ops.OpCode{
 
 // generateSimpleOpsProgram generates non-erroring programs with some degree
 // of interestingness on inputs for various arithmetic ops.
-func generateSimpleOpsProgram() []byte {
+func generateSimpleOpsProgram(forkDef *ops.Fork) []byte {
 
 	var p = program.NewProgram()
 	var stackdepth = 0

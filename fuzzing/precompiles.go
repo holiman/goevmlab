@@ -10,7 +10,7 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func fillPrecompileTest(gst *GstMaker) {
+func fillPrecompileTest(gst *GstMaker, fork string) {
 	// Add a contract which calls a precompile
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{

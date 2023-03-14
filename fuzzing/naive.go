@@ -9,14 +9,19 @@ import (
 	"github.com/holiman/goevmlab/program"
 )
 
-func fillNaive(gst *GstMaker) {
+func fillNaive(gst *GstMaker, fork string) {
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),
 	}
+	forkDef := ops.LookupFork(fork)
+	if forkDef == nil {
+		panic("bad fork")
+	}
+
 	for _, addr := range addrs {
 		gst.AddAccount(addr, GenesisAccount{
-			Code:    randomBytecode(),
+			Code:    randomBytecode(forkDef),
 			Balance: new(big.Int),
 			Storage: RandStorage(15, 20),
 		})
@@ -35,7 +40,7 @@ func fillNaive(gst *GstMaker) {
 }
 
 // randomBytecode returns a pretty simplistic bytecode, 1024 ops.
-func randomBytecode() []byte {
+func randomBytecode(f *ops.Fork) []byte {
 	b := make([]byte, 1024)
 	_, _ = rand.Read(b)
 	i := 0
@@ -49,22 +54,15 @@ func randomBytecode() []byte {
 		return x
 	}
 	p := program.NewProgram()
-	p.Push(0)
-	p.Push(1)
-	p.Push(1)
-	p.Push(2)
-	p.Push(2)
-	p.Push(500)
-	p.Push(0xffff)
-	for {
-		op := ops.OpCode(next())
-		if !ops.IsValid(op) {
-			continue
-		}
-		p.Op(op)
-		if len(p.Bytecode()) > 1024 {
-			break
-		}
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	p.Push(next())
+	for p.Size() < 1024 {
+		p.Op(f.RandomOp(next()))
 	}
 	return p.Bytecode()
 }

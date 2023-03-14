@@ -116,7 +116,7 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 			}
 			return p.Bytecode()
 		}
-		if len(p.Bytecode()) > 500 {
+		if p.Size() > 500 {
 			return p.Bytecode()
 		}
 	}

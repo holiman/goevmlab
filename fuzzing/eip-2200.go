@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func fillSstore(gst *GstMaker) {
+func fillSstore(gst *GstMaker, fork string) {
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),
