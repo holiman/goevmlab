@@ -83,7 +83,7 @@ var operations = []ops.OpCode{
 
 // generateSimpleOpsProgram generates non-erroring programs with some degree
 // of interestingness on inputs for various arithmetic ops.
-func generateSimpleOpsProgram(forkDef ops.Fork) []byte {
+func generateSimpleOpsProgram(forkDef *ops.Fork) []byte {
 
 	var p = program.NewProgram()
 	var stackdepth = 0

@@ -55,49 +55,42 @@ func TestSanity(t *testing.T) {
 				t.Errorf("name %v, got 0x%x expected 0x%x", name, geth, byte(i))
 			}
 		}
-		// Check stack pushes and pops
-		{
-			// This check can only be executed if the go-ethereum codebase
-			// is refactored a bit, to make the following public:
-			// - vm.LatestInstructionSet pointing to latest instruction set
-			// - vm.operation.MinStack
-			// - vm.operation.MaxStack
-			// Was tested on 2021-12-15, oll korrekt
-
-			/*
-				gotPops := len(ourOp.Pops())
-				geth_instr := vm.LatestInstructionset[gethOp]
-				if gotPops != geth_instr.MinStack {
-					t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, geth_instr.MinStack)
-				}
-				havePush := len(ourOp.Pushes())
-				wantPush := 1024 - geth_instr.MaxStack + geth_instr.MinStack
-				if havePush != wantPush {
-					t.Errorf("op %v push wrong, us: %d, geth: %d", ourOp.String(), havePush, wantPush)
-				}
-
-			*/
-		}
 	}
 }
 
-/*
-*
 // This check can only be executed if the go-ethereum codebase
-// is refactored a bit, to make the following public:
+// is refactored a bit, to make the following public.
+//
+//	func LookupInstructionSet(fork string) func() JumpTable
+//	func (op *operation) Stack() (int, int)
+//	func (op *operation) Valid() bool
+/*
 func TestForkOpcodes(t *testing.T) {
-	testForkOpcodes(t, "london", ValidLondonOpCodes)
-	testForkOpcodes(t, "merge", ValidMergeOpCodes)
+	testForkOpcodes(t, "Shanghai")
+	testForkOpcodes(t, "Merged")
+	testForkOpcodes(t, "London")
+	testForkOpcodes(t, "Berlin")
+	testForkOpcodes(t, "Istanbul")
 }
-func testForkOpcodes(t *testing.T, fork string, ourOps []OpCode) {
-	ctor := vm.LookupInstructionSet(fork)
-	jt := ctor()
+func testForkOpcodes(t *testing.T, fork string) {
+	var (
+		f  *Fork
+		jt vm.JumpTable
+	)
+	if f = LookupFork(fork); f == nil {
+		t.Fatalf("fork missing %v", fork)
+	}
+	if ctor := vm.LookupInstructionSet(fork); ctor == nil {
+		t.Fatalf("fork mising in geth: %v", fork)
+	} else {
+		jt = ctor()
+	}
 	for op, gethOp := range jt {
 		if !gethOp.Valid() {
 			continue
 		}
 		found := false
-		for _, ourOp := range ourOps {
+		for _, ourOp := range f.ValidOpcodes {
 			if int(ourOp) == op {
 				found = true
 			}
@@ -106,7 +99,7 @@ func testForkOpcodes(t *testing.T, fork string, ourOps []OpCode) {
 			t.Fatalf("missing operation %#x %v in fork %v", op, vm.OpCode(op), fork)
 		}
 	}
-	for _, ourOp := range ourOps {
+	for _, ourOp := range f.ValidOpcodes {
 		gethOp := vm.OpCode(ourOp)
 		{
 			exp, got := gethOp.String(), ourOp.String()
