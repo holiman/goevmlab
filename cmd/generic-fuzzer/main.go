@@ -100,5 +100,5 @@ func startFuzzer(ctx *cli.Context) error {
 			return fn()
 		}
 	}
-	return common.ExecuteFuzzer(ctx, factory, "mixed")
+	return common.GenerateAndExecute(ctx, factory, "mixed")
 }

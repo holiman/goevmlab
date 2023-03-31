@@ -305,14 +305,32 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 	return slowTest != 0, nil
 }
 
+type TestProviderFn func(index, threadId int) (string, error)
+
+func testFnFromGenerator(fn GeneratorFn, name, location string) TestProviderFn {
+	return func(index, threadId int) (string, error) {
+		gstMaker := fn()
+		testName := fmt.Sprintf("%08d-%v-%d", index, name, threadId)
+		test := gstMaker.ToGeneralStateTest(testName)
+		return storeTest(location, test, testName)
+	}
+}
+
 type GeneratorFn func() *fuzzing.GstMaker
 
-func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
+func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) error {
+	var (
+		location = c.String(LocationFlag.Name)
+	)
+	fn := testFnFromGenerator(generatorFn, name, location)
+	return ExecuteFuzzer(c, fn)
+}
+
+func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn) error {
 
 	var (
 		vms        = initVMs(c)
 		numThreads = c.Int(ThreadFlag.Name)
-		location   = c.String(LocationFlag.Name)
 		skipTrace  = c.Bool(SkipTraceFlag.Name)
 	)
 	if len(vms) == 0 {
@@ -320,7 +338,6 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	}
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
-		name:        name,
 		abort:       int64(0),
 		testCh:      make(chan string, 10), // channel where we'll deliver tests
 		removeCh:    make(chan string, 10), // channel for cleanup-taksks
@@ -329,7 +346,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		vms:         vms,
 	}
 	// Routines to deliver tests
-	meta.startTestFactories((numThreads+1)/2, generatorFn, location)
+	meta.startTestFactories((numThreads+1)/2, providerFn)
 	meta.startTestExecutors((numThreads+1)/2, skipTrace)
 	// One goroutine to spit out some statistics
 	ctx, cancel := context.WithCancel(context.Background())
@@ -454,7 +471,6 @@ func Copy(src, dst string) error {
 }
 
 type testMeta struct {
-	name        string
 	abort       int64
 	testCh      chan string
 	removeCh    chan string
@@ -467,7 +483,7 @@ type testMeta struct {
 
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
 // the paths on the testCh.
-func (meta *testMeta) startTestFactories(numFactories int, generatorFn GeneratorFn, location string) {
+func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProviderFn) {
 	factories := int64(numFactories)
 	meta.wg.Add(numFactories)
 	factory := func(threadId int) {
@@ -480,10 +496,7 @@ func (meta *testMeta) startTestFactories(numFactories int, generatorFn Generator
 			meta.wg.Done()
 		}()
 		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
-			gstMaker := generatorFn()
-			testName := fmt.Sprintf("%08d-%v-%d", i, meta.name, threadId)
-			test := gstMaker.ToGeneralStateTest(testName)
-			if fileName, err := storeTest(location, test, testName); err != nil {
+			if fileName, err := providerFn(i, threadId); err != nil {
 				log.Error("Error storing test", "err", err)
 				break
 			} else {
