@@ -107,8 +107,8 @@ func (vm *GethEVM) Close() {
 func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	buf := make([]byte, 4*1024*1024)
-	scanner.Buffer(buf, cap(buf))
+	// Start with 1MB buffer, allow up to 32 MB
+	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
 
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
