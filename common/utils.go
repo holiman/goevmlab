@@ -189,18 +189,16 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 	return true, nil
 }
 
-// RunTests runs all tests in paths, on all clients.
+// RunTests runs a test on all clients.
 // Return values are :
 // - true, nil: no consensus issue
 // - true, err: test execution failed
 // - false, err: a consensus issue found
 // - false, nil: a consensus issue found
-func RunTests(paths []string, c *cli.Context) (bool, error) {
+func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	var (
-		vms        = initVMs(c)
-		outputs    []*os.File
-		lastReport time.Time
-		start      = time.Now()
+		vms     = initVMs(c)
+		outputs []*os.File
 	)
 	if len(vms) < 1 {
 		return true, fmt.Errorf("No vms specified!")
@@ -213,44 +211,37 @@ func RunTests(paths []string, c *cli.Context) (bool, error) {
 		}
 		outputs = append(outputs, out)
 	}
-	for i, path := range paths {
-		if time.Since(lastReport) > 8*time.Second {
-			log.Info("Processing tests", "count", i, "remaining", len(paths)-i, "elapsed", time.Since(start), "current", path)
-			lastReport = time.Now()
-		}
-		// Zero out the output files and reset offset
-		for _, f := range outputs {
-			_ = f.Truncate(0)
-			_, _ = f.Seek(0, 0)
-		}
-		// Kick off the binaries
-		var wg sync.WaitGroup
-		wg.Add(len(vms))
-		var commands = make([]string, len(vms))
-		for i, vm := range vms {
-			go func(evm evms.Evm, i int) {
-				defer wg.Done()
-				t0 := time.Now()
-				cmd, err := evm.RunStateTest(path, outputs[i], false)
-				commands[i] = cmd
-				if err != nil {
-					log.Error("Error running test", "err", err)
-					return
-				}
-				log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
-			}(vm, i)
-		}
-		wg.Wait()
-		// Seek to beginning
-		var readers []io.Reader
-		for _, f := range outputs {
-			_, _ = f.Seek(0, 0)
-			readers = append(readers, f)
-		}
-		// Compare outputs
-		if eq, _ := evms.CompareFiles(vms, readers); eq {
-			continue
-		}
+	// Zero out the output files and reset offset
+	for _, f := range outputs {
+		_ = f.Truncate(0)
+		_, _ = f.Seek(0, 0)
+	}
+	// Kick off the binaries
+	var wg sync.WaitGroup
+	wg.Add(len(vms))
+	var commands = make([]string, len(vms))
+	for i, vm := range vms {
+		go func(evm evms.Evm, i int) {
+			defer wg.Done()
+			t0 := time.Now()
+			cmd, err := evm.RunStateTest(path, outputs[i], false)
+			commands[i] = cmd
+			if err != nil {
+				log.Error("Error running test", "err", err)
+				return
+			}
+			log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
+		}(vm, i)
+	}
+	wg.Wait()
+	// Seek to beginning
+	var readers []io.Reader
+	for _, f := range outputs {
+		_, _ = f.Seek(0, 0)
+		readers = append(readers, f)
+	}
+	// Compare outputs
+	if eq, _ := evms.CompareFiles(vms, readers); !eq {
 		out := new(strings.Builder)
 		fmt.Fprintf(out, "Consensus error\n")
 		fmt.Fprintf(out, "Testcase: %v\n", path)
@@ -260,12 +251,11 @@ func RunTests(paths []string, c *cli.Context) (bool, error) {
 		}
 		fmt.Println(out)
 		return false, fmt.Errorf("Consensus error")
-
 	}
 	for _, f := range outputs {
 		f.Close()
 	}
-	log.Info("Execution done", "count", len(paths))
+	log.Info("Execution done")
 	return true, nil
 }
 
@@ -323,10 +313,10 @@ func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) er
 		location = c.String(LocationFlag.Name)
 	)
 	fn := testFnFromGenerator(generatorFn, name, location)
-	return ExecuteFuzzer(c, fn)
+	return ExecuteFuzzer(c, fn, true)
 }
 
-func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn) error {
+func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool) error {
 
 	var (
 		vms        = initVMs(c)
@@ -397,6 +387,9 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn) error {
 	go func() {
 		defer meta.wg.Done()
 		for path := range meta.removeCh {
+			if !cleanupFiles {
+				continue
+			}
 			if err := os.Remove(path); err != nil {
 				log.Error("Error deleting file", "file", path, "err", err)
 			}

@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
+	"sync/atomic"
 )
 
 var app = initApp()
@@ -51,22 +51,6 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
-	// start the parallel fuzzer if --parallel is set
-	if c.IsSet(common.ThreadFlag.Name) {
-		return startParallelFuzzer(c)
-	}
-	if c.NArg() != 1 {
-		return fmt.Errorf("file (or regexp) needed")
-	}
-	files, err := filepath.Glob(c.Args().First())
-	if err != nil {
-		return err
-	}
-	_, err = common.RunTests(files, c)
-	return err
-}
-
-func startParallelFuzzer(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return fmt.Errorf("file (or regexp) needed")
 	}
@@ -75,13 +59,11 @@ func startParallelFuzzer(c *cli.Context) error {
 		return err
 	}
 	var nextFile atomic.Int64
-	testProvider := func(index, threadId int) (string, error) {
-		old := nextFile.Add(1) - 1
-		if int(old) < len(files) {
-			return files[old], nil
+	return common.ExecuteFuzzer(c, func(_, _ int) (string, error) {
+		index := int(nextFile.Add(1)) - 1
+		if index < len(files) {
+			return files[index], nil
 		}
 		return "", errors.New("done")
-	}
-
-	return common.ExecuteFuzzer(c, testProvider)
+	}, false)
 }

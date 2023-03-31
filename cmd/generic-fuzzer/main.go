@@ -36,7 +36,7 @@ var (
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",
 		Usage: "What fork to use (London, Merge, Byzantium, Shanghai, etc)",
-		Value: "Merge",
+		Value: "Merged",
 	}
 	app = initApp()
 )

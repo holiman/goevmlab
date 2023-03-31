@@ -78,7 +78,7 @@ func startFuzzer(c *cli.Context) error {
 	}
 	if c.Bool(fullTraceFlag.Name) {
 		compareFn = func(path string, c *cli.Context) (bool, error) {
-			agree, err := common.RunTests([]string{path}, c)
+			agree, err := common.RunSingleTest(path, c)
 			if !agree {
 				return false, nil
 			}
