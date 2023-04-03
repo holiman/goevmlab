@@ -329,6 +329,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
 		abort:       int64(0),
+		errCh:       make(chan error, 10),  // Error channel
 		testCh:      make(chan string, 10), // channel where we'll deliver tests
 		removeCh:    make(chan string, 10), // channel for cleanup-taksks
 		consensusCh: make(chan string, 10), // channel for signalling consensus errors
@@ -415,6 +416,8 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 	case <-sigs:
 	case path := <-meta.consensusCh:
 		log.Info("Possible consensus error", "file", path)
+	case err := <-meta.errCh:
+		log.Warn("Enocuntered error", "err", err)
 	}
 	log.Info("Waiting for processes to exit")
 	atomic.StoreInt64(&meta.abort, 1)
@@ -465,6 +468,7 @@ func Copy(src, dst string) error {
 
 type testMeta struct {
 	abort       int64
+	errCh       chan error
 	testCh      chan string
 	removeCh    chan string
 	consensusCh chan string
@@ -491,6 +495,7 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
 			if fileName, err := providerFn(i, threadId); err != nil {
 				log.Error("Error storing test", "err", err)
+				meta.errCh <- err
 				break
 			} else {
 				meta.testCh <- fileName
