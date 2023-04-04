@@ -197,7 +197,6 @@ Fork: %v
 		BlockNumber: new(big.Int).SetUint64(1),
 		ChainConfig: ruleset,
 		EVMConfig: vm.Config{
-			Debug:  true,
 			Tracer: tracer,
 		},
 	}

@@ -3,9 +3,9 @@ module github.com/holiman/goevmlab
 go 1.19
 
 require (
-	github.com/ethereum/go-ethereum v1.11.5
+	github.com/ethereum/go-ethereum v1.11.6-0.20230404163452-2adce0b06640
 	github.com/gdamore/tcell/v2 v2.6.0
-	github.com/golang/snappy v0.0.4
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb
 	github.com/holiman/uint256 v1.2.2
 	github.com/rivo/tview v0.0.0-20230330183452-5796b0cd5c1f
 	github.com/urfave/cli/v2 v2.25.1

@@ -19,6 +19,7 @@ package ops
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type Fork struct {
@@ -87,7 +88,7 @@ var (
 			SELFDESTRUCT},
 	}
 	merged = Fork{
-		Name:              "Merged",
+		Name:              "Merge",
 		ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
@@ -175,4 +176,80 @@ func LookupFork(fork string) *Fork {
 		}
 	}
 	return nil
+}
+
+func LookupRules(fork string) params.Rules {
+
+	switch fork {
+	case "Istanbul":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+		}
+	case "Berlin":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+		}
+	case "London":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+		}
+
+	case "Merge":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+			IsMerge:          true,
+		}
+	case "Shanghai":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+			IsMerge:          true,
+			IsShanghai:       true,
+		}
+	default:
+		panic(fmt.Sprintf("Unsupported: %v", fork))
+
+	}
+
 }

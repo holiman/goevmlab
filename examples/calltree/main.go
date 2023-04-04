@@ -130,7 +130,6 @@ func runit() error {
 	var vmConf vm.Config
 	if false {
 		vmConf = vm.Config{
-			Debug:  true,
 			Tracer: &dumbTracer{},
 		}
 	}

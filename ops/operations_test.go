@@ -64,10 +64,10 @@ func TestSanity(t *testing.T) {
 //	func LookupInstructionSet(fork string) func() JumpTable
 //	func (op *operation) Stack() (int, int)
 //	func (op *operation) Valid() bool
-/*
+
 func TestForkOpcodes(t *testing.T) {
 	testForkOpcodes(t, "Shanghai")
-	testForkOpcodes(t, "Merged")
+	testForkOpcodes(t, "Merge")
 	testForkOpcodes(t, "London")
 	testForkOpcodes(t, "Berlin")
 	testForkOpcodes(t, "Istanbul")
@@ -80,13 +80,15 @@ func testForkOpcodes(t *testing.T, fork string) {
 	if f = LookupFork(fork); f == nil {
 		t.Fatalf("fork missing %v", fork)
 	}
-	if ctor := vm.LookupInstructionSet(fork); ctor == nil {
-		t.Fatalf("fork mising in geth: %v", fork)
+	rules := LookupRules(fork)
+
+	if _jt, err := vm.LookupInstructionSet(rules); err != nil {
+		t.Fatalf("error lookup up jumptable in geth: %v", err)
 	} else {
-		jt = ctor()
+		jt = _jt
 	}
 	for op, gethOp := range jt {
-		if !gethOp.Valid() {
+		if !gethOp.HasCost() {
 			continue
 		}
 		found := false
@@ -121,4 +123,3 @@ func testForkOpcodes(t *testing.T, fork string) {
 		}
 	}
 }
-*/
