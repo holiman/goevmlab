@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+	"math/big"
 )
 
 type Fork struct {
@@ -251,5 +252,53 @@ func LookupRules(fork string) params.Rules {
 		panic(fmt.Sprintf("Unsupported: %v", fork))
 
 	}
+}
 
+// LookupChainConfig returns the params.ChainConfig for a given fork.
+func LookupChainConfig(fork string) (*params.ChainConfig, error) {
+
+	cpy := func(src *params.ChainConfig, mod func(p *params.ChainConfig)) *params.ChainConfig {
+		dst := *src
+		v2 := &dst
+		mod(v2)
+		return v2
+	}
+
+	var frontier = &params.ChainConfig{ChainID: big.NewInt(1)}
+	var homestead = cpy(frontier, func(p *params.ChainConfig) { p.HomesteadBlock = big.NewInt(0) })
+	var eip150 = cpy(homestead, func(p *params.ChainConfig) { p.EIP150Block = big.NewInt(0) })
+	var eip158 = cpy(eip150, func(p *params.ChainConfig) { p.EIP158Block, p.EIP155Block = big.NewInt(0), big.NewInt(0) })
+	var byzantium = cpy(eip158, func(p *params.ChainConfig) { p.ByzantiumBlock = big.NewInt(0) })
+	var constantinople = cpy(byzantium, func(p *params.ChainConfig) { p.ConstantinopleBlock = big.NewInt(0) })
+	var constantinopleFix = cpy(constantinople, func(p *params.ChainConfig) { p.PetersburgBlock = big.NewInt(0) })
+	var istanbul = cpy(constantinopleFix, func(p *params.ChainConfig) { p.IstanbulBlock = big.NewInt(0) })
+	var berlin = cpy(istanbul, func(p *params.ChainConfig) { p.BerlinBlock = big.NewInt(0) })
+	var london = cpy(berlin, func(p *params.ChainConfig) { p.LondonBlock = big.NewInt(0) })
+	var merge = cpy(london, func(p *params.ChainConfig) { p.MergeNetsplitBlock = big.NewInt(0) })
+
+	switch fork {
+	case "Frontier":
+		return frontier, nil
+	case "Homestead":
+		return homestead, nil
+	case "EIP150":
+		return eip150, nil
+	case "EIP158":
+		return eip158, nil
+	case "Byzantium":
+		return byzantium, nil
+	case "Constantinople":
+		return constantinople, nil
+	case "ConstantinopleFix":
+		return constantinopleFix, nil
+	case "Istanbul":
+		return istanbul, nil
+	case "Berlin":
+		return berlin, nil
+	case "London":
+		return london, nil
+	case "Merge":
+		return merge, nil
+	}
+	return nil, fmt.Errorf("unknown fork %v", fork)
 }

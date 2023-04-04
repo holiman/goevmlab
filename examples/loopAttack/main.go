@@ -22,7 +22,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -116,13 +115,9 @@ func evaluate(ctx *cli.Context) error {
 		// The attacker code
 		attackerAddr = common.HexToAddress("0x31337")
 	)
-	ruleset, ok := common2.Forks[fork]
-	if !ok {
-		var valid []string
-		for n := range common2.Forks {
-			valid = append(valid, n)
-		}
-		return fmt.Errorf("fork '%v' not defined. Valid values are %v", fork, strings.Join(valid, ","))
+	ruleset, err := ops.LookupChainConfig(fork)
+	if err != nil {
+		return err
 	}
 	if pusher > 255 {
 		return fmt.Errorf("pusher %d is not a byte opcode", pusher)
@@ -205,7 +200,7 @@ Fork: %v
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	t0 := time.Now()
-	_, _, err := runtime.Call(attackerAddr, nil, &runtimeConfig)
+	_, _, err = runtime.Call(attackerAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 
 	fmt.Printf("\nExecution time: %v\n", t1)
