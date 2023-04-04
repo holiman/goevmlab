@@ -114,7 +114,6 @@ func runit() error {
 			IstanbulBlock:       new(big.Int),
 		},
 		EVMConfig: vm.Config{
-			Debug:  true,
 			Tracer: &common2.PrintingTracer{},
 		},
 	}

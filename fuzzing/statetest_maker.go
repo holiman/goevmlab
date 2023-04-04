@@ -168,7 +168,6 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	subtest := test.Subtests()[0]
 	cfg := vm.Config{}
 	if traceOutput != nil {
-		cfg.Debug = true
 		cfg.Tracer = logger.NewJSONLogger(&logger.Config{}, traceOutput)
 	}
 	_, statedb, root, err := test.RunNoVerify(subtest, cfg, false)

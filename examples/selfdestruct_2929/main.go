@@ -177,7 +177,6 @@ func runit() error {
 			BerlinBlock:         new(big.Int),
 		},
 		EVMConfig: vm.Config{
-			Debug:  true,
 			Tracer: logger.NewMarkdownLogger(nil, os.Stdout),
 		},
 	}
