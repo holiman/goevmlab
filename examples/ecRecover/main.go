@@ -98,9 +98,9 @@ func runit() error {
 		gas  = uint64(10_000_000)
 		fork = "London"
 	)
-	ruleset, ok := common2.Forks[fork]
-	if !ok {
-		panic("whoa")
+	ruleset, err := ops.LookupChainConfig(fork)
+	if err != nil {
+		panic(err)
 	}
 	runtimeConfig := runtime.Config{
 		Origin:      sender,
@@ -115,7 +115,7 @@ func runit() error {
 	}
 	// Diagnose it
 	t0 := time.Now()
-	_, _, err := runtime.Call(aAddr, nil, &runtimeConfig)
+	_, _, err = runtime.Call(aAddr, nil, &runtimeConfig)
 	t1 := time.Since(t0)
 	fmt.Printf("\nExecution time: %v\n", t1)
 	if err != nil {
