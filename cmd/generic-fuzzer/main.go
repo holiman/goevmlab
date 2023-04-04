@@ -36,7 +36,7 @@ var (
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",
 		Usage: "What fork to use (London, Merge, Byzantium, Shanghai, etc)",
-		Value: "Merge",
+		Value: "Merged",
 	}
 	app = initApp()
 )
@@ -100,5 +100,5 @@ func startFuzzer(ctx *cli.Context) error {
 			return fn()
 		}
 	}
-	return common.ExecuteFuzzer(ctx, factory, "mixed")
+	return common.GenerateAndExecute(ctx, factory, "mixed")
 }

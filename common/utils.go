@@ -189,18 +189,16 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 	return true, nil
 }
 
-// RunTests runs all tests in paths, on all clients.
+// RunTests runs a test on all clients.
 // Return values are :
 // - true, nil: no consensus issue
 // - true, err: test execution failed
 // - false, err: a consensus issue found
 // - false, nil: a consensus issue found
-func RunTests(paths []string, c *cli.Context) (bool, error) {
+func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	var (
-		vms        = initVMs(c)
-		outputs    []*os.File
-		lastReport time.Time
-		start      = time.Now()
+		vms     = initVMs(c)
+		outputs []*os.File
 	)
 	if len(vms) < 1 {
 		return true, fmt.Errorf("No vms specified!")
@@ -213,44 +211,37 @@ func RunTests(paths []string, c *cli.Context) (bool, error) {
 		}
 		outputs = append(outputs, out)
 	}
-	for i, path := range paths {
-		if time.Since(lastReport) > 8*time.Second {
-			log.Info("Processing tests", "count", i, "remaining", len(paths)-i, "elapsed", time.Since(start), "current", path)
-			lastReport = time.Now()
-		}
-		// Zero out the output files and reset offset
-		for _, f := range outputs {
-			_ = f.Truncate(0)
-			_, _ = f.Seek(0, 0)
-		}
-		// Kick off the binaries
-		var wg sync.WaitGroup
-		wg.Add(len(vms))
-		var commands = make([]string, len(vms))
-		for i, vm := range vms {
-			go func(evm evms.Evm, i int) {
-				defer wg.Done()
-				t0 := time.Now()
-				cmd, err := evm.RunStateTest(path, outputs[i], false)
-				commands[i] = cmd
-				if err != nil {
-					log.Error("Error running test", "err", err)
-					return
-				}
-				log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
-			}(vm, i)
-		}
-		wg.Wait()
-		// Seek to beginning
-		var readers []io.Reader
-		for _, f := range outputs {
-			_, _ = f.Seek(0, 0)
-			readers = append(readers, f)
-		}
-		// Compare outputs
-		if eq, _ := evms.CompareFiles(vms, readers); eq {
-			continue
-		}
+	// Zero out the output files and reset offset
+	for _, f := range outputs {
+		_ = f.Truncate(0)
+		_, _ = f.Seek(0, 0)
+	}
+	// Kick off the binaries
+	var wg sync.WaitGroup
+	wg.Add(len(vms))
+	var commands = make([]string, len(vms))
+	for i, vm := range vms {
+		go func(evm evms.Evm, i int) {
+			defer wg.Done()
+			t0 := time.Now()
+			cmd, err := evm.RunStateTest(path, outputs[i], false)
+			commands[i] = cmd
+			if err != nil {
+				log.Error("Error running test", "err", err)
+				return
+			}
+			log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
+		}(vm, i)
+	}
+	wg.Wait()
+	// Seek to beginning
+	var readers []io.Reader
+	for _, f := range outputs {
+		_, _ = f.Seek(0, 0)
+		readers = append(readers, f)
+	}
+	// Compare outputs
+	if eq, _ := evms.CompareFiles(vms, readers); !eq {
 		out := new(strings.Builder)
 		fmt.Fprintf(out, "Consensus error\n")
 		fmt.Fprintf(out, "Testcase: %v\n", path)
@@ -260,12 +251,11 @@ func RunTests(paths []string, c *cli.Context) (bool, error) {
 		}
 		fmt.Println(out)
 		return false, fmt.Errorf("Consensus error")
-
 	}
 	for _, f := range outputs {
 		f.Close()
 	}
-	log.Info("Execution done", "count", len(paths))
+	log.Info("Execution done")
 	return true, nil
 }
 
@@ -305,14 +295,32 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 	return slowTest != 0, nil
 }
 
+type TestProviderFn func(index, threadId int) (string, error)
+
+func testFnFromGenerator(fn GeneratorFn, name, location string) TestProviderFn {
+	return func(index, threadId int) (string, error) {
+		gstMaker := fn()
+		testName := fmt.Sprintf("%08d-%v-%d", index, name, threadId)
+		test := gstMaker.ToGeneralStateTest(testName)
+		return storeTest(location, test, testName)
+	}
+}
+
 type GeneratorFn func() *fuzzing.GstMaker
 
-func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
+func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) error {
+	var (
+		location = c.String(LocationFlag.Name)
+	)
+	fn := testFnFromGenerator(generatorFn, name, location)
+	return ExecuteFuzzer(c, fn, true)
+}
+
+func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool) error {
 
 	var (
 		vms        = initVMs(c)
 		numThreads = c.Int(ThreadFlag.Name)
-		location   = c.String(LocationFlag.Name)
 		skipTrace  = c.Bool(SkipTraceFlag.Name)
 	)
 	if len(vms) == 0 {
@@ -320,8 +328,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	}
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
-		name:        name,
 		abort:       int64(0),
+		errCh:       make(chan error, 10),  // Error channel
 		testCh:      make(chan string, 10), // channel where we'll deliver tests
 		removeCh:    make(chan string, 10), // channel for cleanup-taksks
 		consensusCh: make(chan string, 10), // channel for signalling consensus errors
@@ -329,7 +337,7 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 		vms:         vms,
 	}
 	// Routines to deliver tests
-	meta.startTestFactories((numThreads+1)/2, generatorFn, location)
+	meta.startTestFactories((numThreads+1)/2, providerFn)
 	meta.startTestExecutors((numThreads+1)/2, skipTrace)
 	// One goroutine to spit out some statistics
 	ctx, cancel := context.WithCancel(context.Background())
@@ -380,6 +388,9 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	go func() {
 		defer meta.wg.Done()
 		for path := range meta.removeCh {
+			if !cleanupFiles {
+				continue
+			}
 			if err := os.Remove(path); err != nil {
 				log.Error("Error deleting file", "file", path, "err", err)
 			}
@@ -405,6 +416,8 @@ func ExecuteFuzzer(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	case <-sigs:
 	case path := <-meta.consensusCh:
 		log.Info("Possible consensus error", "file", path)
+	case err := <-meta.errCh:
+		log.Warn("Enocuntered error", "err", err)
 	}
 	log.Info("Waiting for processes to exit")
 	atomic.StoreInt64(&meta.abort, 1)
@@ -454,8 +467,8 @@ func Copy(src, dst string) error {
 }
 
 type testMeta struct {
-	name        string
 	abort       int64
+	errCh       chan error
 	testCh      chan string
 	removeCh    chan string
 	consensusCh chan string
@@ -467,7 +480,7 @@ type testMeta struct {
 
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
 // the paths on the testCh.
-func (meta *testMeta) startTestFactories(numFactories int, generatorFn GeneratorFn, location string) {
+func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProviderFn) {
 	factories := int64(numFactories)
 	meta.wg.Add(numFactories)
 	factory := func(threadId int) {
@@ -480,11 +493,9 @@ func (meta *testMeta) startTestFactories(numFactories int, generatorFn Generator
 			meta.wg.Done()
 		}()
 		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
-			gstMaker := generatorFn()
-			testName := fmt.Sprintf("%08d-%v-%d", i, meta.name, threadId)
-			test := gstMaker.ToGeneralStateTest(testName)
-			if fileName, err := storeTest(location, test, testName); err != nil {
+			if fileName, err := providerFn(i, threadId); err != nil {
 				log.Error("Error storing test", "err", err)
+				meta.errCh <- err
 				break
 			} else {
 				meta.testCh <- fileName

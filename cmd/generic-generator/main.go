@@ -38,8 +38,8 @@ var (
 	}
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",
-		Usage: "What fork to use (London, Merge, Byzantium, Shanghai, etc)",
-		Value: "Merge",
+		Usage: "What fork to use (London, Merged, Byzantium, Shanghai, etc)",
+		Value: "Merged",
 	}
 	app = initApp()
 )

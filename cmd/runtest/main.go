@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
+	"sync/atomic"
 )
 
 var app = initApp()
@@ -35,6 +37,7 @@ func initApp() *cli.App {
 	app.Usage = "Executes one test against several vms"
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags, common.SkipTraceFlag)
+	app.Flags = append(app.Flags, common.ThreadFlag)
 	app.Action = startFuzzer
 	return app
 }
@@ -55,6 +58,12 @@ func startFuzzer(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = common.RunTests(files, c)
-	return err
+	var nextFile atomic.Int64
+	return common.ExecuteFuzzer(c, func(_, _ int) (string, error) {
+		index := int(nextFile.Add(1)) - 1
+		if index < len(files) {
+			return files[index], nil
+		}
+		return "", errors.New("done")
+	}, false)
 }
