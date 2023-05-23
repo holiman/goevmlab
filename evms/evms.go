@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sync"
 )
 
 // The Evm interface represents external EVM implementations, which can
@@ -45,7 +46,7 @@ type Evm interface {
 	// This method may deliver the same instance each time, but it may also
 	// deliver e.g. a unique version which has preallocated buffers. Such an instance
 	// is not concurrency-safe, but is fine to deliver in this method.
-	Instance() Evm
+	Instance(threadId int) Evm
 }
 
 type stateRoot struct {
@@ -91,4 +92,11 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 		}
 	}
 	return true, count
+}
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		// A 5Mb buffer
+		return make([]byte, 5*1024*1025)
+	},
 }

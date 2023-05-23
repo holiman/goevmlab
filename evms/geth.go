@@ -37,8 +37,6 @@ type GethEVM struct {
 
 	// Some metrics
 	stats *VmStat
-	// Scanner buffer. If left as nil, a temporary buffer will be used.
-	buffer []byte
 }
 
 func NewGethEVM(path string, name string) *GethEVM {
@@ -49,7 +47,7 @@ func NewGethEVM(path string, name string) *GethEVM {
 	}
 }
 
-func (evm *GethEVM) Instance() Evm {
+func (evm *GethEVM) Instance(int) Evm {
 	return evm
 }
 
@@ -130,14 +128,11 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 // copyUntilEnd reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	if evm.buffer == nil {
-		scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
-	} else {
-		scanner.Buffer(evm.buffer, 32*1024*1024)
-	}
+	scanner.Buffer(buf, 32*1024*1024)
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712

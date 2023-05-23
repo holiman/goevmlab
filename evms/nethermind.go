@@ -46,7 +46,7 @@ func NewNethermindVM(path, name string) *NethermindVM {
 	}
 }
 
-func (evm *NethermindVM) Instance() Evm {
+func (evm *NethermindVM) Instance(int) Evm {
 	return evm
 }
 
@@ -118,10 +118,12 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
+	scanner.Buffer(buf, 32*1024*1024)
+
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem logger.StructLog

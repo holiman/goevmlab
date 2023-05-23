@@ -39,6 +39,19 @@ func NewNethermindBatchVM(path, name string) *NethermindBatchVM {
 	}
 }
 
+func (evm *NethermindBatchVM) Instance(threadId int) Evm {
+	return &NethermindBatchVM{
+		NethermindVM: NethermindVM{
+			path:  evm.path,
+			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			stats: evm.stats,
+		},
+		cmd:    nil,
+		stdout: nil,
+		stdin:  nil,
+	}
+}
+
 func (evm *NethermindBatchVM) Name() string {
 	return fmt.Sprintf("nethbatch-%v", evm.name)
 }

@@ -45,7 +45,7 @@ func NewErigonVM(path, name string) *ErigonVM {
 	}
 }
 
-func (evm *ErigonVM) Instance() Evm {
+func (evm *ErigonVM) Instance(int) Evm {
 	return evm
 }
 

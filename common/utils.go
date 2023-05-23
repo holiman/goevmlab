@@ -569,7 +569,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 		}
 		vms := make([]evms.Evm, len(meta.vms))
 		for i, vm := range meta.vms {
-			vms[i] = vm.Instance()
+			vms[i] = vm.Instance(threadId)
 		}
 		for file := range meta.testCh {
 			if meta.abort.Load() {

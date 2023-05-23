@@ -47,7 +47,7 @@ func NewBesuVM(path, name string) *BesuVM {
 	}
 }
 
-func (evm *BesuVM) Instance() Evm {
+func (evm *BesuVM) Instance(int) Evm {
 	return evm
 }
 
@@ -127,10 +127,11 @@ type besuStateRoot struct {
 }
 
 func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
+	scanner.Buffer(buf, 32*1024*1024)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem logger.StructLog

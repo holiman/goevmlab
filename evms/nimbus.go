@@ -46,7 +46,7 @@ func NewNimbusEVM(path string, name string) *NimbusEVM {
 	}
 }
 
-func (evm *NimbusEVM) Instance() Evm {
+func (evm *NimbusEVM) Instance(int) Evm {
 	return evm
 }
 

@@ -45,8 +45,17 @@ func NewBesuBatchVM(path, name string) *BesuBatchVM {
 	}
 }
 
-func (evm *BesuBatchVM) Instance() Evm {
-	return evm
+func (evm *BesuBatchVM) Instance(threadId int) Evm {
+	return &BesuBatchVM{
+		BesuVM: BesuVM{
+			path:  evm.path,
+			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			stats: evm.stats,
+		},
+		cmd:    nil,
+		stdout: nil,
+		stdin:  nil,
+	}
 }
 
 func (evm *BesuBatchVM) Name() string {

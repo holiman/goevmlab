@@ -35,17 +35,16 @@ type GethBatchVM struct {
 
 func NewGethBatchVM(path, name string) *GethBatchVM {
 	return &GethBatchVM{
-		GethEVM: GethEVM{path, name, &VmStat{}, nil},
+		GethEVM: GethEVM{path, name, &VmStat{}},
 	}
 }
 
-func (evm *GethBatchVM) Instance() Evm {
+func (evm *GethBatchVM) Instance(threadId int) Evm {
 	return &GethBatchVM{
 		GethEVM: GethEVM{
-			path:   evm.path,
-			name:   fmt.Sprintf("%v-alt", evm.name),
-			stats:  evm.GethEVM.stats,
-			buffer: make([]byte, 5*1024*1024),
+			path:  evm.path,
+			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			stats: evm.GethEVM.stats,
 		},
 		cmd:    nil,
 		stdout: nil,
