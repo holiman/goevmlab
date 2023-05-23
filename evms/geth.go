@@ -81,7 +81,7 @@ func (evm *GethEVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -94,10 +94,10 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) *tr
 		cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -109,8 +109,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) *tr
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      cmd.String(),
-		Err:      err,
-	}
+	}, err
 }
 
 func (vm *GethEVM) Close() {

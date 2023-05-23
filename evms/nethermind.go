@@ -77,7 +77,7 @@ func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -88,10 +88,10 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		cmd = exec.Command(evm.path, "--trace", "-m", "--neverTrace", "--input", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -101,9 +101,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	return &tracingResult{
 		Slow:     slow,
 		ExecTime: duration,
-		Cmd:      cmd.String(),
-		Err:      err,
-	}
+		Cmd:      cmd.String()}, nil
 }
 
 func (vm *NethermindVM) Close() {

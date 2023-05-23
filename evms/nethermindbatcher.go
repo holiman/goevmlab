@@ -44,7 +44,7 @@ func (evm *NethermindBatchVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		err    error
@@ -57,13 +57,13 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 			cmd = exec.Command(evm.path, "-x", "--trace", "-m", "--neverTrace")
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -79,8 +79,7 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      evm.cmd.String(),
-		Err:      err,
-	}
+	}, nil
 }
 
 func (vm *NethermindBatchVM) Close() {

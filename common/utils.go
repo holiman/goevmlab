@@ -233,10 +233,10 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	for i, vm := range vms {
 		go func(evm evms.Evm, i int) {
 			defer wg.Done()
-			res := evm.RunStateTest(path, outputs[i], false)
+			res, err := evm.RunStateTest(path, outputs[i], false)
 			commands[i] = res.Cmd
-			if res.Err != nil {
-				log.Error("Error running test", "err", res.Err)
+			if err != nil {
+				log.Error("Error running test", "err", err)
 				return
 			}
 			log.Debug("Test done", "evm", evm.Name(), "time", res.ExecTime)
@@ -288,9 +288,9 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 	for _, vm := range vms {
 		go func(evm evms.Evm) {
 			defer wg.Done()
-			res := evm.RunStateTest(path, noopWriter{}, true)
-			if res.Err != nil {
-				log.Error("Error starting vm", "vm", evm.Name(), "err", res.Err)
+			res, err := evm.RunStateTest(path, noopWriter{}, true)
+			if err != nil {
+				log.Error("Error starting vm", "vm", evm.Name(), "err", err)
 				return
 			}
 			if elapsed := res.ExecTime; elapsed > 2*time.Second {
@@ -584,10 +584,10 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			for i, vm := range meta.vms {
 				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
-					res := evm.RunStateTest(file, outputs[i], false)
+					res, err := evm.RunStateTest(file, outputs[i], false)
 					commands[i] = res.Cmd
-					if res.Err != nil {
-						log.Error("Error starting vm", "err", res.Err, "command", res.Cmd)
+					if err != nil {
+						log.Error("Error starting vm", "err", err, "command", res.Cmd)
 						return
 					}
 					if res.Slow {

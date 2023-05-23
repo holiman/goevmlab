@@ -44,7 +44,7 @@ func (evm *GethBatchVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		err    error
@@ -59,13 +59,13 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 			cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest")
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -79,11 +79,10 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	// release resources, handle error but ignore non-zero exit codes
 	duration, slow := evm.stats.TraceDone(t0)
 	return &tracingResult{
-		Slow:     slow,
-		ExecTime: duration,
-		Cmd:      cmd.String(),
-		Err:      err,
-	}
+			Slow:     slow,
+			ExecTime: duration,
+			Cmd:      cmd.String()},
+		nil
 }
 
 func (vm *GethBatchVM) Close() {

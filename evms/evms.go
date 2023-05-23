@@ -28,7 +28,7 @@ import (
 type Evm interface {
 	// RunStateTest runs the statetest on the underlying EVM, and writes
 	// the output to the given writer
-	RunStateTest(path string, writer io.Writer, skipTrace bool) *tracingResult
+	RunStateTest(path string, writer io.Writer, skipTrace bool) (*tracingResult, error)
 	// GetStateRoot runs the test and returns the stateroot
 	GetStateRoot(path string) (root, command string, err error)
 	// ParseStateRoot reads the stateroot from the combined output.

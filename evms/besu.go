@@ -52,7 +52,7 @@ func (evm *BesuVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		stdout io.ReadCloser
@@ -65,10 +65,10 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) *tra
 		cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test", path) // exclude memory
 	}
 	if stdout, err = cmd.StdoutPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stdout)
@@ -77,11 +77,10 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) *tra
 	duration, slow := evm.stats.TraceDone(t0)
 
 	return &tracingResult{
-		Slow:     slow,
-		ExecTime: duration,
-		Cmd:      cmd.String(),
-		Err:      err,
-	}
+			Slow:     slow,
+			ExecTime: duration,
+			Cmd:      cmd.String()},
+		err
 }
 
 func (vm *BesuVM) Close() {}

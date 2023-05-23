@@ -79,7 +79,7 @@ func (evm *ErigonVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -90,10 +90,10 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) *t
 		cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String(), Err: err}
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -101,11 +101,10 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) *t
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
 	return &tracingResult{
-		Slow:     slow,
-		ExecTime: duration,
-		Cmd:      cmd.String(),
-		Err:      err,
-	}
+			Slow:     slow,
+			ExecTime: duration,
+			Cmd:      cmd.String()},
+		err
 }
 
 func (vm *ErigonVM) Close() {

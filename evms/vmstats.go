@@ -33,5 +33,4 @@ type tracingResult struct {
 	Slow     bool
 	ExecTime time.Duration
 	Cmd      string
-	Err      error
 }

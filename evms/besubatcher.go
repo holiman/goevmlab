@@ -50,7 +50,7 @@ func (evm *BesuBatchVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) *tracingResult {
+func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
 		t0     = time.Now()
 		err    error
@@ -65,13 +65,13 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 			cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test")
 		}
 		if stdout, err = cmd.StdoutPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String(), Err: err}
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -87,8 +87,7 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      evm.cmd.String(),
-		Err:      err,
-	}
+	}, nil
 }
 
 func (vm *BesuBatchVM) Close() {
