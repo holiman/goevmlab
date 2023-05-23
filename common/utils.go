@@ -40,6 +40,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
+	"github.com/holiman/goevmlab/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -116,8 +117,8 @@ var (
 		ErigonFlag,
 		NimbusFlag,
 	}
-	traceLengthMA = NewMovingAverage(100)
-	traceLengthSA = NewSlidingAverage()
+	traceLengthMA = utils.NewMovingAverage(100)
+	traceLengthSA = utils.NewSlidingAverage()
 )
 
 func initVMs(c *cli.Context) []evms.Evm {
@@ -232,14 +233,13 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	for i, vm := range vms {
 		go func(evm evms.Evm, i int) {
 			defer wg.Done()
-			t0 := time.Now()
-			cmd, err := evm.RunStateTest(path, outputs[i], false)
-			commands[i] = cmd
+			res, err := evm.RunStateTest(path, outputs[i], false)
+			commands[i] = res.Cmd
 			if err != nil {
 				log.Error("Error running test", "err", err)
 				return
 			}
-			log.Debug("Test done", "evm", evm.Name(), "time", time.Since(t0))
+			log.Debug("Test done", "evm", evm.Name(), "time", res.ExecTime)
 		}(vm, i)
 	}
 	wg.Wait()
@@ -288,14 +288,13 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 	for _, vm := range vms {
 		go func(evm evms.Evm) {
 			defer wg.Done()
-			t0 := time.Now()
-			cmd, err := evm.RunStateTest(path, noopWriter{}, true)
+			res, err := evm.RunStateTest(path, noopWriter{}, true)
 			if err != nil {
 				log.Error("Error starting vm", "vm", evm.Name(), "err", err)
 				return
 			}
-			if elapsed := time.Since(t0); elapsed > 2*time.Second {
-				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", cmd)
+			if elapsed := res.ExecTime; elapsed > 2*time.Second {
+				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", res.Cmd)
 				atomic.StoreUint32(&slowTest, 1)
 			}
 		}(vm)
@@ -357,11 +356,13 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 			tStart    = time.Now()
 			ticker    = time.NewTicker(8 * time.Second)
 			testCount = uint64(0)
+			ticks     = 0
 		)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
+				ticks++
 				n := atomic.LoadUint64(&meta.numTests)
 				testsSinceLastUpdate := n - testCount
 				testCount = n
@@ -385,7 +386,17 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 					"steps-SMA", fmt.Sprintf("%.01f", traceLengthSA.Avg()),
 					"global", globalCount,
 				)
-
+				for _, vm := range vms {
+					log.Info(fmt.Sprintf("Stats %v", vm.Name()), vm.Stats()...)
+				}
+				switch ticks {
+				case 5:
+					// Decrease stats-reporting after 40s
+					ticker.Reset(time.Minute)
+				case 65:
+					// Decrease stats-reporting after one hour
+					ticker.Reset(time.Hour)
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -573,16 +584,15 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			for i, vm := range meta.vms {
 				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
-					t0 := time.Now()
-					cmd, err := evm.RunStateTest(file, outputs[i], false)
-					commands[i] = cmd
+					res, err := evm.RunStateTest(file, outputs[i], false)
+					commands[i] = res.Cmd
 					if err != nil {
-						log.Error("Error starting vm", "err", err, "command", cmd)
+						log.Error("Error starting vm", "err", err, "command", res.Cmd)
 						return
 					}
-					if execTime := time.Since(t0); execTime > 20*time.Second {
+					if res.Slow {
 						// Flag test as slow
-						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd)
+						log.Warn("Slow test found", "evm", evm.Name(), "cmd", res.Cmd, "time", res.ExecTime)
 						atomic.StoreUint32(&slowTest, 1)
 					}
 				}(vm, i)

@@ -21,6 +21,7 @@ import (
 	"io"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 // BesuBatchVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
@@ -31,6 +32,8 @@ type BesuBatchVM struct {
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
 	mu     sync.Mutex
+	// Some metrics
+	stats *VmStat
 }
 
 func NewBesuBatchVM(path, name string) *BesuBatchVM {
@@ -47,8 +50,9 @@ func (evm *BesuBatchVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
+		t0     = time.Now()
 		err    error
 		cmd    *exec.Cmd
 		stdout io.ReadCloser
@@ -61,13 +65,13 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 			cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test")
 		}
 		if stdout, err = cmd.StdoutPipe(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return cmd.String(), err
+			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -78,8 +82,12 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
-	// release resources, handle error but ignore non-zero exit codes
-	return evm.cmd.String(), nil
+	duration, slow := evm.stats.TraceDone(t0)
+	return &tracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      evm.cmd.String(),
+	}, nil
 }
 
 func (vm *BesuBatchVM) Close() {

@@ -21,23 +21,28 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
+	"time"
+
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // NethermindVM is s Evm-interface wrapper around the `nethtest` binary, based on Nethermind.
 type NethermindVM struct {
 	path string
 	name string
+	// Some metrics
+	stats *VmStat
 }
 
 func NewNethermindVM(path, name string) *NethermindVM {
 	return &NethermindVM{
-		path: path,
-		name: name,
+		path:  path,
+		name:  name,
+		stats: &VmStat{},
 	}
 }
 
@@ -72,26 +77,31 @@ func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
+		t0     = time.Now()
 		stderr io.ReadCloser
 		err    error
+		cmd    = exec.Command(evm.path, "--trace", "-m", "--input", path)
 	)
-	cmd := exec.Command(evm.path, "--trace", "-m", "--input", path)
 	if speedTest {
 		cmd = exec.Command(evm.path, "--trace", "-m", "--neverTrace", "--input", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// release resources, handle error but ignore non-zero exit codes
 	_ = cmd.Wait()
-	return cmd.String(), nil
+	duration, slow := evm.stats.TraceDone(t0)
+	return &tracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      cmd.String()}, nil
 }
 
 func (vm *NethermindVM) Close() {
@@ -155,4 +165,8 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
 	return stateRoot
+}
+
+func (evm *NethermindVM) Stats() []any {
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
 }

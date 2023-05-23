@@ -22,18 +22,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
 type BesuVM struct {
 	path string
 	name string // in case multiple instances are used
+	// Some metrics
+	stats *VmStat
 }
 
 func NewBesuVM(path, name string) *BesuVM {
@@ -48,29 +52,35 @@ func (evm *BesuVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (string, error) {
+func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
+		t0     = time.Now()
+		stdout io.ReadCloser
 		err    error
 		cmd    *exec.Cmd
-		stdout io.ReadCloser
 	)
 	if speedTest {
 		cmd = exec.Command(evm.path, "--nomemory", "--notime", "state-test", path)
 	} else {
-		cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json",
-			"state-test", path) // exclude memory
+		cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test", path) // exclude memory
 	}
 	if stdout, err = cmd.StdoutPipe(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return cmd.String(), err
+		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stdout)
-	// release resources, handle error but ignore non-zero exit codes
-	_ = cmd.Wait()
-	return cmd.String(), nil
+	err = cmd.Wait()
+	// release resources
+	duration, slow := evm.stats.TraceDone(t0)
+
+	return &tracingResult{
+			Slow:     slow,
+			ExecTime: duration,
+			Cmd:      cmd.String()},
+		err
 }
 
 func (vm *BesuVM) Close() {}
@@ -161,4 +171,8 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
 	return stateRoot
+}
+
+func (evm *BesuVM) Stats() []any {
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
 }
