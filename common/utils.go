@@ -118,7 +118,6 @@ var (
 		ErigonFlag,
 		NimbusFlag,
 	}
-	traceLengthMA = utils.NewMovingAverage(100)
 	traceLengthSA = utils.NewSlidingAverage()
 )
 
@@ -339,7 +338,6 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 	}
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
-		abort:       int64(0),
 		errCh:       make(chan error, 10),  // Error channel
 		testCh:      make(chan string, 10), // channel where we'll deliver tests
 		removeCh:    make(chan string, 10), // channel for cleanup-taksks
@@ -385,8 +383,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 					"tests", n,
 					"time", common.PrettyDuration(timeSpent),
 					"test/s", fmt.Sprintf("%.01f", float64(uint64(time.Second)*n)/float64(timeSpent)),
-					"steps-WMA", fmt.Sprintf("%.01f", traceLengthMA.Avg()),
-					"steps-SMA", fmt.Sprintf("%.01f", traceLengthSA.Avg()),
+					"avg steps", fmt.Sprintf("%.01f", traceLengthSA.Avg()),
 					"global", globalCount,
 				)
 				for _, vm := range vms {
@@ -443,7 +440,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 		log.Warn("Enocuntered error", "err", err)
 	}
 	log.Info("Waiting for processes to exit")
-	atomic.StoreInt64(&meta.abort, 1)
+	meta.abort.Store(true)
 	cancel()
 	meta.wg.Wait()
 	return nil
@@ -490,7 +487,7 @@ func Copy(src, dst string) error {
 }
 
 type testMeta struct {
-	abort       int64
+	abort       atomic.Bool
 	errCh       chan error
 	testCh      chan string
 	removeCh    chan string
@@ -515,7 +512,7 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 			}
 			meta.wg.Done()
 		}()
-		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
+		for i := 0; !meta.abort.Load(); i++ {
 			if fileName, err := providerFn(i, threadId); err != nil {
 				log.Error("Error storing test", "err", err)
 				meta.errCh <- err
@@ -570,8 +567,12 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				outputs = append(outputs, out)
 			}
 		}
+		vms := make([]evms.Evm, len(meta.vms))
+		for i, vm := range meta.vms {
+			vms[i] = vm.Instance()
+		}
 		for file := range meta.testCh {
-			if atomic.LoadInt64(&meta.abort) == 1 {
+			if meta.abort.Load() {
 				// Continue to drain the testch
 				continue
 			}
@@ -583,8 +584,8 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			var slowTest uint32
 			// Kick off the binaries, which runs the test on all the vms in parallel
 			var vmWg sync.WaitGroup
-			vmWg.Add(len(meta.vms))
-			for i, vm := range meta.vms {
+			vmWg.Add(len(vms))
+			for i, vm := range vms {
 				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
 					bufout := bufio.NewWriter(outputs[i])
@@ -614,7 +615,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			atomic.AddUint64(&meta.numTests, 1)
 			// Compare outputs
 			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
-				atomic.StoreInt64(&meta.abort, 1)
+				meta.abort.Store(true)
 
 				out := new(strings.Builder)
 				fmt.Fprintf(out, "Consensus error\n")
@@ -630,7 +631,6 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			} else {
 				meta.removeCh <- file // flag for removal
 				traceLengthSA.Add(len)
-				traceLengthMA.Add(len)
 			}
 		}
 	}
@@ -660,10 +660,10 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 		}()
 		atomic.AddInt64(&executors, 1)
 		log.Info("Fuzzing thread started", "id", threadId)
-		// Open/create outputs for writing
+
 		for file := range meta.testCh {
-			if atomic.LoadInt64(&meta.abort) == 1 {
-				// Continue to drain the testch
+			if meta.abort.Load() {
+				// Continue looping until testch is drained
 				continue
 			}
 			// Zero out the output files and reset offset
@@ -704,7 +704,7 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 					continue
 				}
 				// Consensus error
-				atomic.StoreInt64(&meta.abort, 1)
+				meta.abort.Store(true)
 				consensusError = true
 				break
 			}

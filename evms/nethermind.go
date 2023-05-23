@@ -46,6 +46,10 @@ func NewNethermindVM(path, name string) *NethermindVM {
 	}
 }
 
+func (evm *NethermindVM) Instance() Evm {
+	return evm
+}
+
 func (evm *NethermindVM) Name() string {
 	return fmt.Sprintf("nethermind-%v", evm.name)
 }
@@ -168,5 +172,5 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 }
 
 func (evm *NethermindVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()), "longest", evm.stats.longestTracingTime}
 }

@@ -45,6 +45,10 @@ func NewErigonVM(path, name string) *ErigonVM {
 	}
 }
 
+func (evm *ErigonVM) Instance() Evm {
+	return evm
+}
+
 func (evm *ErigonVM) Name() string {
 	return fmt.Sprintf("erigon-%v", evm.name)
 }
@@ -159,5 +163,5 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *ErigonVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()), "longest", evm.stats.longestTracingTime}
 }

@@ -46,6 +46,10 @@ func NewNimbusEVM(path string, name string) *NimbusEVM {
 	}
 }
 
+func (evm *NimbusEVM) Instance() Evm {
+	return evm
+}
+
 func (evm *NimbusEVM) Name() string {
 	return fmt.Sprintf("nimb-%v", evm.name)
 }
@@ -157,5 +161,5 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *NimbusEVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()), "longest", evm.stats.longestTracingTime}
 }

@@ -45,6 +45,10 @@ func NewBesuBatchVM(path, name string) *BesuBatchVM {
 	}
 }
 
+func (evm *BesuBatchVM) Instance() Evm {
+	return evm
+}
+
 func (evm *BesuBatchVM) Name() string {
 	return fmt.Sprintf("besubatch-%v", evm.name)
 }

@@ -37,6 +37,8 @@ type GethEVM struct {
 
 	// Some metrics
 	stats *VmStat
+	// Scanner buffer. If left as nil, a temporary buffer will be used.
+	buffer []byte
 }
 
 func NewGethEVM(path string, name string) *GethEVM {
@@ -45,6 +47,10 @@ func NewGethEVM(path string, name string) *GethEVM {
 		name:  name,
 		stats: &VmStat{},
 	}
+}
+
+func (evm *GethEVM) Instance() Evm {
+	return evm
 }
 
 func (evm *GethEVM) Name() string {
@@ -127,8 +133,11 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
-
+	if evm.buffer == nil {
+		scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
+	} else {
+		scanner.Buffer(evm.buffer, 32*1024*1024)
+	}
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
@@ -201,5 +210,5 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 }
 
 func (evm *GethEVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()), "longest", evm.stats.longestTracingTime}
 }

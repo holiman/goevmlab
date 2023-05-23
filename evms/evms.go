@@ -40,6 +40,12 @@ type Evm interface {
 	Close() // Tear down processes
 	Name() string
 	Stats() []any
+
+	// Instance delivers an instance of the EVM which will be executed per-thread.
+	// This method may deliver the same instance each time, but it may also
+	// deliver e.g. a unique version which has preallocated buffers. Such an instance
+	// is not concurrency-safe, but is fine to deliver in this method.
+	Instance() Evm
 }
 
 type stateRoot struct {

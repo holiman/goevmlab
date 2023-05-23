@@ -47,6 +47,10 @@ func NewBesuVM(path, name string) *BesuVM {
 	}
 }
 
+func (evm *BesuVM) Instance() Evm {
+	return evm
+}
+
 func (evm *BesuVM) Name() string {
 	return fmt.Sprintf("besu-%v", evm.name)
 }
@@ -174,5 +178,5 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 }
 
 func (evm *BesuVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()), "longest", evm.stats.longestTracingTime}
 }
