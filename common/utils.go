@@ -34,6 +34,7 @@ import (
 	"syscall"
 	"time"
 
+	"bufio"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -233,7 +234,9 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	for i, vm := range vms {
 		go func(evm evms.Evm, i int) {
 			defer wg.Done()
-			res, err := evm.RunStateTest(path, outputs[i], false)
+			bufout := bufio.NewWriter(outputs[i])
+			res, err := evm.RunStateTest(path, bufout, false)
+			bufout.Flush()
 			commands[i] = res.Cmd
 			if err != nil {
 				log.Error("Error running test", "err", err)
@@ -584,7 +587,9 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			for i, vm := range meta.vms {
 				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
-					res, err := evm.RunStateTest(file, outputs[i], false)
+					bufout := bufio.NewWriter(outputs[i])
+					res, err := evm.RunStateTest(file, bufout, false)
+					bufout.Flush()
 					commands[i] = res.Cmd
 					if err != nil {
 						log.Error("Error starting vm", "err", err, "command", res.Cmd)

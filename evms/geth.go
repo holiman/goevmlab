@@ -155,7 +155,7 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		if len(data) > 1 && data[0] == '#' {
+		if len(data) > 0 && data[0] == '#' {
 			// Output preceded by # is ignored, but can be used for debugging, e.g.
 			// to check that the generated tests cover the intended surface.
 			fmt.Printf("%v: %v\n", evm.Name(), string(data))

@@ -81,7 +81,7 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	return &tracingResult{
 			Slow:     slow,
 			ExecTime: duration,
-			Cmd:      cmd.String()},
+			Cmd:      evm.cmd.String()},
 		nil
 }
 
