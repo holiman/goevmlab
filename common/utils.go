@@ -48,6 +48,10 @@ var (
 		Name:  "geth",
 		Usage: "Location of go-ethereum 'evm' binary",
 	}
+	GethBatchFlag = &cli.StringSliceFlag{
+		Name:  "gethbatch",
+		Usage: "Location of go-ethereum 'evm' binary",
+	}
 	NethermindFlag = &cli.StringSliceFlag{
 		Name:  "nethermind",
 		Usage: "Location of nethermind 'nethtest' binary",
@@ -104,6 +108,7 @@ var (
 	}
 	VmFlags = []cli.Flag{
 		GethFlag,
+		GethBatchFlag,
 		NethermindFlag,
 		NethBatchFlag,
 		BesuFlag,
@@ -118,6 +123,7 @@ var (
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
 		gethBins      = c.StringSlice(GethFlag.Name)
+		gethBatchBins = c.StringSlice(GethBatchFlag.Name)
 		nethBins      = c.StringSlice(NethermindFlag.Name)
 		nethBatchBins = c.StringSlice(NethBatchFlag.Name)
 		besuBins      = c.StringSlice(BesuFlag.Name)
@@ -129,6 +135,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	)
 	for i, bin := range gethBins {
 		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("%d", i)))
+	}
+	for i, bin := range gethBatchBins {
+		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("%d", i)))
 	}
 	for i, bin := range nethBins {
 		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("%d", i)))

@@ -102,9 +102,15 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (st
 func (vm *GethEVM) Close() {
 }
 
-// feed reads from the reader, does some geth-specific filtering and
+// Copy reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
+	evm.copyUntilEnd(out, input)
+}
+
+// copyUntilEnd reads from the reader, does some geth-specific filtering and
+// outputs items onto the channel
+func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	// Start with 1MB buffer, allow up to 32 MB
@@ -158,6 +164,10 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 			if stateRoot.StateRoot == "" {
 				_ = json.Unmarshal(data, &stateRoot)
 			}
+			// If we have a stateroot, we're done
+			if len(stateRoot.StateRoot) > 0 {
+				break
+			}
 			continue
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
@@ -173,6 +183,6 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-		return
 	}
+	return stateRoot
 }
