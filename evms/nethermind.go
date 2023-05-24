@@ -51,7 +51,7 @@ func (evm *NethermindVM) Instance(int) Evm {
 }
 
 func (evm *NethermindVM) Name() string {
-	return fmt.Sprintf("nethermind-%v", evm.name)
+	return evm.name
 }
 
 // GetStateRoot runs the test and returns the stateroot

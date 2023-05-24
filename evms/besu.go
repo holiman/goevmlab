@@ -52,7 +52,7 @@ func (evm *BesuVM) Instance(int) Evm {
 }
 
 func (evm *BesuVM) Name() string {
-	return fmt.Sprintf("besu-%v", evm.name)
+	return evm.name
 }
 
 // RunStateTest implements the Evm interface

@@ -39,8 +39,9 @@ type BesuBatchVM struct {
 func NewBesuBatchVM(path, name string) *BesuBatchVM {
 	return &BesuBatchVM{
 		BesuVM: BesuVM{
-			path: path,
-			name: name,
+			path:  path,
+			name:  name,
+			stats: new(VmStat),
 		},
 	}
 }
@@ -56,10 +57,6 @@ func (evm *BesuBatchVM) Instance(threadId int) Evm {
 		stdout: nil,
 		stdin:  nil,
 	}
-}
-
-func (evm *BesuBatchVM) Name() string {
-	return fmt.Sprintf("besubatch-%v", evm.name)
 }
 
 // RunStateTest implements the Evm interface

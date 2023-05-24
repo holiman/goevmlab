@@ -46,14 +46,7 @@ func (evm *NethermindBatchVM) Instance(threadId int) Evm {
 			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
 			stats: evm.stats,
 		},
-		cmd:    nil,
-		stdout: nil,
-		stdin:  nil,
 	}
-}
-
-func (evm *NethermindBatchVM) Name() string {
-	return fmt.Sprintf("nethbatch-%v", evm.name)
 }
 
 // RunStateTest implements the Evm interface

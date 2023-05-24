@@ -52,6 +52,7 @@ func (evm *GethEVM) Instance(int) Evm {
 }
 
 func (evm *GethEVM) Name() string {
+	return evm.name
 	return fmt.Sprintf("geth-%v", evm.name)
 }
 

@@ -135,28 +135,28 @@ func initVMs(c *cli.Context) []evms.Evm {
 		vms []evms.Evm
 	)
 	for i, bin := range gethBins {
-		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("geth-%d", i)))
 	}
 	for i, bin := range gethBatchBins {
-		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("gethbatch-%d", i)))
 	}
 	for i, bin := range nethBins {
-		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("nethermind-%d", i)))
 	}
 	for i, bin := range nethBatchBins {
-		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("nethbatch-%d", i)))
 	}
 	for i, bin := range besuBins {
-		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("besu-%d", i)))
 	}
 	for i, bin := range besuBatchBins {
-		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("besubatch-%d", i)))
 	}
 	for i, bin := range erigonBins {
-		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("erigon-%d", i)))
 	}
 	for i, bin := range nimBins {
-		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
 	}
 	return vms
 

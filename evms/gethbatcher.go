@@ -52,10 +52,6 @@ func (evm *GethBatchVM) Instance(threadId int) Evm {
 	}
 }
 
-func (evm *GethBatchVM) Name() string {
-	return fmt.Sprintf("gethbatch-%v", evm.name)
-}
-
 // RunStateTest implements the Evm interface
 func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (

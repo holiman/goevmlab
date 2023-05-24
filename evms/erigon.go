@@ -40,8 +40,9 @@ type ErigonVM struct {
 
 func NewErigonVM(path, name string) *ErigonVM {
 	return &ErigonVM{
-		path: path,
-		name: name,
+		path:  path,
+		name:  name,
+		stats: new(VmStat),
 	}
 }
 
@@ -50,7 +51,7 @@ func (evm *ErigonVM) Instance(int) Evm {
 }
 
 func (evm *ErigonVM) Name() string {
-	return fmt.Sprintf("erigon-%v", evm.name)
+	return evm.name
 }
 
 // GetStateRoot runs the test and returns the stateroot
