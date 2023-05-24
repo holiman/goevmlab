@@ -128,6 +128,7 @@ type besuStateRoot struct {
 
 func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	buf := bufferPool.Get().([]byte)
+	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)

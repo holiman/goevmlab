@@ -53,7 +53,6 @@ func (evm *GethEVM) Instance(int) Evm {
 
 func (evm *GethEVM) Name() string {
 	return evm.name
-	return fmt.Sprintf("geth-%v", evm.name)
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -130,6 +129,7 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 // outputs items onto the channel
 func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	buf := bufferPool.Get().([]byte)
+	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)

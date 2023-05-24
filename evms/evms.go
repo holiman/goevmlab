@@ -60,6 +60,7 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 	for _, r := range readers {
 		scanner := bufio.NewScanner(r)
 		buf := bufferPool.Get().([]byte)
+		//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 		defer bufferPool.Put(buf)
 		scanner.Buffer(buf, len(buf))
 		scanners = append(scanners, scanner)
