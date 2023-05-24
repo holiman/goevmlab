@@ -1,5 +1,8 @@
 run:
   skip-dirs-use-default: false
 
-  skip-dirs:
-    - foo
+  issues:
+    exclude-rules:
+      - linters:
+          - staticcheck
+        text: "SA6002:"
