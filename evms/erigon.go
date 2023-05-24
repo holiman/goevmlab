@@ -164,5 +164,5 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *ErigonVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond), "longest", evm.stats.longestTracingTime}
 }
