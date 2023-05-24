@@ -58,7 +58,12 @@ type stateRoot struct {
 func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 	var scanners []*bufio.Scanner
 	for _, r := range readers {
-		scanners = append(scanners, bufio.NewScanner(r))
+		scanner := bufio.NewScanner(r)
+		buf := bufferPool.Get().([]byte)
+		defer bufferPool.Put(buf)
+		scanner.Buffer(buf, len(buf))
+		scanners = append(scanners, scanner)
+
 	}
 	var (
 		count    = 0

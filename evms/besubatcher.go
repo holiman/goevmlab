@@ -32,8 +32,6 @@ type BesuBatchVM struct {
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
 	mu     sync.Mutex
-	// Some metrics
-	stats *VmStat
 }
 
 func NewBesuBatchVM(path, name string) *BesuBatchVM {
@@ -53,9 +51,6 @@ func (evm *BesuBatchVM) Instance(threadId int) Evm {
 			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
 			stats: evm.stats,
 		},
-		cmd:    nil,
-		stdout: nil,
-		stdin:  nil,
 	}
 }
 

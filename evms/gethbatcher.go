@@ -44,11 +44,8 @@ func (evm *GethBatchVM) Instance(threadId int) Evm {
 		GethEVM: GethEVM{
 			path:  evm.path,
 			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
-			stats: evm.GethEVM.stats,
+			stats: evm.stats,
 		},
-		cmd:    nil,
-		stdout: nil,
-		stdin:  nil,
 	}
 }
 
