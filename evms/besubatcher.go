@@ -32,21 +32,26 @@ type BesuBatchVM struct {
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
 	mu     sync.Mutex
-	// Some metrics
-	stats *VmStat
 }
 
 func NewBesuBatchVM(path, name string) *BesuBatchVM {
 	return &BesuBatchVM{
 		BesuVM: BesuVM{
-			path: path,
-			name: name,
+			path:  path,
+			name:  name,
+			stats: new(VmStat),
 		},
 	}
 }
 
-func (evm *BesuBatchVM) Name() string {
-	return fmt.Sprintf("besubatch-%v", evm.name)
+func (evm *BesuBatchVM) Instance(threadId int) Evm {
+	return &BesuBatchVM{
+		BesuVM: BesuVM{
+			path:  evm.path,
+			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			stats: evm.stats,
+		},
+	}
 }
 
 // RunStateTest implements the Evm interface

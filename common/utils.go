@@ -34,6 +34,7 @@ import (
 	"syscall"
 	"time"
 
+	"bufio"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -117,7 +118,6 @@ var (
 		ErigonFlag,
 		NimbusFlag,
 	}
-	traceLengthMA = utils.NewMovingAverage(100)
 	traceLengthSA = utils.NewSlidingAverage()
 )
 
@@ -135,28 +135,28 @@ func initVMs(c *cli.Context) []evms.Evm {
 		vms []evms.Evm
 	)
 	for i, bin := range gethBins {
-		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("geth-%d", i)))
 	}
 	for i, bin := range gethBatchBins {
-		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("gethbatch-%d", i)))
 	}
 	for i, bin := range nethBins {
-		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("nethermind-%d", i)))
 	}
 	for i, bin := range nethBatchBins {
-		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("nethbatch-%d", i)))
 	}
 	for i, bin := range besuBins {
-		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("besu-%d", i)))
 	}
 	for i, bin := range besuBatchBins {
-		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("besubatch-%d", i)))
 	}
 	for i, bin := range erigonBins {
-		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("erigon-%d", i)))
 	}
 	for i, bin := range nimBins {
-		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("%d", i)))
+		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
 	}
 	return vms
 
@@ -233,7 +233,9 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	for i, vm := range vms {
 		go func(evm evms.Evm, i int) {
 			defer wg.Done()
-			res, err := evm.RunStateTest(path, outputs[i], false)
+			bufout := bufio.NewWriter(outputs[i])
+			res, err := evm.RunStateTest(path, bufout, false)
+			bufout.Flush()
 			commands[i] = res.Cmd
 			if err != nil {
 				log.Error("Error running test", "err", err)
@@ -294,7 +296,7 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 				return
 			}
 			if elapsed := res.ExecTime; elapsed > 2*time.Second {
-				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", res.Cmd)
+				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", res.Cmd, "file", path)
 				atomic.StoreUint32(&slowTest, 1)
 			}
 		}(vm)
@@ -336,7 +338,6 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 	}
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
-		abort:       int64(0),
 		errCh:       make(chan error, 10),  // Error channel
 		testCh:      make(chan string, 10), // channel where we'll deliver tests
 		removeCh:    make(chan string, 10), // channel for cleanup-taksks
@@ -363,7 +364,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 			select {
 			case <-ticker.C:
 				ticks++
-				n := atomic.LoadUint64(&meta.numTests)
+				n := meta.numTests.Load()
 				testsSinceLastUpdate := n - testCount
 				testCount = n
 				timeSpent := time.Since(tStart)
@@ -382,8 +383,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 					"tests", n,
 					"time", common.PrettyDuration(timeSpent),
 					"test/s", fmt.Sprintf("%.01f", float64(uint64(time.Second)*n)/float64(timeSpent)),
-					"steps-WMA", fmt.Sprintf("%.01f", traceLengthMA.Avg()),
-					"steps-SMA", fmt.Sprintf("%.01f", traceLengthSA.Avg()),
+					"avg steps", fmt.Sprintf("%.01f", traceLengthSA.Avg()),
 					"global", globalCount,
 				)
 				for _, vm := range vms {
@@ -440,7 +440,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 		log.Warn("Enocuntered error", "err", err)
 	}
 	log.Info("Waiting for processes to exit")
-	atomic.StoreInt64(&meta.abort, 1)
+	meta.abort.Store(true)
 	cancel()
 	meta.wg.Wait()
 	return nil
@@ -487,7 +487,7 @@ func Copy(src, dst string) error {
 }
 
 type testMeta struct {
-	abort       int64
+	abort       atomic.Bool
 	errCh       chan error
 	testCh      chan string
 	removeCh    chan string
@@ -495,7 +495,7 @@ type testMeta struct {
 	slowCh      chan string
 	wg          sync.WaitGroup
 	vms         []evms.Evm
-	numTests    uint64
+	numTests    atomic.Uint64
 }
 
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
@@ -512,7 +512,7 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 			}
 			meta.wg.Done()
 		}()
-		for i := 0; atomic.LoadInt64(&meta.abort) == 0; i++ {
+		for i := 0; !meta.abort.Load(); i++ {
 			if fileName, err := providerFn(i, threadId); err != nil {
 				log.Error("Error storing test", "err", err)
 				meta.errCh <- err
@@ -567,8 +567,12 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				outputs = append(outputs, out)
 			}
 		}
+		vms := make([]evms.Evm, len(meta.vms))
+		for i, vm := range meta.vms {
+			vms[i] = vm.Instance(threadId)
+		}
 		for file := range meta.testCh {
-			if atomic.LoadInt64(&meta.abort) == 1 {
+			if meta.abort.Load() {
 				// Continue to drain the testch
 				continue
 			}
@@ -577,14 +581,16 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				_ = f.Truncate(0)
 				_, _ = f.Seek(0, 0)
 			}
-			var slowTest uint32
+			var slowTest atomic.Bool
 			// Kick off the binaries, which runs the test on all the vms in parallel
 			var vmWg sync.WaitGroup
-			vmWg.Add(len(meta.vms))
-			for i, vm := range meta.vms {
+			vmWg.Add(len(vms))
+			for i, vm := range vms {
 				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
-					res, err := evm.RunStateTest(file, outputs[i], false)
+					bufout := bufio.NewWriter(outputs[i])
+					res, err := evm.RunStateTest(file, bufout, false)
+					bufout.Flush()
 					commands[i] = res.Cmd
 					if err != nil {
 						log.Error("Error starting vm", "err", err, "command", res.Cmd)
@@ -592,8 +598,8 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 					}
 					if res.Slow {
 						// Flag test as slow
-						log.Warn("Slow test found", "evm", evm.Name(), "cmd", res.Cmd, "time", res.ExecTime)
-						atomic.StoreUint32(&slowTest, 1)
+						log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", file)
+						slowTest.Store(true)
 					}
 				}(vm, i)
 			}
@@ -606,10 +612,10 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				_, _ = f.Seek(0, 0)
 				readers = append(readers, f)
 			}
-			atomic.AddUint64(&meta.numTests, 1)
+			meta.numTests.Add(1)
 			// Compare outputs
 			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
-				atomic.StoreInt64(&meta.abort, 1)
+				meta.abort.Store(true)
 
 				out := new(strings.Builder)
 				fmt.Fprintf(out, "Consensus error\n")
@@ -620,12 +626,11 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				}
 				fmt.Println(out)
 				meta.consensusCh <- file // flag as consensus-issue
-			} else if slowTest != 0 {
+			} else if slowTest.Load() {
 				meta.slowCh <- file // flag as slow
 			} else {
 				meta.removeCh <- file // flag for removal
 				traceLengthSA.Add(len)
-				traceLengthMA.Add(len)
 			}
 		}
 	}
@@ -655,10 +660,10 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 		}()
 		atomic.AddInt64(&executors, 1)
 		log.Info("Fuzzing thread started", "id", threadId)
-		// Open/create outputs for writing
+
 		for file := range meta.testCh {
-			if atomic.LoadInt64(&meta.abort) == 1 {
-				// Continue to drain the testch
+			if meta.abort.Load() {
+				// Continue looping until testch is drained
 				continue
 			}
 			// Zero out the output files and reset offset
@@ -683,7 +688,7 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 					roots[i] = root
 					commands[i] = cmd
 					if execTime := time.Since(t0); execTime > 5*time.Second {
-						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd)
+						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd, "file", file)
 						// Flag test as slow
 						atomic.StoreUint32(&slowTest, 1)
 					}
@@ -691,7 +696,7 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 			}
 			vmWg.Wait()
 			// All the tests are now executed, and we need to read and compare the roots
-			atomic.AddUint64(&meta.numTests, 1)
+			meta.numTests.Add(1)
 			// Compare roots
 			consensusError := false
 			for i, root := range roots[:len(roots)-1] {
@@ -699,7 +704,7 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 					continue
 				}
 				// Consensus error
-				atomic.StoreInt64(&meta.abort, 1)
+				meta.abort.Store(true)
 				consensusError = true
 				break
 			}

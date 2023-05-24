@@ -46,8 +46,12 @@ func NewNethermindVM(path, name string) *NethermindVM {
 	}
 }
 
+func (evm *NethermindVM) Instance(int) Evm {
+	return evm
+}
+
 func (evm *NethermindVM) Name() string {
-	return fmt.Sprintf("nethermind-%v", evm.name)
+	return evm.name
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -114,10 +118,13 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	buf := bufferPool.Get().([]byte)
+	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
+	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
+	scanner.Buffer(buf, 32*1024*1024)
+
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem logger.StructLog
@@ -168,5 +175,5 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 }
 
 func (evm *NethermindVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond), "longest", evm.stats.longestTracingTime}
 }

@@ -47,8 +47,12 @@ func NewGethEVM(path string, name string) *GethEVM {
 	}
 }
 
+func (evm *GethEVM) Instance(int) Evm {
+	return evm
+}
+
 func (evm *GethEVM) Name() string {
-	return fmt.Sprintf("geth-%v", evm.name)
+	return evm.name
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -124,11 +128,12 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 // copyUntilEnd reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	buf := bufferPool.Get().([]byte)
+	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
+	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
-
+	scanner.Buffer(buf, 32*1024*1024)
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
@@ -155,7 +160,7 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		if len(data) > 1 && data[0] == '#' {
+		if len(data) > 0 && data[0] == '#' {
 			// Output preceded by # is ignored, but can be used for debugging, e.g.
 			// to check that the generated tests cover the intended surface.
 			fmt.Printf("%v: %v\n", evm.Name(), string(data))
@@ -201,5 +206,5 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 }
 
 func (evm *GethEVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond), "longest", evm.stats.longestTracingTime}
 }

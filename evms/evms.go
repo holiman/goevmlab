@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sync"
 )
 
 // The Evm interface represents external EVM implementations, which can
@@ -40,6 +41,12 @@ type Evm interface {
 	Close() // Tear down processes
 	Name() string
 	Stats() []any
+
+	// Instance delivers an instance of the EVM which will be executed per-thread.
+	// This method may deliver the same instance each time, but it may also
+	// deliver e.g. a unique version which has preallocated buffers. Such an instance
+	// is not concurrency-safe, but is fine to deliver in this method.
+	Instance(threadId int) Evm
 }
 
 type stateRoot struct {
@@ -51,7 +58,13 @@ type stateRoot struct {
 func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 	var scanners []*bufio.Scanner
 	for _, r := range readers {
-		scanners = append(scanners, bufio.NewScanner(r))
+		scanner := bufio.NewScanner(r)
+		buf := bufferPool.Get().([]byte)
+		//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
+		defer bufferPool.Put(buf)
+		scanner.Buffer(buf, len(buf))
+		scanners = append(scanners, scanner)
+
 	}
 	var (
 		count    = 0
@@ -85,4 +98,11 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 		}
 	}
 	return true, count
+}
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		// A 5Mb buffer
+		return make([]byte, 5*1024*1025)
+	},
 }

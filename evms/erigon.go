@@ -40,13 +40,18 @@ type ErigonVM struct {
 
 func NewErigonVM(path, name string) *ErigonVM {
 	return &ErigonVM{
-		path: path,
-		name: name,
+		path:  path,
+		name:  name,
+		stats: new(VmStat),
 	}
 }
 
+func (evm *ErigonVM) Instance(int) Evm {
+	return evm
+}
+
 func (evm *ErigonVM) Name() string {
-	return fmt.Sprintf("erigon-%v", evm.name)
+	return evm.name
 }
 
 // GetStateRoot runs the test and returns the stateroot
@@ -159,5 +164,5 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *ErigonVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond), "longest", evm.stats.longestTracingTime}
 }

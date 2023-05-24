@@ -1,5 +1,6 @@
 run:
   skip-dirs-use-default: false
 
-  skip-dirs:
-    - foo
+issues:
+  exclude:
+    - 'SA6002: argument should be pointer-like to avoid allocations'

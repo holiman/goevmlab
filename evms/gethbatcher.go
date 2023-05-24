@@ -39,8 +39,14 @@ func NewGethBatchVM(path, name string) *GethBatchVM {
 	}
 }
 
-func (evm *GethBatchVM) Name() string {
-	return fmt.Sprintf("gethbatch-%v", evm.name)
+func (evm *GethBatchVM) Instance(threadId int) Evm {
+	return &GethBatchVM{
+		GethEVM: GethEVM{
+			path:  evm.path,
+			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			stats: evm.stats,
+		},
+	}
 }
 
 // RunStateTest implements the Evm interface
@@ -81,7 +87,7 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	return &tracingResult{
 			Slow:     slow,
 			ExecTime: duration,
-			Cmd:      cmd.String()},
+			Cmd:      evm.cmd.String()},
 		nil
 }
 

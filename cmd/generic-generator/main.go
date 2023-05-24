@@ -35,6 +35,7 @@ var (
 	engineFlag = &cli.StringSliceFlag{
 		Name:  "engine",
 		Usage: "fuzzing-engine",
+		Value: cli.NewStringSlice(fuzzing.FactoryNames()...),
 	}
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",

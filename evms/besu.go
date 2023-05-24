@@ -47,8 +47,12 @@ func NewBesuVM(path, name string) *BesuVM {
 	}
 }
 
+func (evm *BesuVM) Instance(int) Evm {
+	return evm
+}
+
 func (evm *BesuVM) Name() string {
-	return fmt.Sprintf("besu-%v", evm.name)
+	return evm.name
 }
 
 // RunStateTest implements the Evm interface
@@ -123,10 +127,12 @@ type besuStateRoot struct {
 }
 
 func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	buf := bufferPool.Get().([]byte)
+	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
+	defer bufferPool.Put(buf)
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
+	scanner.Buffer(buf, 32*1024*1024)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var elem logger.StructLog
@@ -174,5 +180,5 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 }
 
 func (evm *BesuVM) Stats() []any {
-	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA), "longest", evm.stats.longestTracingTime}
+	return []interface{}{"execSpeed", time.Duration(evm.stats.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond), "longest", evm.stats.longestTracingTime}
 }
