@@ -296,7 +296,7 @@ func TestSpeed(path string, c *cli.Context) (bool, error) {
 				return
 			}
 			if elapsed := res.ExecTime; elapsed > 2*time.Second {
-				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", res.Cmd)
+				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", res.Cmd, "file", path)
 				atomic.StoreUint32(&slowTest, 1)
 			}
 		}(vm)
@@ -364,7 +364,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 			select {
 			case <-ticker.C:
 				ticks++
-				n := atomic.LoadUint64(&meta.numTests)
+				n := meta.numTests.Load()
 				testsSinceLastUpdate := n - testCount
 				testCount = n
 				timeSpent := time.Since(tStart)
@@ -495,7 +495,7 @@ type testMeta struct {
 	slowCh      chan string
 	wg          sync.WaitGroup
 	vms         []evms.Evm
-	numTests    uint64
+	numTests    atomic.Uint64
 }
 
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
@@ -581,7 +581,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				_ = f.Truncate(0)
 				_, _ = f.Seek(0, 0)
 			}
-			var slowTest uint32
+			var slowTest atomic.Bool
 			// Kick off the binaries, which runs the test on all the vms in parallel
 			var vmWg sync.WaitGroup
 			vmWg.Add(len(vms))
@@ -598,8 +598,8 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 					}
 					if res.Slow {
 						// Flag test as slow
-						log.Warn("Slow test found", "evm", evm.Name(), "cmd", res.Cmd, "time", res.ExecTime)
-						atomic.StoreUint32(&slowTest, 1)
+						log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", file)
+						slowTest.Store(true)
 					}
 				}(vm, i)
 			}
@@ -612,7 +612,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				_, _ = f.Seek(0, 0)
 				readers = append(readers, f)
 			}
-			atomic.AddUint64(&meta.numTests, 1)
+			meta.numTests.Add(1)
 			// Compare outputs
 			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
 				meta.abort.Store(true)
@@ -626,7 +626,7 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				}
 				fmt.Println(out)
 				meta.consensusCh <- file // flag as consensus-issue
-			} else if slowTest != 0 {
+			} else if slowTest.Load() {
 				meta.slowCh <- file // flag as slow
 			} else {
 				meta.removeCh <- file // flag for removal
@@ -688,7 +688,7 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 					roots[i] = root
 					commands[i] = cmd
 					if execTime := time.Since(t0); execTime > 5*time.Second {
-						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd)
+						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd, "file", file)
 						// Flag test as slow
 						atomic.StoreUint32(&slowTest, 1)
 					}
@@ -696,7 +696,7 @@ func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
 			}
 			vmWg.Wait()
 			// All the tests are now executed, and we need to read and compare the roots
-			atomic.AddUint64(&meta.numTests, 1)
+			meta.numTests.Add(1)
 			// Compare roots
 			consensusError := false
 			for i, root := range roots[:len(roots)-1] {
