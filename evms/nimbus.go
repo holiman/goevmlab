@@ -51,7 +51,7 @@ func (evm *NimbusEVM) Instance(int) Evm {
 }
 
 func (evm *NimbusEVM) Name() string {
-	return fmt.Sprintf("nimb-%v", evm.name)
+	return evm.name
 }
 
 // GetStateRoot runs the test and returns the stateroot
