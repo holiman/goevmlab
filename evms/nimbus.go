@@ -147,9 +147,8 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
-		RemoveUnsupportedElems(&elem)
-		jsondata, _ := json.Marshal(elem)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+		outp := FastMarshal(&elem)
+		if _, err := out.Write(append(outp, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return
 		}

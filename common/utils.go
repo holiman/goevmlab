@@ -17,9 +17,13 @@
 package common
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 	"math/big"
 	"os"
@@ -34,7 +38,6 @@ import (
 	"syscall"
 	"time"
 
-	"bufio"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -536,61 +539,54 @@ func (meta *testMeta) startTestExecutors(numThreads int, skipTrace bool) {
 }
 
 func (meta *testMeta) startTracingTestExecutors(numThreads int) {
-	executors := int64(0)
+	var executors atomic.Int64
 
 	execute := func(threadId int) {
 		log.Info("Test executor routine started", "id", threadId)
+		executors.Add(1)
 		defer meta.wg.Done()
 		defer func() {
 			// clean-up tasks
-			if f := atomic.AddInt64(&executors, -1); f == 0 {
+			if f := executors.Add(-1); f == 0 {
 				close(meta.removeCh)
 				close(meta.slowCh)
 				log.Info("Last executor exiting")
 			}
 		}()
-		// Output files are used, the vms spit out their traces to these files.
-		var outputs []*os.File
-		var commands = make([]string, len(meta.vms))
-		defer func() {
-			for _, f := range outputs {
-				f.Close()
-			}
-		}()
-		atomic.AddInt64(&executors, 1)
+		var (
+			commands = make([]string, len(meta.vms))
+			outputs  []*dualWriter
+			vms      []evms.Evm
+		)
 		// Open/create outputs for writing
 		for _, evm := range meta.vms {
-			if out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755); err != nil {
+			out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755)
+			if err != nil {
 				log.Error("Failed opening file", "err", err)
 				return
-			} else {
-				outputs = append(outputs, out)
 			}
+			defer out.Close()
+			outputs = append(outputs, newDualWriter(out))
 		}
-		vms := make([]evms.Evm, len(meta.vms))
-		for i, vm := range meta.vms {
-			vms[i] = vm.Instance(threadId)
+		// Start new thread-local instances of the VMs
+		for _, vm := range meta.vms {
+			vms = append(vms, vm.Instance(threadId))
 		}
+		// The fuzzing loop.
 		for file := range meta.testCh {
 			if meta.abort.Load() {
 				// Continue to drain the testch
 				continue
 			}
-			// Zero out the output files and reset offset
-			for _, f := range outputs {
-				_ = f.Truncate(0)
-				_, _ = f.Seek(0, 0)
-			}
 			var slowTest atomic.Bool
-			// Kick off the binaries, which runs the test on all the vms in parallel
 			var vmWg sync.WaitGroup
 			vmWg.Add(len(vms))
+			// Kick off the binaries, which runs the test on all the vms in parallel
 			for i, vm := range vms {
 				go func(evm evms.Evm, i int) {
 					defer vmWg.Done()
-					bufout := bufio.NewWriter(outputs[i])
-					res, err := evm.RunStateTest(file, bufout, false)
-					bufout.Flush()
+					outputs[i].Reset()
+					res, err := evm.RunStateTest(file, outputs[i], false)
 					commands[i] = res.Cmd
 					if err != nil {
 						log.Error("Error starting vm", "err", err, "command", res.Cmd)
@@ -604,33 +600,41 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				}(vm, i)
 			}
 			vmWg.Wait()
-			// All the tests are now executed, and we need to read and compare the outputs
-			var readers []io.Reader
-			// Flush file and set reset offset
-			for _, f := range outputs {
-				_ = f.Sync()
-				_, _ = f.Seek(0, 0)
-				readers = append(readers, f)
-			}
 			meta.numTests.Add(1)
+			// All the tests are now executed, and we need to read and compare the outputs
+			ok := true
+			ref := outputs[0].Sum()
+			for _, w := range outputs[1:] {
+				have := w.Sum()
+				ok = ok && bytes.Equal(have, ref)
+			}
+			if ok { // Output-hashes match, don't bother flushing to file and compare json.
+				if slowTest.Load() {
+					meta.slowCh <- file // flag as slow
+				} else {
+					meta.removeCh <- file // flag for removal
+				}
+				continue
+			}
+			// Output-hashes do not match. At this point, we flush the full output
+			// to file, and inspect line by line.
+			var readers []io.Reader
+			for _, w := range outputs {
+				w.FlushAndSeek()
+				readers = append(readers, w.f)
+			}
 			// Compare outputs
-			if eq, len := evms.CompareFiles(meta.vms, readers); !eq {
+			if eq, _ := evms.CompareFiles(meta.vms, readers); !eq {
 				meta.abort.Store(true)
-
 				out := new(strings.Builder)
 				fmt.Fprintf(out, "Consensus error\n")
 				fmt.Fprintf(out, "Testcase: %v\n", file)
-				for i, f := range outputs {
-					fmt.Fprintf(out, "- %v: %v\n", meta.vms[i].Name(), f.Name())
+				for i, w := range outputs {
+					fmt.Fprintf(out, "- %v: %v\n", meta.vms[i].Name(), w.f.Name())
 					fmt.Fprintf(out, "  - command: %v\n", commands[i])
 				}
 				fmt.Println(out)
 				meta.consensusCh <- file // flag as consensus-issue
-			} else if slowTest.Load() {
-				meta.slowCh <- file // flag as slow
-			} else {
-				meta.removeCh <- file // flag for removal
-				traceLengthSA.Add(len)
 			}
 		}
 	}
@@ -790,4 +794,54 @@ func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 	}
 	fmt.Printf("Wrote file %v\n", fname)
 	return nil
+}
+
+// dualWriter is a io.Writer which writes to a hash, and also to a file, via a
+// 5-MB buffer. Ideally, the file-write never happens.
+// If the data is smaller than the internal buffer, and the hashes match up, the
+// writer can be Reset, and thus the file-write aborted.
+// This writer can thus be used to avoid both writing to (via buffer + discard)
+// and reading from (via hasher-check) disk.
+type dualWriter struct {
+	f   *os.File
+	out *bufio.Writer
+	sum hash.Hash
+}
+
+func newDualWriter(f *os.File) *dualWriter {
+	out := bufio.NewWriterSize(f, 5*1024*1024)
+	w := &dualWriter{
+		f:   f,
+		out: out,
+		sum: md5.New(),
+	}
+	w.Reset()
+	return w
+}
+
+func (w *dualWriter) Write(data []byte) (int, error) {
+	_, _ = w.out.Write(data)
+	return w.sum.Write(data)
+}
+
+func (w *dualWriter) Sum() []byte {
+	return w.sum.Sum(nil)
+}
+
+func (w *dualWriter) FlushAndSeek() {
+	w.out.Flush()
+	_ = w.f.Sync()
+	_, _ = w.f.Seek(0, 0)
+}
+
+func (w *dualWriter) Reset() {
+	_ = w.f.Truncate(0)
+	_, _ = w.f.Seek(0, 0)
+	w.out.Reset(w.f)
+	w.sum.Reset()
+}
+
+// Close closes the underlying file handle.
+func (w *dualWriter) Close() {
+	w.f.Close()
 }

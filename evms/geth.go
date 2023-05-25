@@ -143,8 +143,8 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			prev = current
 			return
 		}
-		jsondata, _ := json.Marshal(prev)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+		data := FastMarshal(prev)
+		if _, err := out.Write(append(data, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
 		if current == nil { // final flush
@@ -157,7 +157,6 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			prev = current
 		}
 	}
-
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		if len(data) > 0 && data[0] == '#' {
@@ -193,8 +192,6 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		if elem.Op == 0x0 {
 			continue
 		}
-
-		RemoveUnsupportedElems(&elem)
 		yield(&elem)
 	}
 	yield(nil)
