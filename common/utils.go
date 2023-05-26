@@ -622,6 +622,8 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 				ok = ok && bytes.Equal(have, ref)
 			}
 			if ok { // Output-hashes match, don't bother flushing to file and compare json.
+				traceLengthSA.Add(outputs[0].nLines)
+
 				if slowTest.Load() {
 					meta.slowCh <- file // flag as slow
 				} else {
@@ -816,9 +818,10 @@ func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 // This writer can thus be used to avoid both writing to (via buffer + discard)
 // and reading from (via hasher-check) disk.
 type dualWriter struct {
-	f   *os.File
-	out *bufio.Writer
-	sum hash.Hash
+	f      *os.File
+	out    *bufio.Writer
+	sum    hash.Hash
+	nLines int
 }
 
 func newDualWriter(f *os.File) *dualWriter {
@@ -833,6 +836,7 @@ func newDualWriter(f *os.File) *dualWriter {
 }
 
 func (w *dualWriter) Write(data []byte) (int, error) {
+	w.nLines += bytes.Count(data, []byte{'\n'})
 	_, _ = w.out.Write(data)
 	return w.sum.Write(data)
 }
