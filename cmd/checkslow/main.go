@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
 )
@@ -39,6 +39,7 @@ func initApp() *cli.App {
 var app = initApp()
 
 func main() {
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -50,30 +51,5 @@ func startTests(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return fmt.Errorf("input state test directory needed")
 	}
-	dir := c.Args().First()
-	finfo, err := os.Stat(dir)
-	if err != nil {
-		return err
-	}
-	if !finfo.IsDir() {
-		return fmt.Errorf("%v is not a directory", dir)
-	}
-	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, "json") {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		slow, err := common.TestSpeed(path, c)
-		if err != nil {
-			return err
-		}
-		if !slow {
-			fmt.Printf("deleting %v\n", path)
-			return os.Remove(path)
-		}
-		return nil
-
-	})
+	return common.TestSpeed(c.Args().First(), c)
 }

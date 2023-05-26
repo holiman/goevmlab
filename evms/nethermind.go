@@ -89,7 +89,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		cmd    = exec.Command(evm.path, "--trace", "-m", "--input", path)
 	)
 	if speedTest {
-		cmd = exec.Command(evm.path, "--trace", "-m", "--neverTrace", "--input", path)
+		cmd = exec.Command(evm.path, "-m", "--neverTrace", "--input", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return &tracingResult{Cmd: cmd.String()}, err
@@ -159,10 +159,8 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 		if elem.Op == 0x0 {
 			continue
 		}
-		RemoveUnsupportedElems(&elem)
-
-		jsondata, _ := json.Marshal(elem)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+		outp := FastMarshal(&elem)
+		if _, err := out.Write(append(outp, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return stateRoot
 		}
