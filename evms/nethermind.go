@@ -89,7 +89,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		cmd    = exec.Command(evm.path, "--trace", "-m", "--input", path)
 	)
 	if speedTest {
-		cmd = exec.Command(evm.path, "--trace", "-m", "--neverTrace", "--input", path)
+		cmd = exec.Command(evm.path, "-m", "--neverTrace", "--input", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return &tracingResult{Cmd: cmd.String()}, err

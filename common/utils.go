@@ -279,33 +279,46 @@ func (noopWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func TestSpeed(path string, c *cli.Context) (bool, error) {
-	var (
-		vms = initVMs(c)
-	)
+func TestSpeed(dir string, c *cli.Context) error {
+	vms := initVMs(c)
 	if len(vms) < 1 {
-		return false, fmt.Errorf("No vms specified!")
+		return fmt.Errorf("No vms specified!")
 	}
-	// Kick off the binaries
-	var wg sync.WaitGroup
-	var slowTest uint32
-	wg.Add(len(vms))
-	for _, vm := range vms {
-		go func(evm evms.Evm) {
-			defer wg.Done()
+	if finfo, err := os.Stat(dir); err != nil {
+		return err
+	} else if !finfo.IsDir() {
+		return fmt.Errorf("%v is not a directory", dir)
+	}
+	infoThreshold := time.Second
+	warnThreshold := 5 * time.Second
+	speedTest := func(path string, info os.FileInfo, err error) error {
+		if !strings.HasSuffix(path, "json") {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		// Run the binaries sequentially
+		for _, evm := range vms {
+			log.Debug("Starting test", "evm", evm.Name(), "file", path)
 			res, err := evm.RunStateTest(path, noopWriter{}, true)
 			if err != nil {
 				log.Error("Error starting vm", "vm", evm.Name(), "err", err)
-				return
+				return err
 			}
-			if elapsed := res.ExecTime; elapsed > 2*time.Second {
-				log.Warn("Slow test found", "evm", evm.Name(), "time", elapsed, "cmd", res.Cmd, "file", path)
-				atomic.StoreUint32(&slowTest, 1)
+			logger := log.Debug
+			if res.ExecTime > warnThreshold {
+				logger = log.Warn
+			} else if res.ExecTime > infoThreshold {
+				logger = log.Info
 			}
-		}(vm)
+			logger("Execution speed", "evm", evm.Name(), "file", path,
+				"time", res.ExecTime, "cmd", res.Cmd)
+
+		}
+		return nil
 	}
-	wg.Wait()
-	return slowTest != 0, nil
+	return filepath.Walk(dir, speedTest)
 }
 
 type TestProviderFn func(index, threadId int) (string, error)
