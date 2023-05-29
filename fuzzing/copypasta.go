@@ -151,13 +151,14 @@ type stEnvMarshaling struct {
 //go:generate gencodec -type StTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
 
 type StTransaction struct {
-	GasPrice   *big.Int `json:"gasPrice"`
-	Nonce      uint64   `json:"nonce"`
-	To         string   `json:"to"`
-	Data       []string `json:"data"`
-	GasLimit   []uint64 `json:"gasLimit"`
-	Value      []string `json:"value"`
-	PrivateKey []byte   `json:"secretKey"`
+	GasPrice   *big.Int       `json:"gasPrice"`
+	Nonce      uint64         `json:"nonce"`
+	To         string         `json:"to"`
+	Data       []string       `json:"data"`
+	GasLimit   []uint64       `json:"gasLimit"`
+	Value      []string       `json:"value"`
+	Sender     common.Address `json:"sender"`
+	PrivateKey []byte         `json:"secretKey"`
 }
 
 type stTransactionMarshaling struct {

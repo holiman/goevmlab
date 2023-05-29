@@ -22,6 +22,7 @@ func fillBlake(gst *GstMaker, fork string) {
 		Data:       []string{randHex(100)},
 		GasPrice:   big.NewInt(0x10),
 		To:         dest.Hex(),
+		Sender:     sender,
 		PrivateKey: pKey,
 	})
 }

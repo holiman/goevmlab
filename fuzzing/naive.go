@@ -35,6 +35,7 @@ func fillNaive(gst *GstMaker, fork string) {
 		Data:       []string{randHex(100)},
 		GasPrice:   big.NewInt(0x10),
 		To:         addrs[0].Hex(),
+		Sender:     sender,
 		PrivateKey: pKey,
 	})
 }

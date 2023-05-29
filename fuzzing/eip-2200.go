@@ -65,6 +65,7 @@ func fillSstore(gst *GstMaker, fork string) {
 			Data:       []string{randHex(100)},
 			GasPrice:   big.NewInt(0x10),
 			To:         addrs[0].Hex(),
+			Sender:     sender,
 			PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		}
 		gst.SetTx(tx)

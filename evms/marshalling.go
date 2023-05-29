@@ -19,10 +19,14 @@ var FastMarshal = CustomMarshal
 // OBS! This output format will omit all stack element except the last 6 items.
 func CustomMarshal(log *logger.StructLog) []byte {
 	b := make([]byte, 0, 200)
+	b = append(b, '{')
 
 	// Depth : PC
-	b = append(b, `{"depth":`...)
-	b = strconv.AppendUint(b, uint64(log.Depth), 10)
+	if !ClearDepth {
+		b = append(b, `"depth":`...)
+		b = strconv.AppendUint(b, uint64(log.Depth), 10)
+	}
+
 	b = append(b, []byte(`,"pc":`)...)
 	b = strconv.AppendUint(b, uint64(log.Pc), 10)
 

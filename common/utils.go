@@ -85,6 +85,10 @@ var (
 		Name:  "nimbus",
 		Usage: "Location of nimbus 'evmstate' binary",
 	}
+	EvmoneFlag = &cli.StringSliceFlag{
+		Name:  "evmone",
+		Usage: "Location of evmone 'evmone' binary",
+	}
 	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -125,6 +129,7 @@ var (
 		ErigonFlag,
 		ErigonBatchFlag,
 		NimbusFlag,
+		EvmoneFlag,
 	}
 	traceLengthSA = utils.NewSlidingAverage()
 )
@@ -140,6 +145,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		erigonBins      = c.StringSlice(ErigonFlag.Name)
 		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
 		nimBins         = c.StringSlice(NimbusFlag.Name)
+		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
 
 		vms []evms.Evm
 	)
@@ -169,6 +175,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range nimBins {
 		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
+	}
+	for i, bin := range evmoneBins {
+		vms = append(vms, evms.NewEvmoneVM(bin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 
@@ -803,6 +812,7 @@ func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 		Value:      []string{"0x0"},
 		Data:       []string{""},
 		GasPrice:   big.NewInt(0x10),
+		Sender:     sender,
 		PrivateKey: hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
 		To:         target.Hex(),
 	}

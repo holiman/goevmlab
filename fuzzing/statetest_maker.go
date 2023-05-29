@@ -18,14 +18,15 @@ package fuzzing
 
 import (
 	"encoding/json"
+	"io"
+	"math/big"
+	"os"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
-	"io"
-	"math/big"
-	"os"
 )
 
 // The sender
@@ -202,6 +203,7 @@ func AddTransaction(dest *common.Address, gst *GstMaker) {
 		Value:      []string{"0x01"},
 		Data:       []string{"0x"},
 		GasPrice:   big.NewInt(0x16),
+		Sender:     sender,
 		PrivateKey: pKey,
 	}
 	gst.SetTx(tx)
