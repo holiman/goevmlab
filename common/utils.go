@@ -77,6 +77,10 @@ var (
 		Name:  "erigon",
 		Usage: "Location of erigon 'evm' binary",
 	}
+	ErigonBatchFlag = &cli.StringSliceFlag{
+		Name:  "erigonbatch",
+		Usage: "Location of erigon 'evm' binary",
+	}
 	NimbusFlag = &cli.StringSliceFlag{
 		Name:  "nimbus",
 		Usage: "Location of nimbus 'evmstate' binary",
@@ -119,6 +123,7 @@ var (
 		BesuFlag,
 		BesuBatchFlag,
 		ErigonFlag,
+		ErigonBatchFlag,
 		NimbusFlag,
 	}
 	traceLengthSA = utils.NewSlidingAverage()
@@ -126,14 +131,15 @@ var (
 
 func initVMs(c *cli.Context) []evms.Evm {
 	var (
-		gethBins      = c.StringSlice(GethFlag.Name)
-		gethBatchBins = c.StringSlice(GethBatchFlag.Name)
-		nethBins      = c.StringSlice(NethermindFlag.Name)
-		nethBatchBins = c.StringSlice(NethBatchFlag.Name)
-		besuBins      = c.StringSlice(BesuFlag.Name)
-		besuBatchBins = c.StringSlice(BesuBatchFlag.Name)
-		erigonBins    = c.StringSlice(ErigonFlag.Name)
-		nimBins       = c.StringSlice(NimbusFlag.Name)
+		gethBins        = c.StringSlice(GethFlag.Name)
+		gethBatchBins   = c.StringSlice(GethBatchFlag.Name)
+		nethBins        = c.StringSlice(NethermindFlag.Name)
+		nethBatchBins   = c.StringSlice(NethBatchFlag.Name)
+		besuBins        = c.StringSlice(BesuFlag.Name)
+		besuBatchBins   = c.StringSlice(BesuBatchFlag.Name)
+		erigonBins      = c.StringSlice(ErigonFlag.Name)
+		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
+		nimBins         = c.StringSlice(NimbusFlag.Name)
 
 		vms []evms.Evm
 	)
@@ -157,6 +163,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range erigonBins {
 		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("erigon-%d", i)))
+	}
+	for i, bin := range erigonBatchBins {
+		vms = append(vms, evms.NewErigonBatchVM(bin, fmt.Sprintf("erigonbatch-%d", i)))
 	}
 	for i, bin := range nimBins {
 		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
