@@ -865,6 +865,7 @@ func (w *dualWriter) Reset() {
 	_, _ = w.f.Seek(0, 0)
 	w.out.Reset(w.f)
 	w.sum.Reset()
+	w.nLines = 0
 }
 
 // Close closes the underlying file handle.
