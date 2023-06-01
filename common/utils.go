@@ -527,7 +527,7 @@ type testMeta struct {
 // the paths on the testCh.
 func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProviderFn) {
 	var factories atomic.Int64
-	factories.Add(numFactories)
+	factories.Add(int64(numFactories))
 	meta.wg.Add(numFactories)
 	factory := func(threadId int) {
 		log.Info("Test factory thread started")
