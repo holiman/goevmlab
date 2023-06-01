@@ -44,6 +44,7 @@ func NewBesuVM(path, name string) *BesuVM {
 	return &BesuVM{
 		path: path,
 		name: name,
+		stats: new(VmStat),
 	}
 }
 
