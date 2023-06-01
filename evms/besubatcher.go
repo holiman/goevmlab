@@ -121,12 +121,6 @@ func (evm *BesuBatchVM) GetStateRoot(path string) (root, command string, err err
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := evm.copyUntilEnd(devNull{}, evm.stdout)
+	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil
-}
-
-type devNull struct{}
-
-func (d devNull) Write(p []byte) (n int, err error) {
-	return len(p), nil
 }
