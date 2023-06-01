@@ -116,6 +116,6 @@ func (evm *ErigonBatchVM) GetStateRoot(path string) (root, command string, err e
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := evm.copyUntilEnd(devNull{}, evm.stdout)
+	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }

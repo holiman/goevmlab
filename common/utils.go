@@ -526,12 +526,13 @@ type testMeta struct {
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
 // the paths on the testCh.
 func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProviderFn) {
-	factories := int64(numFactories)
+	var factories atomic.Int64
+	factories.Add(int64(numFactories))
 	meta.wg.Add(numFactories)
 	factory := func(threadId int) {
 		log.Info("Test factory thread started")
 		defer func() {
-			if f := atomic.AddInt64(&factories, -1); f == 0 {
+			if f := factories.Add(-1); f == 0 {
 				log.Info("Last test factory exiting\n")
 				close(meta.testCh)
 			}
@@ -674,19 +675,19 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 }
 
 func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
-	executors := int64(0)
+	var executors atomic.Int64
 	execute := func(threadId int) {
 		log.Info("Test executor routine started")
 		defer meta.wg.Done()
 		defer func() {
 			// clean-up tasks
-			if f := atomic.AddInt64(&executors, -1); f == 0 {
+			if f := executors.Add(-1); f == 0 {
 				close(meta.removeCh)
 				close(meta.slowCh)
 				log.Info("Last executor exiting")
 			}
 		}()
-		atomic.AddInt64(&executors, 1)
+		executors.Add(1)
 		log.Info("Fuzzing thread started", "id", threadId)
 
 		for file := range meta.testCh {

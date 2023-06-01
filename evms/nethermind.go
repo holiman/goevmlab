@@ -46,8 +46,12 @@ func NewNethermindVM(path, name string) *NethermindVM {
 	}
 }
 
-func (evm *NethermindVM) Instance(int) Evm {
-	return evm
+func (evm *NethermindVM) Instance(threadId int) Evm {
+	return &NethermindVM{
+		path:  evm.path,
+		name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+		stats: evm.stats,
+	}
 }
 
 func (evm *NethermindVM) Name() string {
