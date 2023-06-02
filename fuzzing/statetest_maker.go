@@ -51,7 +51,7 @@ func NewGstMaker() *GstMaker {
 			// The ENV portion
 			Number:     1,
 			GasLimit:   0x26e1f476fe1e22,
-			Difficulty: big.NewInt(0x20000),
+			Difficulty: big.NewInt(0x200000),
 			Random:     &rnd,
 			Coinbase:   common.HexToAddress("b94f5374fce5edbc8e2a8697c15331677e6ebf0b"),
 			Timestamp:  0x03e8,
