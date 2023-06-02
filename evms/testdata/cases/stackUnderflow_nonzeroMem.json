@@ -2,7 +2,7 @@
   "00000000-mixed-0": {
     "env": {
       "currentCoinbase": "b94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-      "currentDifficulty": "0x20000",
+      "currentDifficulty": "0x200000",
       "currentGasLimit": "0x26e1f476fe1e22",
       "currentNumber": "0x1",
       "currentTimestamp": "0x3e8",

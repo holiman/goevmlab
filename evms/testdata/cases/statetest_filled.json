@@ -65,7 +65,7 @@
       "currentTimestamp": "0x03e8",
       "currentNumber": "0x01",
       "currentGasLimit": "0x26e1f476fe1e22",
-      "currentDifficulty": "0x20000"
+      "currentDifficulty": "0x200000"
     }
   }
 }
