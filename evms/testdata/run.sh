@@ -5,6 +5,7 @@
 # besuvm="/home/martin/workspace/besu-vm"
 # erigonvm="/home/martin/workspace/erigon-evm"
 # nimbus="/home/martin/workspace/evmstate"
+# evmone="/home/martin/workspace/evmone-statetest"
 
 ### Geth
 
@@ -102,3 +103,24 @@ if [[ -n "$nimbus" ]]; then
     done
     cd ..
 fi
+
+# evmone
+if [[ -n "$evmone" ]]; then
+    echo "evmone"
+    cd ./cases
+    # The traces
+    for i in *.json; do
+        $evmone --trace --ignore-state-root $i \
+         2>../traces/$i.evmone.stderr.txt \
+         1>../traces/$i.evmone.stdout.txt
+    done
+    # And the stateroots, where we invoke the evm the same way that
+    # GetStateRoot does
+    for i in *.json; do
+        $evmone $i \
+         2>../roots/$i.evmone.stderr.txt \
+         1>../roots/$i.evmone.stdout.txt
+    done
+    cd ..
+fi
+

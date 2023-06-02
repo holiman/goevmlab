@@ -1,0 +1,12 @@
+{"depth":1,"pc":0,"op":96,"opName":"PUSH1","gas":"0x79bee4","stack":[],"memorySize":0}
+{"depth":1,"pc":2,"op":96,"opName":"PUSH1","gas":"0x79bee1","stack":["0x0"],"memorySize":0}
+{"depth":1,"pc":4,"op":96,"opName":"PUSH1","gas":"0x79bede","stack":["0x0","0x1"],"memorySize":0}
+{"depth":1,"pc":6,"op":96,"opName":"PUSH1","gas":"0x79bedb","stack":["0x0","0x1","0x1"],"memorySize":0}
+{"depth":1,"pc":8,"op":96,"opName":"PUSH1","gas":"0x79bed8","stack":["0x0","0x1","0x1","0x2"],"memorySize":0}
+{"depth":1,"pc":10,"op":97,"opName":"PUSH2","gas":"0x79bed5","stack":["0x0","0x1","0x1","0x2","0x2"],"memorySize":0}
+{"depth":1,"pc":13,"op":97,"opName":"PUSH2","gas":"0x79bed2","stack":["0x0","0x1","0x1","0x2","0x2","0x1f4"],"memorySize":0}
+{"depth":1,"pc":16,"op":244,"opName":"DELEGATECALL","gas":"0x79becf","stack":["0x0","0x1","0x1","0x2","0x2","0x1f4","0xffff"],"memorySize":0}
+{"depth":1,"pc":17,"op":54,"opName":"CALLDATASIZE","gas":"0x79b4a4","stack":["0x0","0x1"],"memorySize":32}
+{"depth":1,"pc":18,"op":145,"opName":"SWAP2","gas":"0x79b4a2","stack":["0x0","0x1","0x12"],"memorySize":32}
+{"depth":1,"pc":19,"op":142,"opName":"DUP15","gas":"0x79b49f","stack":["0x12","0x1","0x0"],"memorySize":32}
+{"stateRoot": "0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4"}

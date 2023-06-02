@@ -23,6 +23,7 @@ func CustomMarshal(log *logger.StructLog) []byte {
 	// Depth : PC
 	b = append(b, `{"depth":`...)
 	b = strconv.AppendUint(b, uint64(log.Depth), 10)
+
 	b = append(b, []byte(`,"pc":`)...)
 	b = strconv.AppendUint(b, uint64(log.Pc), 10)
 

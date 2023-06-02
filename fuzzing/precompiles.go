@@ -27,6 +27,7 @@ func fillPrecompileTest(gst *GstMaker, fork string) {
 		Data:       []string{""},
 		GasPrice:   big.NewInt(0x20),
 		To:         dest.Hex(),
+		Sender:     sender,
 		PrivateKey: pKey,
 	})
 }

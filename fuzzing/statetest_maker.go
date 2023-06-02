@@ -18,14 +18,15 @@ package fuzzing
 
 import (
 	"encoding/json"
+	"io"
+	"math/big"
+	"os"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
-	"io"
-	"math/big"
-	"os"
 )
 
 // The sender
@@ -50,7 +51,7 @@ func NewGstMaker() *GstMaker {
 			// The ENV portion
 			Number:     1,
 			GasLimit:   0x26e1f476fe1e22,
-			Difficulty: big.NewInt(0x20000),
+			Difficulty: big.NewInt(0x200000),
 			Random:     &rnd,
 			Coinbase:   common.HexToAddress("b94f5374fce5edbc8e2a8697c15331677e6ebf0b"),
 			Timestamp:  0x03e8,
@@ -202,6 +203,7 @@ func AddTransaction(dest *common.Address, gst *GstMaker) {
 		Value:      []string{"0x01"},
 		Data:       []string{"0x"},
 		GasPrice:   big.NewInt(0x16),
+		Sender:     sender,
 		PrivateKey: pKey,
 	}
 	gst.SetTx(tx)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var _ = (*stTransactionMarshaling)(nil)
@@ -21,6 +22,7 @@ func (s StTransaction) MarshalJSON() ([]byte, error) {
 		Data       []string              `json:"data"`
 		GasLimit   []math.HexOrDecimal64 `json:"gasLimit"`
 		Value      []string              `json:"value"`
+		Sender     common.Address        `json:"sender"`
 		PrivateKey hexutil.Bytes         `json:"secretKey"`
 	}
 	var enc StTransaction
@@ -35,6 +37,7 @@ func (s StTransaction) MarshalJSON() ([]byte, error) {
 		}
 	}
 	enc.Value = s.Value
+	enc.Sender = s.Sender
 	enc.PrivateKey = s.PrivateKey
 	return json.Marshal(&enc)
 }
