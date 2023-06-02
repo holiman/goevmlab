@@ -24,7 +24,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
@@ -119,22 +118,31 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 
-		if strings.Contains(string(data), "depth") || strings.Contains(string(data), "\"error\":null") {
+		/*
+			Evmone spits out the following as the first line of output,
+			and we need to ignore it:
+
+				{"depth":0,"rev":"Shanghai","static":false}
+		*/
+		if bytes.Contains(data, []byte("depth")) {
 			continue
 		}
-
-		if strings.Contains(string(data), "Precompile") {
+		/* Re-enable if we have a testcase showing we need this
+		if bytes.Contains(data, []byte(`"error":null`)) {
+			continue
+		}
+		*/
+		if bytes.Contains(data, []byte("Precompile")) {
 			fmt.Printf("evmone err: %v\n", string(data))
 			continue
 		}
 
-		if strings.Contains(string(data), "stateRoot") {
+		if bytes.Contains(data, []byte("stateRoot")) {
 			if stateRoot.StateRoot == "" {
 				_ = json.Unmarshal(data, &stateRoot)
 				continue
 			}
 		}
-
 		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("evmone err: %v, line\n\t%v\n", err, string(data))
