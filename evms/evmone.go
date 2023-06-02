@@ -27,12 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/holiman/uint256"
 )
 
 type EvmoneVM struct {
@@ -112,20 +108,6 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 func (vm *EvmoneVM) Close() {
 }
 
-type evmOneLog struct {
-	Pc            uint64                      `json:"pc"`
-	Op            vm.OpCode                   `json:"op"`
-	Gas           hexutil.Uint64              `json:"gas"`
-	GasCost       hexutil.Uint64              `json:"gasCost"`
-	MemorySize    int                         `json:"memSize"`
-	Stack         []uint256.Int               `json:"stack"`
-	ReturnData    []byte                      `json:"returnData,omitempty"`
-	Storage       map[common.Hash]common.Hash `json:"-"`
-	Depth         int                         `json:"depth"`
-	RefundCounter uint64                      `json:"refund"`
-	Err           error                       `json:"-"`
-}
-
 func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
@@ -153,7 +135,7 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 			}
 		}
 
-		var elem evmOneLog
+		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("evmone err: %v, line\n\t%v\n", err, string(data))
 			continue
@@ -163,20 +145,7 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
-
-		jsondata := FastMarshal(&logger.StructLog{
-			Pc:            elem.Pc,
-			Op:            elem.Op,
-			Gas:           uint64(elem.Gas),
-			GasCost:       uint64(elem.GasCost),
-			MemorySize:    elem.MemorySize,
-			Stack:         elem.Stack,
-			ReturnData:    elem.ReturnData,
-			Storage:       elem.Storage,
-			Depth:         elem.Depth,
-			RefundCounter: elem.RefundCounter,
-			Err:           elem.Err,
-		})
+		jsondata := FastMarshal(&elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
