@@ -27,8 +27,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/holiman/uint256"
 )
 
 type EvmoneVM struct {
@@ -108,6 +112,20 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 func (vm *EvmoneVM) Close() {
 }
 
+type evmOneLog struct {
+	Pc            uint64                      `json:"pc"`
+	Op            vm.OpCode                   `json:"op"`
+	Gas           hexutil.Uint64              `json:"gas"`
+	GasCost       hexutil.Uint64              `json:"gasCost"`
+	MemorySize    int                         `json:"memSize"`
+	Stack         []uint256.Int               `json:"stack"`
+	ReturnData    []byte                      `json:"returnData,omitempty"`
+	Storage       map[common.Hash]common.Hash `json:"-"`
+	Depth         int                         `json:"depth"`
+	RefundCounter uint64                      `json:"refund"`
+	Err           error                       `json:"-"`
+}
+
 func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
@@ -115,26 +133,6 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(buf, 32*1024*1024)
-
-	var prev *logger.StructLog
-	var yield = func(current *logger.StructLog) {
-		if prev == nil {
-			prev = current
-			return
-		}
-		jsondata, _ := json.Marshal(prev)
-		if _, err := out.Write(append(jsondata, '\n')); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to output: %v\n", err)
-		}
-		if current == nil { // final flush
-			return
-		}
-		if prev.Pc == current.Pc {
-			prev = nil
-		} else {
-			prev = current
-		}
-	}
 
 	for scanner.Scan() {
 		data := scanner.Bytes()
@@ -155,14 +153,9 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 			}
 		}
 
-		data = fixHexValues(data)
-		var elem logger.StructLog
+		var elem evmOneLog
 		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("evmone err: %v, line\n\t%v\n", err, string(data))
-			continue
-		}
-
-		if strings.Contains(string(data), "error") {
 			continue
 		}
 
@@ -171,28 +164,28 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 			continue
 		}
 
-		yield(&elem)
+		jsondata := FastMarshal(&logger.StructLog{
+			Pc:            elem.Pc,
+			Op:            elem.Op,
+			Gas:           uint64(elem.Gas),
+			GasCost:       uint64(elem.GasCost),
+			MemorySize:    elem.MemorySize,
+			Stack:         elem.Stack,
+			ReturnData:    elem.ReturnData,
+			Storage:       elem.Storage,
+			Depth:         elem.Depth,
+			RefundCounter: elem.RefundCounter,
+			Err:           elem.Err,
+		})
+		if _, err := out.Write(append(jsondata, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		}
 	}
-	yield(nil)
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to output: %v\n", err)
 		return
 	}
-}
-
-func fixHexValues(data []byte) []byte {
-	dataStr := string(data)
-	for _, element := range &[2]string{"\"gas\"", "\"gasUsed\""} {
-		if strings.Contains(dataStr, element) {
-			ix := strings.Index(dataStr, element)
-			iy := strings.Index(dataStr[ix:], ",") + ix
-			pair := strings.Split(dataStr[ix:iy], ":")
-			pairStr := fmt.Sprintf("%v: \"%v\"", pair[0], pair[1])
-			dataStr = strings.Replace(dataStr, dataStr[ix:iy], pairStr, 1)
-		}
-	}
-	return []byte(dataStr)
 }
 
 func (evm *EvmoneVM) Stats() []any {
