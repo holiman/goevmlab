@@ -1,0 +1,23 @@
+Note: Google Test filter = -stCreateTest.CreateOOGafterMaxCodesize:stQuadraticComplexityTest.Call50000_sha256:stTimeConsuming.static_Call50000_sha256:stTimeConsuming.CALLBlake2f_MaxRounds:VMTests/vmPerformance.*:
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from 
+[ RUN      ] .00003656-naivefuzz-0
+/home/martin/workspace/evmone/test/statetest/statetest_runner.cpp:38: Failure
+Expected equality of these values:
+  logs_hash(get<state::TransactionReceipt>(res).logs)
+    Which is: 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
+  expected.logs_hash
+    Which is: 0x0000000000000000000000000000000000000000000000000000000000000000
+Google Test trace:
+/home/martin/workspace/evmone/test/statetest/statetest_runner.cpp:19: London/0
+[  FAILED  ] .00003656-naivefuzz-0 (1 ms)
+[----------] 1 test from  (1 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (1 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] .00003656-naivefuzz-0
+
+ 1 FAILED TEST

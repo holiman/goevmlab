@@ -118,25 +118,6 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 
-		/*
-			Evmone spits out the following as the first line of output,
-			and we need to ignore it:
-
-				{"depth":0,"rev":"Shanghai","static":false}
-		*/
-		if bytes.Contains(data, []byte("depth")) {
-			continue
-		}
-		/* Re-enable if we have a testcase showing we need this
-		if bytes.Contains(data, []byte(`"error":null`)) {
-			continue
-		}
-		*/
-		if bytes.Contains(data, []byte("Precompile")) {
-			fmt.Printf("evmone err: %v\n", string(data))
-			continue
-		}
-
 		if bytes.Contains(data, []byte("stateRoot")) {
 			if stateRoot.StateRoot == "" {
 				_ = json.Unmarshal(data, &stateRoot)
