@@ -86,4 +86,17 @@ Building
  cmake --build build --parallel
 ```
 The `DEVMONE_PRECOMPILES_SILKPRE` enables the precompiles. 
+It complains something like 
+```
+/home/martin/workspace/evmone/build/_deps/silkpre-src/lib/silkpre/precompile.cpp: In function ‘SilkpreOutput silkpre_blake2_f_run(const uint8_t*, size_t)’:
+/home/martin/workspace/evmone/build/_deps/silkpre-src/lib/silkpre/precompile.cpp:479:25: error: ‘byte_order_is_little_endian’ is not a member of ‘intx’
+  479 |     static_assert(intx::byte_order_is_little_endian);
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+gmake[2]: *** [_deps/silkpre-build/lib/CMakeFiles/silkpre.dir/build.make:104: _deps/silkpre-build/lib/CMakeFiles/silkpre.dir/silkpre/precompile.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:880: _deps/silkpre-build/lib/CMakeFiles/silkpre.dir/all] Error 2
+gmake: *** [Makefile:166: all] Error 2
+martin@mediaNUK:~/workspace$ nano /home/martin/workspace/evmone/build/_deps/silkpre-src/lib/silkpre/precompile.cpp
+```
+And you need to remove that static assertion, and try again. 
+
 The `build/bin/evmone-statetest` is the one you want.
