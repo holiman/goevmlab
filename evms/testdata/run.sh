@@ -5,7 +5,7 @@
 # besuvm="/home/martin/workspace/besu-vm"
 # erigonvm="/home/martin/workspace/erigon-evm"
 # nimbus="/home/martin/workspace/evmstate"
-evmone=/home/chfast/Projects/ethereum/evmone/build/release/bin/evmone-statetest
+# evmone="/home/martin/workspace/evmone-statetest"
 
 ### Geth
 
@@ -110,7 +110,7 @@ if [[ -n "$evmone" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
-        $evmone --trace $i \
+        $evmone --trace --ignore-state-root $i \
          2>../traces/$i.evmone.stderr.txt \
          1>../traces/$i.evmone.stdout.txt
     done

@@ -68,3 +68,22 @@ It should wind up in
 ```
 ethereum/evmtool/build/install/evmtool/bin/evm
 ```
+
+## EvmOne (`evmone-statetest`)
+
+Prerequisites
+
+```
+sudo apt install cmake libgmp-dev
+```
+Fetching
+```
+git clone --recursive https://github.com/ethereum/evmone
+```
+Building
+```
+ cmake -S . -B build -DEVMONE_TESTING=ON -DEVMONE_PRECOMPILES_SILKPRE=1 && \
+ cmake --build build --parallel
+```
+The `DEVMONE_PRECOMPILES_SILKPRE` enables the precompiles. 
+The `build/bin/evmone-statetest` is the one you want.

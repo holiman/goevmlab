@@ -21,7 +21,4 @@ const (
 
 	// Besu sometimes reports GasCost of 0x7fffffffffffffff, along with ,"error":"Out of gas"
 	ClearGascost = true
-
-	// Evmone does not report depth
-	ClearDepth = true
 )
