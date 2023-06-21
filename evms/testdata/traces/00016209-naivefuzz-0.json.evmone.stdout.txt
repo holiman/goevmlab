@@ -3,14 +3,22 @@ Note: Google Test filter = -stCreateTest.CreateOOGafterMaxCodesize:stQuadraticCo
 [----------] Global test environment set-up.
 [----------] 1 test from 
 [ RUN      ] .00016209-naivefuzz-0
-/home/martin/workspace/evmone/test/statetest/statetest_runner.cpp:38: Failure
+/home/chfast/Projects/ethereum/evmone/test/statetest/statetest_runner.cpp:54: Failure
 Expected equality of these values:
   logs_hash(get<state::TransactionReceipt>(res).logs)
     Which is: 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
   expected.logs_hash
     Which is: 0x0000000000000000000000000000000000000000000000000000000000000000
 Google Test trace:
-/home/martin/workspace/evmone/test/statetest/statetest_runner.cpp:19: London/0
+/home/chfast/Projects/ethereum/evmone/test/statetest/statetest_runner.cpp:18: London/0
+/home/chfast/Projects/ethereum/evmone/test/statetest/statetest_runner.cpp:58: Failure
+Expected equality of these values:
+  state_root
+    Which is: 0x9b732142c31ee7c3c1d28a1c5f451f555524e0bb39371d94a9698000203742fb
+  expected.state_hash
+    Which is: 0x0000000000000000000000000000000000000000000000000000000000000000
+Google Test trace:
+/home/chfast/Projects/ethereum/evmone/test/statetest/statetest_runner.cpp:18: London/0
 [  FAILED  ] .00016209-naivefuzz-0 (2 ms)
 [----------] 1 test from  (2 ms total)
 

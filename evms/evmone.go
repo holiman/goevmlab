@@ -54,11 +54,17 @@ func (evm *EvmoneVM) Name() string {
 }
 
 func (evm *EvmoneVM) GetStateRoot(path string) (root, command string, err error) {
-	cmd := exec.Command(evm.path, "--ignore-state-root", "--ignore-logs", "--trace", path)
+	cmd := exec.Command(evm.path, "--trace-summary", path)
 	data, err := cmd.CombinedOutput()
+
+	// In case of root hash mismatch evmone exists with 1. Ignore this.
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		err = nil
+	}
 	if err != nil {
 		return "", cmd.String(), err
 	}
+
 	root, err = evm.ParseStateRoot(data)
 	if err != nil {
 		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
@@ -68,12 +74,14 @@ func (evm *EvmoneVM) GetStateRoot(path string) (root, command string, err error)
 }
 
 func (evm *EvmoneVM) ParseStateRoot(data []byte) (root string, err error) {
-	start := bytes.Index(data, []byte(`"stateRoot": "`))
-	end := start + 14 + 66
-	if start == -1 || end >= len(data) {
+	pattern := []byte(`"stateRoot":"`)
+	idx := bytes.Index(data, pattern)
+	start := idx + len(pattern)
+	end := start + 32*2 + 2
+	if idx == -1 || end >= len(data) {
 		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
-	return string(data[start+14 : end]), nil
+	return string(data[start:end]), nil
 }
 
 func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
@@ -84,7 +92,7 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		cmd    *exec.Cmd
 	)
 
-	cmd = exec.Command(evm.path, "--ignore-state-root", "--ignore-logs", "--trace", path)
+	cmd = exec.Command(evm.path, "--trace", path)
 
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
@@ -96,6 +104,11 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 	evm.Copy(out, stderr)
 	err = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
+
+	// In case of root hash mismatch evmone exists with 1. Ignore this.
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		err = nil
+	}
 
 	return &tracingResult{
 		Slow:     slow,
