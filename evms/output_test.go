@@ -98,6 +98,10 @@ func TestStateRootNimbus(t *testing.T) {
 	testStateRootOnly(t, NewNimbusEVM("", ""), "nimbus")
 }
 
+func TestStateRootEvmone(t *testing.T) {
+	testStateRootOnly(t, NewEvmoneVM("", ""), "evmone")
+}
+
 func testStateRootOnly(t *testing.T, vm Evm, name string) {
 
 	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))

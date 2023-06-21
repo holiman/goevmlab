@@ -38,4 +38,4 @@
 {"depth":1,"pc":12,"op":80,"opName":"POP","gas":"0xf4","stack":["0x0"],"memorySize":0}
 {"depth":1,"pc":13,"op":96,"opName":"PUSH1","gas":"0xf2","stack":[],"memorySize":0}
 {"depth":1,"pc":15,"op":84,"opName":"SLOAD","gas":"0xef","stack":["0x3"],"memorySize":0}
-{"stateRoot": "0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b"}
+{"pass":false,"error":"out of gas","gasUsed":"0x99df","stateRoot":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b"}

@@ -110,14 +110,14 @@ if [[ -n "$evmone" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
-        $evmone --trace --ignore-state-root $i \
+        $evmone --trace $i \
          2>../traces/$i.evmone.stderr.txt \
          1>../traces/$i.evmone.stdout.txt
     done
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
-        $evmone $i \
+        $evmone --trace-summary $i \
          2>../roots/$i.evmone.stderr.txt \
          1>../roots/$i.evmone.stdout.txt
     done

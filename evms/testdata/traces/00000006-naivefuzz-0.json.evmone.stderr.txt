@@ -905,4 +905,4 @@
 {"depth":2,"pc":1787,"op":80,"opName":"POP","gas":"0x160","stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26"],"memorySize":1472}
 {"depth":1,"pc":2618,"op":80,"opName":"POP","gas":"0x13aa","stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x1"],"memorySize":2240}
 {"depth":1,"pc":2619,"op":80,"opName":"POP","gas":"0x13a8","stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba"],"memorySize":2240}
-{"stateRoot": "0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458"}
+{"pass":true,"gasUsed":"0xb8665","stateRoot":"0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458"}
