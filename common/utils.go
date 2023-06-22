@@ -652,24 +652,35 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 			}
 			// Output-hashes do not match. At this point, we flush the full output
 			// to file, and inspect line by line.
-			var readers []io.Reader
-			for _, w := range outputs {
-				w.FlushAndSeek()
-				readers = append(readers, w.f)
+			out := new(strings.Builder)
+			fmt.Fprintf(out, "Consensus error\n")
+			fmt.Fprintf(out, "Testcase: %v\n", file)
+			for i := range outputs {
+				fmt.Fprintf(out, "- %v: \n", meta.vms[i].Name())
+				fmt.Fprintf(out, "  - command: %v\n", commands[i])
 			}
-			// Compare outputs
-			if eq, _ := evms.CompareFiles(meta.vms, readers); !eq {
-				meta.abort.Store(true)
-				out := new(strings.Builder)
-				fmt.Fprintf(out, "Consensus error\n")
-				fmt.Fprintf(out, "Testcase: %v\n", file)
-				for i, w := range outputs {
-					fmt.Fprintf(out, "- %v: %v\n", meta.vms[i].Name(), w.f.Name())
-					fmt.Fprintf(out, "  - command: %v\n", commands[i])
+			fmt.Println(out)
+			meta.consensusCh <- file // flag as consensus-issue
+			/*
+				var readers []io.Reader
+				for _, w := range outputs {
+					w.FlushAndSeek()
+					readers = append(readers, w.f)
 				}
-				fmt.Println(out)
-				meta.consensusCh <- file // flag as consensus-issue
-			}
+				// Compare outputs
+				if eq, _ := evms.CompareFiles(meta.vms, readers); !eq {
+					meta.abort.Store(true)
+					out := new(strings.Builder)
+					fmt.Fprintf(out, "Consensus error\n")
+					fmt.Fprintf(out, "Testcase: %v\n", file)
+					for i, w := range outputs {
+						fmt.Fprintf(out, "- %v: %v\n", meta.vms[i].Name(), w.f.Name())
+						fmt.Fprintf(out, "  - command: %v\n", commands[i])
+					}
+					fmt.Println(out)
+					meta.consensusCh <- file // flag as consensus-issue
+				}
+			*/
 		}
 	}
 	numExecutors := numThreads / 2
@@ -838,17 +849,17 @@ func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 // This writer can thus be used to avoid both writing to (via buffer + discard)
 // and reading from (via hasher-check) disk.
 type dualWriter struct {
-	f      *os.File
-	out    *bufio.Writer
+	//f      *os.File
+	//out    *bufio.Writer
 	sum    hash.Hash
 	nLines int
 }
 
 func newDualWriter(f *os.File) *dualWriter {
-	out := bufio.NewWriterSize(f, 5*1024*1024)
+	//out := bufio.NewWriterSize(f, 5*1024*1024)
 	w := &dualWriter{
-		f:   f,
-		out: out,
+		//f:   f,
+		//out: out,
 		sum: md5.New(),
 	}
 	w.Reset()
@@ -857,7 +868,7 @@ func newDualWriter(f *os.File) *dualWriter {
 
 func (w *dualWriter) Write(data []byte) (int, error) {
 	w.nLines += bytes.Count(data, []byte{'\n'})
-	_, _ = w.out.Write(data)
+	//_, _ = w.out.Write(data)
 	return w.sum.Write(data)
 }
 
@@ -866,20 +877,20 @@ func (w *dualWriter) Sum() []byte {
 }
 
 func (w *dualWriter) FlushAndSeek() {
-	w.out.Flush()
-	_ = w.f.Sync()
-	_, _ = w.f.Seek(0, 0)
+	//w.out.Flush()
+	//_ = w.f.Sync()
+	//_, _ = w.f.Seek(0, 0)
 }
 
 func (w *dualWriter) Reset() {
-	_ = w.f.Truncate(0)
-	_, _ = w.f.Seek(0, 0)
-	w.out.Reset(w.f)
+	//_ = w.f.Truncate(0)
+	//_, _ = w.f.Seek(0, 0)
+	//w.out.Reset(w.f)
 	w.sum.Reset()
 	w.nLines = 0
 }
 
 // Close closes the underlying file handle.
 func (w *dualWriter) Close() {
-	w.f.Close()
+	//w.f.Close()
 }
