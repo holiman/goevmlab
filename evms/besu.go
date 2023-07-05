@@ -42,8 +42,8 @@ type BesuVM struct {
 
 func NewBesuVM(path, name string) *BesuVM {
 	return &BesuVM{
-		path: path,
-		name: name,
+		path:  path,
+		name:  name,
 		stats: new(VmStat),
 	}
 }
@@ -94,7 +94,7 @@ func (vm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	// Run without tracing
 	cmd := exec.Command(vm.path, "--nomemory", "--notime", "state-test", path)
 
-	data, err := cmd.CombinedOutput()
+	data, err := cmd.Output()
 	if err != nil {
 		return "", cmd.String(), err
 	}

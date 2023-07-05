@@ -61,10 +61,8 @@ func (evm *NimbusEVM) Name() string {
 func (evm *NimbusEVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
 	cmd := exec.Command(evm.path, path)
-	data, _ := cmd.CombinedOutput()
-	//if err != nil {
-	//	return "", cmd.String(), err
-	//}
+	data, _ := cmd.Output()
+
 	root, err = evm.ParseStateRoot(data)
 	if err != nil {
 		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())

@@ -55,7 +55,7 @@ func (evm *EvmoneVM) Name() string {
 
 func (evm *EvmoneVM) GetStateRoot(path string) (root, command string, err error) {
 	cmd := exec.Command(evm.path, "--trace-summary", path)
-	data, err := cmd.CombinedOutput()
+	data, err := StdErrOutput(cmd)
 
 	// In case of root hash mismatch evmone exists with 1. Ignore this.
 	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
