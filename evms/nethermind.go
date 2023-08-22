@@ -62,7 +62,7 @@ func (evm *NethermindVM) Name() string {
 func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
 	cmd := exec.Command(evm.path, "--neverTrace", "-m", "-s", "-i", path)
-	data, err := cmd.CombinedOutput()
+	data, err := cmd.Output()
 	if err != nil {
 		return "", cmd.String(), err
 	}

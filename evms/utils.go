@@ -1,5 +1,11 @@
 package evms
 
+import (
+	"bytes"
+	"errors"
+	"os/exec"
+)
+
 const (
 	// Nethermind does not support refundcounter
 	ClearRefunds = true
@@ -22,3 +28,14 @@ const (
 	// Besu sometimes reports GasCost of 0x7fffffffffffffff, along with ,"error":"Out of gas"
 	ClearGascost = true
 )
+
+// StdErrOutput runs the command and returns its standard error.
+func StdErrOutput(c *exec.Cmd) ([]byte, error) {
+	if c.Stderr != nil {
+		return nil, errors.New("exec: Stderr already set")
+	}
+	var b bytes.Buffer
+	c.Stderr = &b
+	err := c.Run()
+	return b.Bytes(), err
+}
