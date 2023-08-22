@@ -257,7 +257,9 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 			bufout := bufio.NewWriter(outputs[i])
 			res, err := evm.RunStateTest(path, bufout, false)
 			bufout.Flush()
-			commands[i] = res.Cmd
+			if res != nil {
+				commands[i] = res.Cmd
+			}
 			if err != nil {
 				log.Error("Error running test", "err", err)
 				return
