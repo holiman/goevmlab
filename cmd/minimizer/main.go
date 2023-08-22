@@ -91,7 +91,7 @@ func startFuzzer(c *cli.Context) error {
 		msg := "No consensus failure -- the input statetest needs to be a test which produces a difference"
 		if !c.Bool(fullTraceFlag.Name) {
 			msg = "No consensus failure -- the input statetest needs to be a test which produces a difference.\n" +
-				"(Perhaps retry with --fulltTrace enabled?)"
+				"(Perhaps retry with --fulltrace enabled?)"
 		}
 		return errors.New(msg)
 	}
