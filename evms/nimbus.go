@@ -126,6 +126,12 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 
+                // Nimbus sometimes report a negative refund
+                if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
+                        // we can just make it positive, it will be zeroed later
+                        data[i+9] = byte(' ')
+                }
+
 		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("nimb err: %v, line\n\t%v\n", err, string(data))
