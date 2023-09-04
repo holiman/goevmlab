@@ -1,1 +1,0 @@
-{"output":"","gasUsed":"0x3cea43","test":"00016209-naivefuzz-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x9b732142c31ee7c3c1d28a1c5f451f555524e0bb39371d94a9698000203742fb","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}

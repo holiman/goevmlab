@@ -121,10 +121,40 @@ func (vm *NimbusEVM) Close() {
 func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
+	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024) // Start with 1MB buffer, allow up to 32 MB
+
+	// When nimbus encounters an error, it may already have spat out the info prematurely.
+	// We need to merge it back to one item, just like geth
+	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
+	var prev *logger.StructLog
+	var yield = func(current *logger.StructLog) {
+		if prev == nil {
+			prev = current
+			return
+		}
+		data := FastMarshal(prev)
+		if _, err := out.Write(append(data, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		}
+		if current == nil { // final flush
+			return
+		}
+		if prev.Pc == current.Pc && prev.Depth == current.Depth {
+			// Yup, that happened here. Set the error and continue
+			prev = nil
+		} else {
+			prev = current
+		}
+	}
+
 	for scanner.Scan() {
 		data := scanner.Bytes()
+
+		// Nimbus sometimes report a negative refund
+		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
+			// we can just make it positive, it will be zeroed later
+			data[i+9] = byte(' ')
+		}
 
 		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
@@ -145,12 +175,9 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
-		outp := FastMarshal(&elem)
-		if _, err := out.Write(append(outp, '\n')); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return
-		}
+		yield(&elem)
 	}
+	yield(nil)
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)

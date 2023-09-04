@@ -1,0 +1,1 @@
+{"pass":true,"gasUsed":"0x34ce32","stateRoot":"0xee0bbf0438796320ede24ca3c52e31f04dccbfe1fce282f79fe44e67a23351e9"}
