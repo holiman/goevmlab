@@ -20,6 +20,7 @@ import (
 	crand "crypto/rand"
 	"math/big"
 	"math/rand"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
@@ -156,12 +157,8 @@ func NewFP2toG2() []byte {
 }
 
 var (
-	// Initialize G1
-	g1 = bls12381.NewG1()
-	// Initialize G2
-	g2 = bls12381.NewG2()
-	// Initialize rand reader
-	reader = rand.New(rand.NewSource(1234))
+	g1Pool = NewPool(bls12381.NewG1)
+	g2Pool = NewPool(bls12381.NewG2)
 )
 
 // randInt64 returns a new random int64
@@ -185,6 +182,10 @@ func randInt64() int64 {
 // e(aMul1 * G1, bMul1 * G2) * e(aMul2 * G1, bMul2 * G2) * ... * e(aMuln * G1, bMuln * G2) == e(G1, G2) ^ s
 // with s = sum(x: 1 -> n: (aMulx * bMulx))
 func NewPairing() []byte {
+	var g1 = g1Pool.Get()
+	defer g1Pool.Put(g1)
+	var g2 = g2Pool.Get()
+	defer g2Pool.Put(g2)
 	pairs := randInt64()
 	var res []byte
 	target := new(big.Int)
@@ -210,7 +211,7 @@ func NewPairing() []byte {
 }
 
 func NewFieldElement() []byte {
-	ret, err := crand.Int(reader, modulo)
+	ret, err := crand.Int(crand.Reader, modulo)
 	if err != nil {
 		panic(err)
 	}
@@ -221,6 +222,8 @@ func NewFieldElement() []byte {
 }
 
 func NewG1Point() []byte {
+	var g1 = g1Pool.Get()
+	defer g1Pool.Put(g1)
 	a := NewFieldElement()
 	b, err := g1.MapToCurve(a)
 	if err != nil {
@@ -230,6 +233,9 @@ func NewG1Point() []byte {
 }
 
 func NewG2Point() []byte {
+	var g2 = g2Pool.Get()
+	defer g2Pool.Put(g2)
+
 	a := NewFieldElement()
 	b := NewFieldElement()
 	x := append(a, b...)
@@ -239,4 +245,22 @@ func NewG2Point() []byte {
 		panic(err)
 	}
 	return g2.EncodePoint(res)
+}
+
+type Pool[T any] struct {
+	pool sync.Pool
+}
+
+func NewPool[T any](fn func() T) Pool[T] {
+	return Pool[T]{
+		pool: sync.Pool{New: func() interface{} { return fn() }},
+	}
+}
+
+func (p *Pool[T]) Get() T {
+	return p.pool.Get().(T)
+}
+
+func (p *Pool[T]) Put(x T) {
+	p.pool.Put(x)
 }
