@@ -17,7 +17,6 @@
 package program
 
 import (
-	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -324,15 +323,15 @@ func (p *Program) Push0() {
 func (p *Program) RJump(relOffset uint16) {
 	panic("Need RJUMP defined")
 	//p.Op(ops.RJUMP)
-	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
+	//p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
 }
 
 // RJumpI implements RJUMPI (0x5d) - conditional relative jump
 func (p *Program) RJumpI(relOffset uint16, condition interface{}) {
-	p.Push(condition)
 	panic("Need RJUMPI defined") // unclear what op it is
+	//p.Push(condition)
 	//p.Op(ops.RJUMPI)
-	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
+	//p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
 }
 
 // RJumpV implements RJUMPV (0x5e) - relative jump via jump table
@@ -340,11 +339,11 @@ func (p *Program) RJumpV(relOffsets []uint16) {
 	panic("Need RJUMPV defined") // unclear what op it is
 	//p.Op(ops.RJUMPV)
 	// Immediate 1: the length
-	p.add(byte(len(relOffsets)))
+	//p.add(byte(len(relOffsets)))
 	// Immediates 2...N, the offsets
-	for _, offset := range relOffsets {
-		p.code = binary.BigEndian.AppendUint16(p.code, offset)
-	}
+	//for _, offset := range relOffsets {
+	//	p.code = binary.BigEndian.AppendUint16(p.code, offset)
+	//}
 }
 
 // CallF implements CALLF (0xb0) - call a function
@@ -353,7 +352,7 @@ func (p *Program) CallF(i uint16) {
 	//p.Op(ops.CALLF)
 	// Has one immediate argument,code_section_index,
 	// encoded as a 16-bit unsigned big-endian value.
-	p.code = binary.BigEndian.AppendUint16(p.code, i)
+	//p.code = binary.BigEndian.AppendUint16(p.code, i)
 }
 
 // RetF implements RETF (0xb1) - return from a function
