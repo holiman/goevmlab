@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
@@ -94,10 +95,11 @@ func startFuzzer(ctx *cli.Context) error {
 			}
 			log.Info("Added factory", "name", fName)
 		}
-		index := 0
+		var index atomic.Uint64
 		factory = func() *fuzzing.GstMaker {
-			fn := factories[index%len(factories)]
-			index++
+			i := int(index.Add(1))
+			i %= len(factories)
+			fn := factories[i]
 			return fn()
 		}
 	}
