@@ -139,14 +139,15 @@ var (
 			ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CALLDATACOPY, CODESIZE, CODECOPY, GASPRICE, EXTCODESIZE, EXTCODECOPY, RETURNDATASIZE, RETURNDATACOPY, EXTCODEHASH, BLOCKHASH,
 			COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE,
 			POP, MLOAD, MSTORE, MSTORE8, SLOAD, SSTORE, JUMP, JUMPI, PC, MSIZE, GAS, JUMPDEST,
-			RJUMPI, RJUMPV, RJUMP, // New for Cancun
+			PUSH0,         // New for shanghai
+			BLOBHASH,      // New for Cancun
+			MCOPY,         // New for Cancun
+			TLOAD, TSTORE, // New for Cancun
 			PUSH0, PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16,
 			PUSH17, PUSH18, PUSH19, PUSH20, PUSH21, PUSH22, PUSH23, PUSH24, PUSH25, PUSH26, PUSH27, PUSH28, PUSH29, PUSH30, PUSH31, PUSH32,
 			DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16,
 			SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16,
 			LOG0, LOG1, LOG2, LOG3, LOG4,
-			CALLF, RETF, // New for Cancun
-			TLOAD, TSTORE, // New for Cancun
 			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
 			SELFDESTRUCT},
 	}
@@ -249,6 +250,22 @@ func LookupRules(fork string) params.Rules {
 			IsMerge:          true,
 			IsShanghai:       true,
 		}
+	case "Cancun":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+			IsMerge:          true,
+			IsShanghai:       true,
+			IsCancun:         true,
+		}
 	default:
 		panic(fmt.Sprintf("Unsupported: %v", fork))
 
@@ -276,6 +293,7 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 	var berlin = cpy(istanbul, func(p *params.ChainConfig) { p.BerlinBlock = big.NewInt(0) })
 	var london = cpy(berlin, func(p *params.ChainConfig) { p.LondonBlock = big.NewInt(0) })
 	var merge = cpy(london, func(p *params.ChainConfig) { p.MergeNetsplitBlock = big.NewInt(0) })
+	var shanghai = cpy(merge, func(p *params.ChainConfig) { p.ShanghaiTime = new(uint64) })
 
 	switch fork {
 	case "Frontier":
@@ -300,6 +318,8 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 		return london, nil
 	case "Merge":
 		return merge, nil
+	case "Shanghai":
+		return shanghai, nil
 	}
 	return nil, fmt.Errorf("unknown fork %v", fork)
 }
