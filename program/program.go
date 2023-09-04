@@ -322,20 +322,23 @@ func (p *Program) Push0() {
 
 // RJump implements RJUMP (0x5c) - relative jump
 func (p *Program) RJump(relOffset uint16) {
-	p.Op(ops.RJUMP)
+	panic("Need RJUMP defined")
+	//p.Op(ops.RJUMP)
 	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
 }
 
 // RJumpI implements RJUMPI (0x5d) - conditional relative jump
 func (p *Program) RJumpI(relOffset uint16, condition interface{}) {
 	p.Push(condition)
-	p.Op(ops.RJUMPI)
+	panic("Need RJUMPI defined") // unclear what op it is
+	//p.Op(ops.RJUMPI)
 	p.code = binary.BigEndian.AppendUint16(p.code, relOffset)
 }
 
 // RJumpV implements RJUMPV (0x5e) - relative jump via jump table
 func (p *Program) RJumpV(relOffsets []uint16) {
-	p.Op(ops.RJUMPV)
+	panic("Need RJUMPV defined") // unclear what op it is
+	//p.Op(ops.RJUMPV)
 	// Immediate 1: the length
 	p.add(byte(len(relOffsets)))
 	// Immediates 2...N, the offsets
@@ -346,7 +349,8 @@ func (p *Program) RJumpV(relOffsets []uint16) {
 
 // CallF implements CALLF (0xb0) - call a function
 func (p *Program) CallF(i uint16) {
-	p.Op(ops.CALLF)
+	panic("Need CALLF defined") // unclear what op it is
+	//p.Op(ops.CALLF)
 	// Has one immediate argument,code_section_index,
 	// encoded as a 16-bit unsigned big-endian value.
 	p.code = binary.BigEndian.AppendUint16(p.code, i)
@@ -354,5 +358,6 @@ func (p *Program) CallF(i uint16) {
 
 // RetF implements RETF (0xb1) - return from a function
 func (p *Program) RetF() {
-	p.Op(ops.RETF)
+	panic("Need RETF defined") // unclear what op it is
+	//p.Op(ops.RETF)
 }

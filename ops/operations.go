@@ -33,8 +33,8 @@ func (op OpCode) HasImmediate() bool {
 	switch {
 	case op >= PUSH1 && op <= PUSH32:
 		return true
-	case op == RJUMP || op == RJUMPI || op == RJUMPV:
-		return true
+		//case op == RJUMP || op == RJUMPI || op == RJUMPV:
+		//	return true
 	}
 	return false
 }
@@ -121,6 +121,7 @@ const (
 	CHAINID     = OpCode(0x46)
 	SELFBALANCE = OpCode(0x47)
 	BASEFEE     = OpCode(0x48)
+	BLOBHASH    = OpCode(0x49)
 )
 
 // 0x50 range - 'storage' and execution.
@@ -138,10 +139,15 @@ const (
 	GAS      = OpCode(0x5A)
 	JUMPDEST = OpCode(0x5B)
 
-	RJUMP  = OpCode(0x5c) // Cancun
-	RJUMPI = OpCode(0x5d) // Cancun
-	RJUMPV = OpCode(0x5e) // Cancun
+	//RJUMP  = OpCode(0x5c) // Cancun
+	//RJUMPI = OpCode(0x5d) // Cancun
+	//RJUMPV = OpCode(0x5e) // Cancun
+
+	TLOAD  = OpCode(0x5c) // Cancun
+	TSTORE = OpCode(0x5d) // Cancun
+	MCOPY  = OpCode(0x5e) // Cancun
 	PUSH0  = OpCode(0x5f) // Shanghai
+
 )
 
 // 0x60 through 0x7F range.
@@ -231,10 +237,8 @@ const (
 
 // 0xb0 range
 const (
-	CALLF  = OpCode(0xb0)
-	RETF   = OpCode(0xb1)
-	TLOAD  = OpCode(0xb3)
-	TSTORE = OpCode(0xb4)
+// CALLF  = OpCode(0xb0)
+// RETF   = OpCode(0xb1)
 )
 
 // 0xf0 range - closures.
@@ -266,9 +270,9 @@ func IsDefined(op OpCode) bool {
 }
 
 func IsValid(op OpCode) bool {
-	if op == RJUMP || op == RJUMPV || op == RJUMPI {
-		return false
-	}
+	//if op == RJUMP || op == RJUMPV || op == RJUMPI {
+	//	return false
+	//}
 	_, ok := opCodeInfo[op]
 	return ok
 }
@@ -276,39 +280,11 @@ func IsValid(op OpCode) bool {
 // stringToOp is a mapping from strings to OpCode
 var stringToOp map[string]OpCode
 
-// ValidOpcodes is the set of valid opcodes
-var ValidOpcodes []OpCode
-
 func init() {
 	stringToOp = make(map[string]OpCode)
-
 	for k, elem := range opCodeInfo {
-
 		stringToOp[elem.name] = k
-		if k == RJUMP {
-			continue
-		}
-		if k == RJUMPV {
-			continue
-		}
-		if k == RJUMPI {
-			continue
-		}
-		if k == CALLF {
-			continue
-		}
-		if k == RETF {
-			continue
-		}
-		if k == TSTORE {
-			continue
-		}
-		if k == TLOAD {
-			continue
-		}
-		ValidOpcodes = append(ValidOpcodes, k)
 	}
-
 	// Add mapping for legacy opcode names
 	stringToOp["SHA3"] = KECCAK256
 	stringToOp["SUICIDE"] = SELFDESTRUCT
@@ -387,6 +363,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	CHAINID:     {"CHAINID", nil, []string{"chain id"}},
 	SELFBALANCE: {"SELFBALANCE", nil, []string{"balance at current context"}},
 	BASEFEE:     {"BASEFEE", nil, []string{"basefee in current block"}},
+	BLOBHASH:    {"BLOBHASH", []string{"index"}, []string{"blobhash at index"}},
 
 	POP:      {"POP", []string{"value to pop"}, nil},
 	MLOAD:    {"MLOAD", []string{"offset"}, []string{"value"}},
@@ -400,11 +377,14 @@ var opCodeInfo = map[OpCode]opInfo{
 	MSIZE:    {"MSIZE", nil, []string{"size of memory"}},
 	GAS:      {"GAS", nil, []string{"current gas remaining"}},
 	JUMPDEST: {"JUMPDEST", nil, nil},
+	MCOPY:    {"MCOPY", []string{"dest", "source", "length"}, nil},
+	TLOAD:    {"TLOAD", []string{"t-slot"}, []string{"value"}},
+	TSTORE:   {"TSTORE", []string{"t-slot", "value"}, nil},
+	PUSH0:    {"PUSH0", nil, []string{"zero"}},
 
-	RJUMP:  {"RJUMP", nil, nil},
-	RJUMPI: {"RJUMPI", []string{"cond"}, nil},
-	RJUMPV: {"RJUMPV", []string{"case"}, nil},
-	PUSH0:  {"PUSH0", nil, []string{"zero"}},
+	//RJUMP:  {"RJUMP", nil, nil},
+	//RJUMPI: {"RJUMPI", []string{"cond"}, nil},
+	//RJUMPV: {"RJUMPV", []string{"case"}, nil},
 
 	// 0x60 through 0x7F range - push.
 	PUSH1:  {"PUSH1", nil, []string{"1 byte pushed value"}},
@@ -482,8 +462,8 @@ var opCodeInfo = map[OpCode]opInfo{
 	LOG4: {"LOG4", []string{"mStart", "mSize", "topic", "topic", "topic", "topic"}, nil},
 
 	// 0xb0 range.
-	CALLF: {"CALLF", nil, nil},
-	RETF:  {"RETF", nil, nil},
+	//CALLF:  {"CALLF", nil, nil},
+	//RETF:   {"RETF", nil, nil},
 
 	// 0xf0 range.
 	CREATE:       {"CREATE", []string{"value", "mem offset", "mem size"}, []string{"address or zero"}},
