@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
@@ -171,7 +172,7 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	if traceOutput != nil {
 		cfg.Tracer = logger.NewJSONLogger(&logger.Config{}, traceOutput)
 	}
-	_, statedb, root, err := test.RunNoVerify(subtest, cfg, false)
+	_, _, statedb, root, err := test.RunNoVerify(subtest, cfg, false, rawdb.HashScheme)
 	if err != nil {
 		return err
 	}
