@@ -171,7 +171,7 @@ func generateMemoryInteractingOpsProgram(fork string) []byte {
 	}
 
 	for nCases := 0; nCases < 1000; nCases++ {
-		op := ops.OpCode(memOps[rand.Intn(len(memOps))])
+		op := ops.OpCode(usedOps[rand.Intn(len(usedOps))])
 
 		if stackdepth < len(op.Pops()) {
 			for i := 0; i < len(op.Pops()); i++ {
