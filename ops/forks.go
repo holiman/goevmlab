@@ -141,6 +141,7 @@ var (
 			POP, MLOAD, MSTORE, MSTORE8, SLOAD, SSTORE, JUMP, JUMPI, PC, MSIZE, GAS, JUMPDEST,
 			PUSH0,         // New for shanghai
 			BLOBHASH,      // New for Cancun
+			BLOBBASEFEE,   // New for Cancun
 			MCOPY,         // New for Cancun
 			TLOAD, TSTORE, // New for Cancun
 			PUSH0, PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16,
