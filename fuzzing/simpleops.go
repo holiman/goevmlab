@@ -1,10 +1,10 @@
 package fuzzing
 
 import (
+	"fmt"
 	"math/big"
 	"math/rand"
 
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
