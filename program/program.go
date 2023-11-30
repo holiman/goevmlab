@@ -267,6 +267,15 @@ func (p *Program) Sstore(slot interface{}, value interface{}) {
 	p.Op(ops.SSTORE)
 }
 
+// Tstore stores the given byte array to the given t-slot.
+// OBS! Does not verify that the value indeed fits into 32 bytes
+// If it does not, it will panic later on via pushBig
+func (p *Program) Tstore(slot interface{}, value interface{}) {
+	p.Push(value)
+	p.Push(slot)
+	p.Op(ops.TSTORE)
+}
+
 func (p *Program) Return(offset, len uint32) {
 	p.Push(len)
 	p.Push(offset)

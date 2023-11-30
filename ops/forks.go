@@ -294,6 +294,7 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 	var london = cpy(berlin, func(p *params.ChainConfig) { p.LondonBlock = big.NewInt(0) })
 	var merge = cpy(london, func(p *params.ChainConfig) { p.MergeNetsplitBlock = big.NewInt(0) })
 	var shanghai = cpy(merge, func(p *params.ChainConfig) { p.ShanghaiTime = new(uint64) })
+	var cancun = cpy(shanghai, func(p *params.ChainConfig) { p.CancunTime = new(uint64) })
 
 	switch fork {
 	case "Frontier":
@@ -320,6 +321,8 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 		return merge, nil
 	case "Shanghai":
 		return shanghai, nil
+	case "Cancun":
+		return cancun, nil
 	}
 	return nil, fmt.Errorf("unknown fork %v", fork)
 }

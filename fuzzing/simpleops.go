@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"math/rand"
 
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
@@ -13,7 +14,7 @@ func fillSimple(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
 	forkDef := ops.LookupFork(fork)
 	if forkDef == nil {
-		panic("bad fork")
+		panic(fmt.Sprintf("bad fork %v", fork))
 	}
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateSimpleOpsProgram(forkDef),
@@ -37,7 +38,7 @@ func fillSimple(gst *GstMaker, fork string) {
 func fillMemOps(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
 	gst.AddAccount(dest, GenesisAccount{
-		Code:    generateMemoryInteractingOpsProgram(),
+		Code:    generateMemoryInteractingOpsProgram(fork),
 		Balance: new(big.Int),
 		Storage: make(map[common.Hash]common.Hash),
 	})
@@ -121,6 +122,7 @@ var memOps = []ops.OpCode{
 	ops.RETURNDATACOPY,
 	ops.MLOAD,
 	ops.MSTORE,
+	ops.MCOPY,
 	ops.MSTORE8,
 	ops.RETURN,
 	ops.REVERT,
@@ -129,10 +131,28 @@ var memOps = []ops.OpCode{
 // generateMemoryInteractingOpsProgram generates potentially erroring programs with some degree
 // of interestingness on inputs for various arithmetic ops. These operations include
 // memory access ops, which may be OOG.
-func generateMemoryInteractingOpsProgram() []byte {
+func generateMemoryInteractingOpsProgram(fork string) []byte {
 
 	var p = program.NewProgram()
 	var stackdepth = 0
+
+	// We may have to filter out ops that aren't active yet, e.g. MCOPY before cancun
+	var usedOps []ops.OpCode
+	allValid, err := ops.ValidOpcodesInFork(fork)
+	if err != nil {
+		panic(err)
+	}
+	for _, op := range memOps {
+		valid := false
+		for _, v := range allValid {
+			if v == op {
+				valid = true
+			}
+		}
+		if valid {
+			usedOps = append(usedOps, op)
+		}
+	}
 
 	for nCases := 0; nCases < 1000; nCases++ {
 		op := ops.OpCode(memOps[rand.Intn(len(memOps))])
