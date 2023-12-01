@@ -13,15 +13,8 @@ jobs:
       - run:
           name: "Install tools"
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.51.2
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
       - checkout
-      - run:
-          name: "Lint"
-          command: golangci-lint run --timeout 180s
-#            golangci-lint cache clean
-#            go clean -modcache -cache -i
-#            golangci-lint run --timeout 120s
-          resource_class: large
       - run:
           name: "Test"
           command: go test -v ./...
@@ -31,6 +24,13 @@ jobs:
       - run:
           name: "Build all cmds"
           command: go build -v ./cmd/...
+      - run:
+          name: "Lint"
+          command: golangci-lint run --timeout 240s --verbose
+          #            golangci-lint cache clean
+          #            go clean -modcache -cache -i
+          #            golangci-lint run --timeout 120s
+          resource_class: large
 workflows:
   version: 2
   goevmlab:

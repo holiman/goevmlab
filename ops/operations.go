@@ -122,6 +122,7 @@ const (
 	SELFBALANCE = OpCode(0x47)
 	BASEFEE     = OpCode(0x48)
 	BLOBHASH    = OpCode(0x49)
+	BLOBBASEFEE = OpCode(0x4a)
 )
 
 // 0x50 range - 'storage' and execution.
@@ -364,6 +365,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	SELFBALANCE: {"SELFBALANCE", nil, []string{"balance at current context"}},
 	BASEFEE:     {"BASEFEE", nil, []string{"basefee in current block"}},
 	BLOBHASH:    {"BLOBHASH", []string{"index"}, []string{"blobhash at index"}},
+	BLOBBASEFEE: {"BLOBBASEFEE", nil, []string{"blob basefee in current block"}},
 
 	POP:      {"POP", []string{"value to pop"}, nil},
 	MLOAD:    {"MLOAD", []string{"offset"}, []string{"value"}},

@@ -23,7 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func fillSstore(gst *GstMaker, fork string) {
+func fillTstore(gst *GstMaker, fork string) {
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		common.HexToAddress("0xF1"),
@@ -66,7 +66,7 @@ func fillSstore(gst *GstMaker, fork string) {
 	}
 	for _, addr := range addrs {
 		gst.AddAccount(addr, GenesisAccount{
-			Code:    RandCall2200(allAddrs),
+			Code:    RandCallTStore(allAddrs),
 			Balance: new(big.Int),
 			Storage: RandStorage(15, 20),
 		})
@@ -75,7 +75,7 @@ func fillSstore(gst *GstMaker, fork string) {
 	{
 		tx := &StTransaction{
 			// 8M gaslimit
-			GasLimit:   []uint64{8000000},
+			GasLimit:   []uint64{16000000},
 			Nonce:      0,
 			Value:      []string{randHex(4)},
 			Data:       []string{randHex(100)},
