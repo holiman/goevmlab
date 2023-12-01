@@ -28,15 +28,19 @@ import (
 func randTStoreOps() *program.Program {
 	p := program.NewProgram()
 	for {
-		r := rand.Intn(100)
+		r := chance(rand.Intn(101))
 		switch {
-		case r < 40:
-			slot, val := rand.Intn(5), rand.Intn(3)
-			p.Tstore(slot, val)
-		case r < 80:
-			slot := rand.Intn(10)
-			p.Push(slot)
+		case r.between(0, 20):
+			p.Tstore(rand.Intn(5), rand.Intn(3))
+		case r.between(20, 40):
+			p.Sstore(rand.Intn(5), rand.Intn(3))
+		case r.between(40, 60):
+			p.Push(rand.Intn(10))
 			p.Op(ops.TLOAD)
+			p.Op(ops.POP)
+		case r.between(60, 80):
+			p.Push(rand.Intn(10))
+			p.Op(ops.SLOAD)
 			p.Op(ops.POP)
 		default:
 			return p
@@ -48,6 +52,14 @@ func RandCallTStore(addresses []common.Address) []byte {
 	return randCallTStore(addresses, 0)
 }
 
+type chance int
+
+func (c chance) between(a, b int) bool {
+	return int(c) >= a && int(c) < b
+}
+
+// randCallTStore creates code which does a mix of TSTORE, TLOAD, SSTORE, SLOAD
+// and other (mostly well-formed) opcodes, plys a fair bit of calls to other contracts.
 func randCallTStore(addresses []common.Address, depth int) []byte {
 	if depth > 10 {
 		return []byte{}
@@ -56,16 +68,21 @@ func randCallTStore(addresses []common.Address, depth int) []byte {
 
 	p := program.NewProgram()
 	for {
-		r := rand.Intn(101)
+		r := chance(rand.Intn(101))
 		switch {
-		case r < 10:
-			p.Tstore(rand.Intn(5), rand.Intn(3))
-		case r < 20:
-			slot := rand.Intn(5)
-			p.Push(slot)
+		case r.between(0, 10): // TSTORE 10%
+			p.Tstore(rand.Intn(5), rand.Intn(10))
+		case r.between(10, 20): // SSTORE 10%
+			p.Sstore(rand.Intn(5), rand.Intn(10))
+		case r.between(20, 35): // TLOAD 15%
+			p.Push(rand.Intn(5))
 			p.Op(ops.TLOAD)
 			p.Op(ops.POP)
-		case r < 50: // 30% chance of well-formed opcode
+		case r.between(35, 50): // SLOAD 15%
+			p.Push(rand.Intn(5))
+			p.Op(ops.SLOAD)
+			p.Op(ops.POP)
+		case r.between(50, 60): // 10% chance of some well-formed opcodes
 			b := make([]byte, 10)
 			_, _ = crand.Read(b)
 			for i := 0; i < len(b); i++ {
@@ -73,20 +90,17 @@ func randCallTStore(addresses []common.Address, depth int) []byte {
 					p.Op(op)
 				}
 			}
-		case r < 60: // 10% chance of some random opcode
+		case r.between(60, 70): // 10% chance of some random opcode
 			p.Op(ops.OpCode(rand.Uint32()))
-		case r < 80:
-			// zero value call with no data
-			p2 := RandCall(nil, addrGen, nil, nil, nil)
-			p.AddAll(p2)
-			// pop the ret value
-			p.Op(ops.POP)
-		case r < 90:
+		case r.between(70, 80): // 10% zero value call with no data
+			p.AddAll(RandCall(nil, addrGen, nil, nil, nil))
+			p.Op(ops.POP) // pop returnvalue
+		case r.between(80, 90): // 10% create and call
 			ctor := randTStoreOps()
 			runtimeCode := randCallTStore(addresses, depth+1)
 			ctor.ReturnData(runtimeCode)
 			p.CreateAndCall(ctor.Bytecode(), r%2 == 0, randCallType())
-		case r < 95:
+		case r.between(90, 95):
 			p.Push(addrGen())
 			p.Op(ops.SELFDESTRUCT)
 		default:
