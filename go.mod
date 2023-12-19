@@ -9,7 +9,7 @@ require (
 	github.com/holiman/uint256 v1.2.4
 	github.com/rivo/tview v0.0.0-20231126152417-33a1d271f2b6
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 )
 
 require (
