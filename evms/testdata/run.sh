@@ -6,6 +6,7 @@
 # erigonvm="/home/martin/workspace/erigon-evm"
 # nimbus="/home/martin/workspace/evmstate"
 # evmone="/home/martin/workspace/evmone-statetest"
+revm="/home/user/workspace/revme"
 
 ### Geth
 
@@ -120,6 +121,26 @@ if [[ -n "$evmone" ]]; then
         $evmone --trace-summary $i \
          2>../roots/$i.evmone.stderr.txt \
          1>../roots/$i.evmone.stdout.txt
+    done
+    cd ..
+fi
+
+# retun
+if [[ -n "$revm" ]]; then
+    echo "revm"
+    cd ./cases
+    # The traces
+    for i in *.json; do
+        $revm statetest --json  $i \
+         2>../traces/$i.revm.stderr.txt \
+         1>../traces/$i.revm.stdout.txt
+    done
+    # And the stateroots, where we invoke the evm the same way that
+    # GetStateRoot does
+    for i in *.json; do
+        $revm statetest $i \
+         2>../roots/$i.revm.stderr.txt \
+         1>../roots/$i.revm.stdout.txt
     done
     cd ..
 fi
