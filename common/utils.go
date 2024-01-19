@@ -89,6 +89,10 @@ var (
 		Name:  "evmone",
 		Usage: "Location of evmone 'evmone' binary",
 	}
+	RethFlag = &cli.StringSliceFlag{
+		Name:  "revme",
+		Usage: "Location of reth 'revme' binary",
+	}
 	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -130,6 +134,7 @@ var (
 		ErigonBatchFlag,
 		NimbusFlag,
 		EvmoneFlag,
+		RethFlag,
 	}
 	traceLengthSA = utils.NewSlidingAverage()
 )
@@ -146,6 +151,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
 		nimBins         = c.StringSlice(NimbusFlag.Name)
 		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
+		revmBins        = c.StringSlice(RethFlag.Name)
 
 		vms []evms.Evm
 	)
@@ -178,6 +184,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range evmoneBins {
 		vms = append(vms, evms.NewEvmoneVM(bin, fmt.Sprintf("%d", i)))
+	}
+	for i, bin := range revmBins {
+		vms = append(vms, evms.NewRethVM(bin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 

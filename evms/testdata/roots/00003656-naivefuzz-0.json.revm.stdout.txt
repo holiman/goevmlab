@@ -1,0 +1,294 @@
+
+Running tests in 00003656-naivefuzz-0.json...
+
+Traces:
+
+Execution result: Ok(
+    Halt {
+        reason: OutOfGas(
+            Basic,
+        ),
+        gas_used: 39391,
+    },
+)
+
+Expected exception: None
+
+State before: CacheState {
+    accounts: {
+        0x00000000000000000000000000000000000000f9: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0xa70374b2d016f7fb0bafe4b7b37b0c03485d9d6dd09d47f06dce0963e1757220,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x600060006000600060f85af4506000fd,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+        0x00000000000000000000000000000000000000f3: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0x9c83f91760db27d8ad30c47f4b4d83959f25a05c18139464c5efc611232acee2,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x60006002556000600060006000600060f95af260035450f09660006000fd,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+        0x00000000000000000000000000000000000000f8: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0xe23bbd3e6d7933a33f91a21ab9c4dbfed3729ea683bad4298468d0599596f9ed,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x600060006002600255600150,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+        0x00000000000000000000000000000000000000f1: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0xd0e70c85054ae6dd4eb0c5d908100d52f290d717c6ce81ebed5344d32c30572e,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x600060006000600060f35af450600354506000f4506000600060006000600060045af1507f60016000557fa8600060006000600060f95af4507f7f466b1d1a15600060006050,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {
+                        0x0000000000000000000000000000000000000000000000000000000000000002_U256: 0x0000000000000000000000000000000000000000000000000000000000000008_U256,
+                    },
+                },
+            ),
+            status: Loaded,
+        },
+        0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x000000000000000000000000000000000000000000000000000000ffffffffff_U256,
+                        nonce: 0,
+                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+    },
+    contracts: {},
+    has_state_clear: false,
+}
+
+State after: CacheState {
+    accounts: {
+        0x0000000000000000000000000000000000000000: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 1,
+                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x00,
+                                state: Analysed {
+                                    len: 0,
+                                    jump_map: JumpMap {
+                                        map: "00",
+                                    },
+                                },
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: InMemoryChange,
+        },
+        0x00000000000000000000000000000000000000f9: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0xa70374b2d016f7fb0bafe4b7b37b0c03485d9d6dd09d47f06dce0963e1757220,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x600060006000600060f85af4506000fd,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+        0x00000000000000000000000000000000000000f3: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0x9c83f91760db27d8ad30c47f4b4d83959f25a05c18139464c5efc611232acee2,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x60006002556000600060006000600060f95af260035450f09660006000fd,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+        0x00000000000000000000000000000000000000f8: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0xe23bbd3e6d7933a33f91a21ab9c4dbfed3729ea683bad4298468d0599596f9ed,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x600060006002600255600150,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+        0x00000000000000000000000000000000000000f1: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0xd0e70c85054ae6dd4eb0c5d908100d52f290d717c6ce81ebed5344d32c30572e,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x600060006000600060f35af450600354506000f4506000600060006000600060045af1507f60016000557fa8600060006000600060f95af4507f7f466b1d1a15600060006050,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {
+                        0x0000000000000000000000000000000000000000000000000000000000000002_U256: 0x0000000000000000000000000000000000000000000000000000000000000008_U256,
+                    },
+                },
+            ),
+            status: Loaded,
+        },
+        0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x000000000000000000000000000000000000000000000000000000ffffffffff_U256,
+                        nonce: 0,
+                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
+                        code: Some(
+                            Bytecode {
+                                bytecode: 0x,
+                                state: Raw,
+                            },
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+    },
+    contracts: {},
+    has_state_clear: true,
+}
+
+Specification: LONDON
+
+Environment: Env {
+    cfg: CfgEnv {
+        chain_id: 1,
+        kzg_settings: Default,
+        perf_analyse_created_bytecodes: Analyse,
+        limit_contract_code_size: None,
+    },
+    block: BlockEnv {
+        number: 0x0000000000000000000000000000000000000000000000000000000000000001_U256,
+        coinbase: 0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b,
+        timestamp: 0x00000000000000000000000000000000000000000000000000000000000003e8_U256,
+        gas_limit: 0x0000000000000000000000000000000000000000000000000026e1f476fe1e22_U256,
+        basefee: 0x0000000000000000000000000000000000000000000000000000000000000010_U256,
+        difficulty: 0x0000000000000000000000000000000000000000000000000000000000200000_U256,
+        prevrandao: None,
+        blob_excess_gas_and_price: Some(
+            BlobExcessGasAndPrice {
+                excess_blob_gas: 0,
+                blob_gasprice: 1,
+            },
+        ),
+    },
+    tx: TxEnv {
+        caller: 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b,
+        gas_limit: 39391,
+        gas_price: 0x0000000000000000000000000000000000000000000000000000000000000010_U256,
+        transact_to: Call(
+            0x00000000000000000000000000000000000000f1,
+        ),
+        value: 0x000000000000000000000000000000000000000000000000000000000000819c_U256,
+        data: 0xa598da695a2e18ee,
+        nonce: None,
+        chain_id: None,
+        access_list: [],
+        gas_priority_fee: None,
+        blob_hashes: [],
+        max_fee_per_blob_gas: None,
+    },
+}
+
+Test name: "00003656-naivefuzz-0" (index: 0, path: 00003656-naivefuzz-0.json) failed:
+Test 00003656-naivefuzz-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
+Finished execution. Total CPU time: 0.000266s
+Test 00003656-naivefuzz-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
