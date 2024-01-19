@@ -57,10 +57,10 @@ func (evm *RethVM) GetStateRoot(path string) (root, command string, err error) {
 	cmd := exec.Command(evm.path, "statetest", path)
 	data, err := StdErrOutput(cmd)
 
-	// In case of root hash mismatch evmone exists with 1. Ignore this.
-	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-		err = nil
-	}
+	// If revm exits with 1 on stateroot errors, uncomment to ignore:
+	//if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+	//	err = nil
+	//}
 	if err != nil {
 		return "", cmd.String(), err
 	}
@@ -105,10 +105,10 @@ func (evm *RethVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	err = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
 
-	// In case of root hash mismatch evmone exists with 1. Ignore this.
-	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-		err = nil
-	}
+	// If revm exits with 1 on stateroot errors, uncomment to ignore:
+	//if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+	//	err = nil
+	//}
 
 	return &tracingResult{
 		Slow:     slow,
