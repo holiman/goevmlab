@@ -52,6 +52,7 @@ func testVmsOutput(t *testing.T, testfile string) {
 		{NewGethEVM("", ""), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
 		{NewNimbusEVM("", ""), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
 		{NewEvmoneVM("", ""), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
+		{NewRethVM("", ""), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
 	}
 	var readers []io.Reader
 	var vms []Evm
@@ -102,6 +103,10 @@ func TestStateRootEvmone(t *testing.T) {
 	testStateRootOnly(t, NewEvmoneVM("", ""), "evmone")
 }
 
+func TestStateRootRethVM(t *testing.T) {
+	testStateRootOnly(t, NewRethVM("", ""), "revm")
+}
+
 func testStateRootOnly(t *testing.T, vm Evm, name string) {
 
 	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))
@@ -125,7 +130,7 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 		combined := append(stderr, stdout...)
 		have, err := vm.ParseStateRoot(combined)
 		if err != nil {
-			t.Fatalf("case %d, %v: got error: %v", i, finfo.Name(), err)
+			t.Errorf("case %d, %v: got error: %v", i, finfo.Name(), err)
 		}
 		want, ok := wants[finfo.Name()]
 		if !ok {
