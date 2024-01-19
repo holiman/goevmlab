@@ -147,9 +147,7 @@ Environment: Env {
         gas_limit: 0x0000000000000000000000000000000000000000000000000026e1f476fe1e22_U256,
         basefee: 0x0000000000000000000000000000000000000000000000000000000000000010_U256,
         difficulty: 0x0000000000000000000000000000000000000000000000000000000000200000_U256,
-        prevrandao: Some(
-            0x0000000000000000000000000000000000000000000000000000000000200000,
-        ),
+        prevrandao: None,
         blob_excess_gas_and_price: Some(
             BlobExcessGasAndPrice {
                 excess_blob_gas: 0,
@@ -177,5 +175,5 @@ Environment: Env {
 
 Test name: "00000006-naivefuzz-0" (index: 0, path: 00000006-naivefuzz-0.json) failed:
 Test 00000006-naivefuzz-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
-Finished execution. Total CPU time: 0.000176s
+Finished execution. Total CPU time: 0.000695s
 Test 00000006-naivefuzz-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347

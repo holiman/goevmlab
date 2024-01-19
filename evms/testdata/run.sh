@@ -138,7 +138,7 @@ if [[ -n "$revm" ]]; then
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
-        $revm statetest $i \
+        $revm statetest --json-outcome $i \
          2>../roots/$i.revm.stderr.txt \
          1>../roots/$i.revm.stdout.txt
     done
