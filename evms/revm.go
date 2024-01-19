@@ -54,7 +54,7 @@ func (evm *RethVM) Name() string {
 }
 
 func (evm *RethVM) GetStateRoot(path string) (root, command string, err error) {
-	cmd := exec.Command(evm.path, "statetest", path)
+	cmd := exec.Command(evm.path, "statetest", "--json-outcome", path)
 	data, err := StdErrOutput(cmd)
 
 	// If revm exits with 1 on stateroot errors, uncomment to ignore:
@@ -74,7 +74,7 @@ func (evm *RethVM) GetStateRoot(path string) (root, command string, err error) {
 }
 
 func (evm *RethVM) ParseStateRoot(data []byte) (root string, err error) {
-	pattern := []byte(`"stateRoot": "`)
+	pattern := []byte(`"stateRoot":"`)
 	idx := bytes.Index(data, pattern)
 	start := idx + len(pattern)
 	end := start + 32*2 + 2
