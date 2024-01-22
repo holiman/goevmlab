@@ -630,11 +630,11 @@ func (meta *testMeta) startTracingTestExecutors(numThreads int) {
 					defer vmWg.Done()
 					outputs[i].Reset()
 					res, err := evm.RunStateTest(file, outputs[i], false)
-					commands[i] = res.Cmd
 					if err != nil {
-						log.Error("Error starting vm", "err", err, "command", res.Cmd)
+						log.Error("Error starting vm", "err", err, "evm", evm.Name())
 						return
 					}
+					commands[i] = res.Cmd
 					if res.Slow {
 						// Flag test as slow
 						log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", file)
