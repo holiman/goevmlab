@@ -93,14 +93,35 @@ RUN cd nethermind/src/Nethermind/Nethermind.Test.Runner && dotnet publish --self
 RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Runner/release_linux-x64 /out/neth
 
 
+
+#---------------------------------------------------------------
+# Another builder-image (ubuntu with java SDK)
+#---------------------------------------------------------------
+
+#
+# BESU 
+#
+
+FROM ubuntu:23.10 as java-builder
+
+RUN apt update && apt install -y --no-install-recommends git ca-certificates 
+RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
+RUN apt install --no-install-recommends -q -y git openjdk-17-jre-headless=17* libjemalloc-dev=5.* 
+RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
+RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
+
 #
 # Main non-builder
 #
 
 FROM debian
 
+RUN apt update
 #nethtest requires libssl-dev
-RUN apt update && apt install -y libssl-dev
+RUN apt install -y libssl-dev
+# besu requires openjdk-17-jre
+RUN apt install -y --no-install-recommends  openjdk-17-jre 
+
 
 COPY --from=debian-builder /go/go-ethereum/build/bin/evm /gethvm
 COPY --from=debian-builder /erigon_vm /erigon_vm
@@ -110,6 +131,7 @@ COPY --from=debian-builder /evmstate /nimbvm
 COPY --from=rust-builder /revm/target/release/revme /revme
 COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
+COPY --from=java-builder /out/evmtool /evmtool
+RUN ln -s /evmtool/bin/evm besu-vm
 
-#ENTRYPOINT ["/bin/bash", "-l", "-c"]
-ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--fork=Cancun"]
+ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--besubatch=/besu-vm","--fork=Cancun"]
