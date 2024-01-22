@@ -6,10 +6,10 @@
 #
 # - [x] Goevmlab binary 'generic-fuzzer'
 # - [x] Go-ethereum binary 'evm'
-# - [ ] Erigon binary 'evm'
+# - [x] Erigon binary 'evm'
 # - [ ] EvmOne vm binary 'evmone'
 # - [x] Reth VM binary 'revme' 
-# - [ ] Besu
+# - [x] Besu
 # - [x] Nethermind
 # - [x] Nimbus-eth1
 #
@@ -35,19 +35,6 @@ RUN git clone https://github.com/holiman/goevmlab --depth 1
 RUN cd goevmlab && go build ./cmd/generic-fuzzer && cd ..
 
 #
-# EVMONE 
-#
-
-#RUN apt-get update -q && apt-get install -qy --no-install-recommends \
-#    ca-certificates g++ cmake ninja-build libgmp-dev
-
-#RUN git clone https://github.com/ethereum/evmone.git --depth 1 --recurse-submodules
-#RUN cd evmone && \
-#    cmake -S . -B build -DEVMONE_TESTING=ON -DEVMONE_PRECOMPILES_SILKPRE=1
-#RUN cd evmone && cmake --build build --parallel
-#RUN ls -laR /evmone
-
-#
 # NIMBUS-ETH1
 #
 
@@ -61,6 +48,20 @@ RUN cp nimbus-eth1/tools/evmstate/evmstate /evmstate
 # Erigon
 RUN git clone https://github.com/ledgerwatch/erigon --depth 1
 RUN cd erigon && make evm && cp ./build/bin/evm /erigon_vm
+
+#
+# EVMONE 
+#
+
+RUN apt-get update -q && apt-get install -qy --no-install-recommends \
+    ca-certificates g++ cmake ninja-build libgmp-dev
+
+RUN git clone https://github.com/ethereum/evmone.git --depth 1 --recurse-submodules
+RUN cd evmone && \
+    cmake -S . -B build -DEVMONE_TESTING=ON -DEVMONE_PRECOMPILES_SILKPRE=1
+RUN cd evmone && cmake --build build --parallel
+
+RUN cd evmone && ls -laR ./build/
 
 
 
@@ -127,11 +128,11 @@ COPY --from=debian-builder /go/go-ethereum/build/bin/evm /gethvm
 COPY --from=debian-builder /erigon_vm /erigon_vm
 COPY --from=debian-builder /go/goevmlab/generic-fuzzer /generic-fuzzer
 COPY --from=debian-builder /evmstate /nimbvm
-#COPY --from=debian-builder /go/evmone/build/bin/evm /evmone
+COPY --from=debian-builder /go/evmone/build/bin/evm /evmone
 COPY --from=rust-builder /revm/target/release/revme /revme
 COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
 COPY --from=java-builder /out/evmtool /evmtool
 RUN ln -s /evmtool/bin/evm besu-vm
 
-ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--besubatch=/besu-vm","--fork=Cancun"]
+ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--besubatch=/besu-vm","--evmone=/evmone","--fork=Cancun"]
