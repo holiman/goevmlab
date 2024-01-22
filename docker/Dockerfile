@@ -58,6 +58,11 @@ RUN cd nimbus-eth1 && make -j4 update
 RUN cd nimbus-eth1 && make -j8 evmstate 
 RUN cp nimbus-eth1/tools/evmstate/evmstate /evmstate
 
+# Erigon
+RUN git clone https://github.com/ledgerwatch/erigon --depth 1
+RUN cd erigon && make evm && cp ./build/bin/evm /erigon_vm
+
+
 
 #---------------------------------------------------------------
 # Another builder-image (cargo)
@@ -98,6 +103,7 @@ FROM debian
 RUN apt update && apt install -y libssl-dev
 
 COPY --from=debian-builder /go/go-ethereum/build/bin/evm /gethvm
+COPY --from=debian-builder /erigon_vm /erigon_vm
 COPY --from=debian-builder /go/goevmlab/generic-fuzzer /generic-fuzzer
 COPY --from=debian-builder /evmstate /nimbvm
 #COPY --from=debian-builder /go/evmone/build/bin/evm /evmone
@@ -106,4 +112,4 @@ COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
 
 #ENTRYPOINT ["/bin/bash", "-l", "-c"]
-ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--fork=Cancun"]
+ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--fork=Cancun"]
