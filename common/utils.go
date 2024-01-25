@@ -659,36 +659,42 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool) {
 	meta.wg.Add(1)
 	go meta.cleanupLoop(cleanCh)
 
+	// TODO use multiple vm instances  / threads?
+	//for _, vm := range meta.vms {
+	//	vm.Instance()
+	//}
+
 	for file := range meta.testCh {
 		testIndex++
 		for len(ready) < 2 {
-			select {
-			case t := <-resultCh: // result delivery
-				ready = append(ready, t.vmIdx) // add client to ready-set
-				if t.err != nil {
-					log.Error("Error", "err", t.err)
-					meta.abort.Store(true)
-					continue // continue draining
-				}
-
-				if t.slow {
-					cleanCh <- &cleanTask{slow: t.file}
-				}
-				// check results
-				if results[t.testIdx] == nil { // first
-					results[t.testIdx] = t.result
-					continue
-				}
-				if !bytes.Equal(results[t.testIdx], t.result) {
-					// Consensus flaw
-					meta.consensusCh <- t.file
-					meta.abort.Store(true)
-				} else {
-					delete(results, t.testIdx)
-					cleanCh <- &cleanTask{remove: t.file}
-				}
-				meta.numTests.Add(1)
+			t := <-resultCh                // result delivery
+			ready = append(ready, t.vmIdx) // add client to ready-set
+			if t.err != nil {
+				log.Error("Error", "err", t.err)
+				meta.abort.Store(true)
+				continue // continue draining
 			}
+
+			if t.slow {
+				cleanCh <- &cleanTask{slow: t.file}
+			}
+			// check results
+			if results[t.testIdx] == nil { // first
+				results[t.testIdx] = t.result
+				continue
+			}
+			if !bytes.Equal(results[t.testIdx], t.result) {
+				// Consensus flaw
+				meta.consensusCh <- t.file
+				meta.abort.Store(true)
+			} else {
+				cleanCh <- &cleanTask{remove: t.file}
+			}
+			delete(results, t.testIdx)
+			meta.numTests.Add(1)
+		}
+		if meta.abort.Load() {
+			continue
 		}
 		for _, id := range ready {
 			taskChannels[id] <- &task{
@@ -706,10 +712,8 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool) {
 	}
 	// drain resultchannel
 	for len(ready) < len(meta.vms) {
-		select {
-		case t := <-resultCh: // result delivery
-			ready = append(ready, t.vmIdx) // add client to ready-set
-		}
+		t := <-resultCh                // result delivery
+		ready = append(ready, t.vmIdx) // add client to ready-set
 	}
 	fmt.Printf("fuzzing loop exiting\n")
 
