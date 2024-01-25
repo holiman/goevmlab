@@ -23,7 +23,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"hash"
 	"io"
 	"math/big"
 	"os"
@@ -385,14 +384,13 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 	meta := &testMeta{
 		errCh:       make(chan error, 10),  // Error channel
 		testCh:      make(chan string, 10), // channel where we'll deliver tests
-		removeCh:    make(chan string, 10), // channel for cleanup-taksks
 		consensusCh: make(chan string, 10), // channel for signalling consensus errors
-		slowCh:      make(chan string, 10), // channel for signalling slow tests
 		vms:         vms,
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
-	meta.startTestExecutors((numThreads+1)/2, skipTrace)
+	meta.wg.Add(1)
+	go meta.fuzzingLoop(skipTrace)
 	// One goroutine to spit out some statistics
 	ctx, cancel := context.WithCancel(context.Background())
 	meta.wg.Add(1)
@@ -448,32 +446,6 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 		}
 
 	}()
-	// One goroutine to clean up after ourselves
-	meta.wg.Add(1)
-	go func() {
-		defer meta.wg.Done()
-		for path := range meta.removeCh {
-			if !cleanupFiles {
-				continue
-			}
-			if err := os.Remove(path); err != nil {
-				log.Error("Error deleting file", "file", path, "err", err)
-			}
-		}
-	}()
-	// One to handle slow tests
-	meta.wg.Add(1)
-	go func() {
-		defer meta.wg.Done()
-		for path := range meta.slowCh {
-			newPath := filepath.Join(filepath.Dir(path),
-				fmt.Sprintf("slowtest-%v", filepath.Base(path)))
-			if err := Copy(path, newPath); err != nil {
-				log.Error("Error copying file", "file", path, "err", err)
-			}
-		}
-	}()
-
 	// Cancel ability
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -535,9 +507,7 @@ type testMeta struct {
 	abort       atomic.Bool
 	errCh       chan error
 	testCh      chan string
-	removeCh    chan string
 	consensusCh chan string
-	slowCh      chan string
 	wg          sync.WaitGroup
 	vms         []evms.Evm
 	numTests    atomic.Uint64
@@ -552,6 +522,7 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 	factory := func(threadId int) {
 		log.Info("Test factory thread started")
 		defer func() {
+			log.Info("Factory exiting")
 			if f := factories.Add(-1); f == 0 {
 				log.Info("Last test factory exiting\n")
 				close(meta.testCh)
@@ -573,215 +544,181 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 	}
 }
 
-func (meta *testMeta) startTestExecutors(numThreads int, skipTrace bool) {
-	if skipTrace {
-		meta.startNontracingTestExecutors(numThreads)
-	} else {
-		meta.startTracingTestExecutors(numThreads)
-	}
+type task struct {
+	// pre-execution fields:
+	file      string // file is the input statetest
+	testIdx   int    // testIdx is a global index of the test
+	vmIdx     int    // vmIdx is a global index of the vm
+	skipTrace bool   // skipTrace: if true, ignore output and just exec as fast as possible
+
+	// post-execution fields:
+	execSpeed time.Duration
+	slow      bool   // set by the executor if the test is deemed slow.
+	result    []byte // result is the md5 hash of the execution output
+	command   string // command used to execute the test
+	err       error  // if error occurred
 }
 
-func (meta *testMeta) startTracingTestExecutors(numThreads int) {
-	var executors atomic.Int64
-
-	execute := func(threadId int) {
-		log.Info("Test executor routine started", "id", threadId)
-		executors.Add(1)
-		defer meta.wg.Done()
-		defer func() {
-			// clean-up tasks
-			if f := executors.Add(-1); f == 0 {
-				close(meta.removeCh)
-				close(meta.slowCh)
-				log.Info("Last executor exiting")
-			}
-		}()
-		var (
-			commands = make([]string, len(meta.vms))
-			outputs  []*dualWriter
-			vms      []evms.Evm
-		)
-		// Open/create outputs for writing
-		for _, evm := range meta.vms {
-			out, err := os.OpenFile(fmt.Sprintf("./%v-output-%d.jsonl", evm.Name(), threadId), os.O_CREATE|os.O_RDWR, 0755)
-			if err != nil {
-				log.Error("Failed opening file", "err", err)
-				return
-			}
-			defer out.Close()
-			outputs = append(outputs, newDualWriter(out))
+func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
+	defer meta.wg.Done()
+	var hasher = md5.New()
+	for t := range taskCh {
+		hasher.Reset()
+		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
+		if err != nil {
+			log.Error("Error starting vm", "err", err, "evm", evm.Name())
+			t.err = fmt.Errorf("error starting vm %v: %w", evm.Name, err)
+			// Send back
+			resultCh <- t
+			continue
 		}
-		// Start new thread-local instances of the VMs
-		for _, vm := range meta.vms {
-			vms = append(vms, vm.Instance(threadId))
+		if res.Slow {
+			log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", t.file)
 		}
-		// The fuzzing loop.
-		for file := range meta.testCh {
-			if meta.abort.Load() {
-				// Continue to drain the testch
-				continue
-			}
-			var slowTest atomic.Bool
-			var vmWg sync.WaitGroup
-			vmWg.Add(len(vms))
-			// Kick off the binaries, which runs the test on all the vms in parallel
-			for i, vm := range vms {
-				go func(evm evms.Evm, i int) {
-					defer vmWg.Done()
-					outputs[i].Reset()
-					res, err := evm.RunStateTest(file, outputs[i], false)
-					if err != nil {
-						log.Error("Error starting vm", "err", err, "evm", evm.Name())
-						return
-					}
-					commands[i] = res.Cmd
-					if res.Slow {
-						// Flag test as slow
-						log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", file)
-						slowTest.Store(true)
-					}
-				}(vm, i)
-			}
-			vmWg.Wait()
-			meta.numTests.Add(1)
-			// All the tests are now executed, and we need to read and compare the outputs
-			ok := true
-			ref := outputs[0].Sum()
-			for _, w := range outputs[1:] {
-				have := w.Sum()
-				ok = ok && bytes.Equal(have, ref)
-			}
-			if ok { // Output-hashes match, don't bother flushing to file and compare json.
-				traceLengthSA.Add(outputs[0].nLines)
+		t.slow = res.Slow
+		t.result = hasher.Sum(nil)
+		t.command = res.Cmd
+		t.execSpeed = res.ExecTime
+		// Send back
+		resultCh <- t
+	}
+	fmt.Printf("vmloop exiting\n")
+}
 
-				if slowTest.Load() {
-					meta.slowCh <- file // flag as slow
-				} else {
-					meta.removeCh <- file // flag for removal
-				}
-				continue
+type cleanTask struct {
+	slow   string // path to a file considered 'slow'
+	remove string // path to a file to be removed
+}
+
+func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
+	defer meta.wg.Done()
+	for task := range cleanCh {
+		if path := task.slow; path != "" {
+			newPath := filepath.Join(filepath.Dir(path), fmt.Sprintf("slowtest-%v", filepath.Base(path)))
+			if err := Copy(path, newPath); err != nil {
+				log.Error("Error copying file", "file", path, "err", err)
 			}
-			// Output-hashes do not match. At this point, we flush the full output
-			// to file, and inspect line by line.
-			var readers []io.Reader
-			for _, w := range outputs {
-				w.FlushAndSeek()
-				readers = append(readers, w.f)
-			}
-			// Compare outputs
-			if eq, _ := evms.CompareFiles(meta.vms, readers); !eq {
-				meta.abort.Store(true)
-				out := new(strings.Builder)
-				fmt.Fprintf(out, "Consensus error\n")
-				fmt.Fprintf(out, "Testcase: %v\n", file)
-				for i, w := range outputs {
-					fmt.Fprintf(out, "- %v: %v\n", meta.vms[i].Name(), w.f.Name())
-					fmt.Fprintf(out, "  - command: %v\n", commands[i])
-				}
-				fmt.Println(out)
-				meta.consensusCh <- file // flag as consensus-issue
+		}
+		if path := task.remove; path != "" {
+			if err := os.Remove(path); err != nil {
+				log.Error("Error deleting file", "file", path, "err", err)
 			}
 		}
 	}
-	numExecutors := numThreads / 2
-	if numExecutors == 0 {
-		numExecutors = 1
+	fmt.Printf("cleanupLoop exiting\n")
+}
+
+func (meta *testMeta) handleConsensusFlaw(testfile string) {
+	fmt.Fprintf(os.Stdout, "Consensus error\n")
+	fmt.Fprintf(os.Stdout, "Testcase: %v\n", testfile)
+	var readers []io.Reader
+	for _, evm := range meta.vms {
+		filename := fmt.Sprintf("./%v-output.jsonl", evm.Name())
+		out, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0755)
+		if err != nil {
+			log.Error("Failed opening file", "err", err)
+			panic(err)
+		}
+		res, err := evm.RunStateTest(testfile, out, false)
+		if err != nil {
+			log.Error("Failed running vm", "err", err)
+			panic(err)
+		}
+		fmt.Fprintf(os.Stdout, "- %v: %v\n", evm.Name(), filename)
+		fmt.Fprintf(os.Stdout, "  - command: %v\n", res.Cmd)
+		out.Sync()
+		out.Seek(0, 0)
+		readers = append(readers, out)
 	}
-	for i := 0; i < numExecutors; i++ {
-		// Thread that executes the tests and compares the outputs
+	// Compare outputs (and show diff)
+	evms.CompareFiles(meta.vms, readers)
+	for _, f := range readers {
+		f.(*os.File).Close()
+	}
+
+}
+func (meta *testMeta) fuzzingLoop(skipTrace bool) {
+	var (
+		ready        []int
+		testIndex    = 0
+		results      = make(map[int][]byte)
+		taskChannels []chan *task
+		resultCh     = make(chan *task)
+		cleanCh      = make(chan *cleanTask)
+	)
+	defer meta.wg.Done()
+	defer close(cleanCh)
+	// Start n vmLoops.
+	for i, vm := range meta.vms {
+		var taskCh = make(chan *task)
+		taskChannels = append(taskChannels, taskCh)
 		meta.wg.Add(1)
-		go execute(i)
+		go meta.vmLoop(vm, taskCh, resultCh)
+		ready = append(ready, i)
 	}
-}
 
-func (meta *testMeta) startNontracingTestExecutors(numThreads int) {
-	var executors atomic.Int64
-	execute := func(threadId int) {
-		log.Info("Test executor routine started")
-		defer meta.wg.Done()
-		defer func() {
-			// clean-up tasks
-			if f := executors.Add(-1); f == 0 {
-				close(meta.removeCh)
-				close(meta.slowCh)
-				log.Info("Last executor exiting")
-			}
-		}()
-		executors.Add(1)
-		log.Info("Fuzzing thread started", "id", threadId)
+	meta.wg.Add(1)
+	go meta.cleanupLoop(cleanCh)
 
-		for file := range meta.testCh {
-			if meta.abort.Load() {
-				// Continue looping until testch is drained
-				continue
-			}
-			// Zero out the output files and reset offset
-			var slowTest uint32
-			// Kick off the binaries, which runs the test on all the vms in parallel
-			var vmWg sync.WaitGroup
-			vmWg.Add(len(meta.vms))
-			var roots = make([]string, len(meta.vms))
-			var commands = make([]string, len(meta.vms))
-			for i := range meta.vms {
-				go func(i int) {
-					defer vmWg.Done()
-					var (
-						t0             = time.Now()
-						evm            = meta.vms[i]
-						root, cmd, err = evm.GetStateRoot(file)
-					)
-					if err != nil {
-						log.Error("Error starting vm", "vm", evm.Name(), "err", err)
-						return
-					}
-					roots[i] = root
-					commands[i] = cmd
-					if execTime := time.Since(t0); execTime > 5*time.Second {
-						log.Warn("Slow test found", "evm", evm.Name(), "time", execTime, "cmd", cmd, "file", file)
-						// Flag test as slow
-						atomic.StoreUint32(&slowTest, 1)
-					}
-				}(i)
-			}
-			vmWg.Wait()
-			// All the tests are now executed, and we need to read and compare the roots
-			meta.numTests.Add(1)
-			// Compare roots
-			consensusError := false
-			for i, root := range roots[:len(roots)-1] {
-				if root == roots[i+1] {
+	for file := range meta.testCh {
+		testIndex++
+		for len(ready) < 2 {
+			select {
+			case t := <-resultCh: // result delivery
+				ready = append(ready, t.vmIdx) // add client to ready-set
+				if t.err != nil {
+					log.Error("Error", "err", t.err)
+					meta.abort.Store(true)
+					continue // continue draining
+				}
+
+				if t.slow {
+					cleanCh <- &cleanTask{slow: t.file}
+				}
+				// check results
+				if results[t.testIdx] == nil { // first
+					results[t.testIdx] = t.result
 					continue
 				}
-				// Consensus error
-				meta.abort.Store(true)
-				consensusError = true
-				break
-			}
-			if consensusError {
-				out := new(strings.Builder)
-				fmt.Fprintf(out, "Consensus error\n")
-				for i, r := range roots {
-					fmt.Fprintf(out, "  - %v stateroot: %v\n", meta.vms[i].Name(), r)
-					fmt.Fprintf(out, "    - command: %v\n", commands[i])
+				if !bytes.Equal(results[t.testIdx], t.result) {
+					// Consensus flaw
+					meta.consensusCh <- t.file
+					meta.abort.Store(true)
+				} else {
+					delete(results, t.testIdx)
+					cleanCh <- &cleanTask{remove: t.file}
 				}
-				fmt.Fprintf(out, "Testcase: %v\n", file)
-				fmt.Println(out.String())
-				meta.consensusCh <- file // flag as consensus-issue
-			} else if slowTest != 0 {
-				meta.slowCh <- file // flag as slow
-			} else {
-				meta.removeCh <- file // flag for removal
+				meta.numTests.Add(1)
 			}
 		}
+		for _, id := range ready {
+			taskChannels[id] <- &task{
+				file:      file,
+				testIdx:   testIndex,
+				vmIdx:     id,
+				skipTrace: skipTrace,
+			}
+			ready = ready[1:]
+		}
 	}
-	numExecutors := numThreads / 2
-	if numExecutors == 0 {
-		numExecutors = 1
+	// Close all task channels
+	for _, taskCh := range taskChannels {
+		close(taskCh)
 	}
-	for i := 0; i < numExecutors; i++ {
-		// Thread that executes the tests and compares the outputs
-		meta.wg.Add(1)
-		go execute(i)
+	// drain resultchannel
+	for len(ready) < len(meta.vms) {
+		select {
+		case t := <-resultCh: // result delivery
+			ready = append(ready, t.vmIdx) // add client to ready-set
+		}
+	}
+	fmt.Printf("fuzzing loop exiting\n")
+
+	// We might have a consensus issue to investigate
+	select {
+	case testfile := <-meta.consensusCh:
+		meta.handleConsensusFlaw(testfile)
+	default:
 	}
 }
 
@@ -840,57 +777,4 @@ func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uin
 	}
 	fmt.Printf("Wrote file %v\n", fname)
 	return nil
-}
-
-// dualWriter is a io.Writer which writes to a hash, and also to a file, via a
-// 5-MB buffer. Ideally, the file-write never happens.
-// If the data is smaller than the internal buffer, and the hashes match up, the
-// writer can be Reset, and thus the file-write aborted.
-// This writer can thus be used to avoid both writing to (via buffer + discard)
-// and reading from (via hasher-check) disk.
-type dualWriter struct {
-	f      *os.File
-	out    *bufio.Writer
-	sum    hash.Hash
-	nLines int
-}
-
-func newDualWriter(f *os.File) *dualWriter {
-	out := bufio.NewWriterSize(f, 5*1024*1024)
-	w := &dualWriter{
-		f:   f,
-		out: out,
-		sum: md5.New(),
-	}
-	w.Reset()
-	return w
-}
-
-func (w *dualWriter) Write(data []byte) (int, error) {
-	w.nLines += bytes.Count(data, []byte{'\n'})
-	_, _ = w.out.Write(data)
-	return w.sum.Write(data)
-}
-
-func (w *dualWriter) Sum() []byte {
-	return w.sum.Sum(nil)
-}
-
-func (w *dualWriter) FlushAndSeek() {
-	w.out.Flush()
-	_ = w.f.Sync()
-	_, _ = w.f.Seek(0, 0)
-}
-
-func (w *dualWriter) Reset() {
-	_ = w.f.Truncate(0)
-	_, _ = w.f.Seek(0, 0)
-	w.out.Reset(w.f)
-	w.sum.Reset()
-	w.nLines = 0
-}
-
-// Close closes the underlying file handle.
-func (w *dualWriter) Close() {
-	w.f.Close()
 }
