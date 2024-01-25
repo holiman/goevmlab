@@ -371,7 +371,6 @@ func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) er
 }
 
 func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool) error {
-
 	var (
 		vms        = initVMs(c)
 		numThreads = c.Int(ThreadFlag.Name)
@@ -567,7 +566,7 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
 		if err != nil {
 			log.Error("Error starting vm", "err", err, "evm", evm.Name())
-			t.err = fmt.Errorf("error starting vm %v: %w", evm.Name, err)
+			t.err = fmt.Errorf("error starting vm %v: %w", evm.Name(), err)
 			// Send back
 			resultCh <- t
 			continue
