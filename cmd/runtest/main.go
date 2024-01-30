@@ -17,7 +17,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
+	"io"
 	"sync/atomic"
 )
 
@@ -59,11 +59,11 @@ func startFuzzer(c *cli.Context) error {
 		return err
 	}
 	var nextFile atomic.Int64
-	return common.ExecuteFuzzer(c, func(_, _ int) (string, error) {
+	return common.ExecuteFuzzer(c, true, func(_, _ int) (string, error) {
 		index := int(nextFile.Add(1)) - 1
 		if index < len(files) {
 			return files[index], nil
 		}
-		return "", errors.New("done")
+		return "", io.EOF
 	}, false)
 }

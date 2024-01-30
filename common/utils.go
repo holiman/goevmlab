@@ -301,12 +301,6 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	return true, nil
 }
 
-type noopWriter struct{}
-
-func (noopWriter) Write(p []byte) (n int, err error) {
-	return len(p), nil
-}
-
 func TestSpeed(dir string, c *cli.Context) error {
 	vms := initVMs(c)
 	if len(vms) < 1 {
@@ -329,7 +323,7 @@ func TestSpeed(dir string, c *cli.Context) error {
 		// Run the binaries sequentially
 		for _, evm := range vms {
 			log.Debug("Starting test", "evm", evm.Name(), "file", path)
-			res, err := evm.RunStateTest(path, noopWriter{}, true)
+			res, err := evm.RunStateTest(path, io.Discard, true)
 			if err != nil {
 				log.Error("Error starting vm", "vm", evm.Name(), "err", err)
 				return err
@@ -363,35 +357,40 @@ func testFnFromGenerator(fn GeneratorFn, name, location string) TestProviderFn {
 type GeneratorFn func() *fuzzing.GstMaker
 
 func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) error {
-	var (
-		location = c.String(LocationFlag.Name)
-	)
+	location := c.String(LocationFlag.Name)
 	fn := testFnFromGenerator(generatorFn, name, location)
-	return ExecuteFuzzer(c, fn, true)
+	return ExecuteFuzzer(c, false, fn, true)
 }
 
-func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool) error {
+func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, cleanupFiles bool) error {
 	var (
 		vms        = initVMs(c)
 		numThreads = c.Int(ThreadFlag.Name)
 		skipTrace  = c.Bool(SkipTraceFlag.Name)
+		numClients = 2
 	)
+	if allClients {
+		numClients = len(vms)
+	}
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")
 	}
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
-		errCh:       make(chan error, 10),  // Error channel
-		testCh:      make(chan string, 10), // channel where we'll deliver tests
-		consensusCh: make(chan string, 10), // channel for signalling consensus errors
-		vms:         vms,
+		testCh:              make(chan string, 10), // channel where we'll deliver tests
+		consensusCh:         make(chan string, 10), // channel for signalling consensus errors
+		vms:                 vms,
+		deleteFilesWhenDone: cleanupFiles,
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
 	meta.wg.Add(1)
-	go meta.fuzzingLoop(skipTrace)
-	// One goroutine to spit out some statistics
 	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		meta.fuzzingLoop(skipTrace, numClients)
+		cancel()
+	}()
+	// One goroutine to spit out some statistics
 	meta.wg.Add(1)
 	go func() {
 		defer meta.wg.Done()
@@ -450,10 +449,7 @@ func ExecuteFuzzer(c *cli.Context, providerFn TestProviderFn, cleanupFiles bool)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	select {
 	case <-sigs:
-	case path := <-meta.consensusCh:
-		log.Info("Possible consensus error", "file", path)
-	case err := <-meta.errCh:
-		log.Warn("Enocuntered error", "err", err)
+	case <-ctx.Done():
 	}
 	log.Info("Waiting for processes to exit")
 	meta.abort.Store(true)
@@ -510,6 +506,8 @@ type testMeta struct {
 	wg          sync.WaitGroup
 	vms         []evms.Evm
 	numTests    atomic.Uint64
+
+	deleteFilesWhenDone bool
 }
 
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
@@ -529,13 +527,17 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 			meta.wg.Done()
 		}()
 		for i := 0; !meta.abort.Load(); i++ {
-			if fileName, err := providerFn(i, threadId); err != nil {
-				log.Error("Error storing test", "err", err)
-				meta.errCh <- err
+			fileName, err := providerFn(i, threadId)
+			if err == io.EOF {
+				log.Info("Test provider done, exiting")
 				break
-			} else {
-				meta.testCh <- fileName
 			}
+			if err != nil {
+				log.Error("Error generating test, exiting", "err", err)
+				break
+			}
+			log.Trace("Shipping a test", "file", fileName)
+			meta.testCh <- fileName
 		}
 	}
 	for i := 0; i < numFactories; i++ {
@@ -581,7 +583,7 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 		// Send back
 		resultCh <- t
 	}
-	fmt.Printf("vmloop exiting\n")
+	log.Debug("vmloop exiting")
 }
 
 type cleanTask struct {
@@ -598,13 +600,13 @@ func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
 				log.Error("Error copying file", "file", path, "err", err)
 			}
 		}
-		if path := task.remove; path != "" {
+		if path := task.remove; path != "" && meta.deleteFilesWhenDone {
 			if err := os.Remove(path); err != nil {
 				log.Error("Error deleting file", "file", path, "err", err)
 			}
 		}
 	}
-	fmt.Printf("cleanupLoop exiting\n")
+	log.Debug("CleanupLoop exiting")
 }
 
 func (meta *testMeta) handleConsensusFlaw(testfile string) {
@@ -634,13 +636,12 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 	for _, f := range readers {
 		f.(*os.File).Close()
 	}
-
 }
-func (meta *testMeta) fuzzingLoop(skipTrace bool) {
+
+func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	var (
 		ready        []int
 		testIndex    = 0
-		results      = make(map[int][]byte)
 		taskChannels []chan *task
 		resultCh     = make(chan *task)
 		cleanCh      = make(chan *cleanTask)
@@ -663,42 +664,70 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool) {
 	//for _, vm := range meta.vms {
 	//	vm.Instance()
 	//}
-
-	for file := range meta.testCh {
-		testIndex++
-		for len(ready) < 2 {
+	type execResult struct {
+		hash          []byte
+		slow          bool
+		consensusFlaw bool
+		waiting       int
+	}
+	var executing = make(map[string]*execResult)
+	readResults := func(count int) {
+		for i := 0; i < count; i++ {
 			t := <-resultCh                // result delivery
 			ready = append(ready, t.vmIdx) // add client to ready-set
 			if t.err != nil {
 				log.Error("Error", "err", t.err)
 				meta.abort.Store(true)
-				continue // continue draining
-			}
-
-			if t.slow {
-				cleanCh <- &cleanTask{slow: t.file}
-			}
-			// check results
-			if results[t.testIdx] == nil { // first
-				results[t.testIdx] = t.result
 				continue
 			}
-			if !bytes.Equal(results[t.testIdx], t.result) {
-				// Consensus flaw
+			execRs := executing[t.file]
+			execRs.waiting--
+
+			if t.slow {
+				execRs.slow = true
+			}
+			// check results
+			if execRs.hash == nil { // first
+				execRs.hash = t.result
+			}
+			if !bytes.Equal(execRs.hash, t.result) {
+				log.Info("Consensus flaw", "file", t.file)
+				execRs.consensusFlaw = true
+			}
+			if execRs.waiting > 0 {
+				continue
+			}
+			// No more results in the pipeline
+			delete(executing, t.file)
+			meta.numTests.Add(1)
+			switch {
+			case execRs.consensusFlaw:
 				meta.consensusCh <- t.file
 				meta.abort.Store(true)
-			} else {
+			case execRs.slow:
+				cleanCh <- &cleanTask{slow: t.file}
+			default:
 				cleanCh <- &cleanTask{remove: t.file}
 			}
-			delete(results, t.testIdx)
-			meta.numTests.Add(1)
+		}
+	}
+	for testfile := range meta.testCh {
+		testIndex++
+		// First, make sure we have N clients to execute the test on
+		if clientsNeeded := clientCount - len(ready); clientsNeeded > 0 {
+			readResults(clientsNeeded)
 		}
 		if meta.abort.Load() {
+			log.Info("Shortcutting through abort")
 			continue
 		}
-		for _, id := range ready {
+		// Dispatch the testfile to the ready clients
+		log.Trace("Dispatching test to clients", "count", clientCount)
+		executing[testfile] = &execResult{waiting: clientCount}
+		for i := 0; i < clientCount; i++ {
+			id := ready[0]
 			taskChannels[id] <- &task{
-				file:      file,
+				file:      testfile,
 				testIdx:   testIndex,
 				vmIdx:     id,
 				skipTrace: skipTrace,
@@ -710,13 +739,11 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool) {
 	for _, taskCh := range taskChannels {
 		close(taskCh)
 	}
-	// drain resultchannel
+	// drain resultchanne;
 	for len(ready) < len(meta.vms) {
-		t := <-resultCh                // result delivery
-		ready = append(ready, t.vmIdx) // add client to ready-set
+		readResults(len(meta.vms) - len(ready))
 	}
-	fmt.Printf("fuzzing loop exiting\n")
-
+	log.Debug("Fuzzing loop exiting")
 	// We might have a consensus issue to investigate
 	select {
 	case testfile := <-meta.consensusCh:
