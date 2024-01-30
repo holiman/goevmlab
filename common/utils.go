@@ -377,8 +377,8 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 	}
 	log.Info("Fuzzing started", "threads", numThreads)
 	meta := &testMeta{
-		testCh:              make(chan string, 10), // channel where we'll deliver tests
-		consensusCh:         make(chan string, 10), // channel for signalling consensus errors
+		testCh:              make(chan string, 4), // channel where we'll deliver tests
+		consensusCh:         make(chan string, 4), // channel for signalling consensus errors
 		vms:                 vms,
 		deleteFilesWhenDone: cleanupFiles,
 	}
@@ -500,7 +500,6 @@ func Copy(src, dst string) error {
 
 type testMeta struct {
 	abort       atomic.Bool
-	errCh       chan error
 	testCh      chan string
 	consensusCh chan string
 	wg          sync.WaitGroup
@@ -627,8 +626,8 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 		}
 		fmt.Fprintf(os.Stdout, "- %v: %v\n", evm.Name(), filename)
 		fmt.Fprintf(os.Stdout, "  - command: %v\n", res.Cmd)
-		out.Sync()
-		out.Seek(0, 0)
+		_ = out.Sync()
+		_, _ = out.Seek(0, 0)
 		readers = append(readers, out)
 	}
 	// Compare outputs (and show diff)
