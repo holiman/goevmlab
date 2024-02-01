@@ -30,6 +30,14 @@ func (stat *VmStat) TraceDone(start time.Time) (time.Duration, bool) {
 	return duration, false
 }
 
+func (stat *VmStat) Stats() []any {
+	return []interface{}{
+		"execSpeed", time.Duration(stat.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond),
+		"longest", stat.longestTracingTime,
+		"count", stat.numExecs.Load(),
+	}
+}
+
 type tracingResult struct {
 	Slow     bool
 	ExecTime time.Duration

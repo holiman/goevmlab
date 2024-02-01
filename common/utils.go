@@ -23,6 +23,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 	"math/big"
 	"os"
@@ -555,13 +556,39 @@ type task struct {
 	execSpeed time.Duration
 	slow      bool   // set by the executor if the test is deemed slow.
 	result    []byte // result is the md5 hash of the execution output
+	nLines    int    // number of lines of output
 	command   string // command used to execute the test
 	err       error  // if error occurred
 }
 
+type lineCountingHasher struct {
+	h     hash.Hash
+	lines int
+}
+
+func newLineCountingHasher() *lineCountingHasher {
+	return &lineCountingHasher{md5.New(), 0}
+}
+
+func (l *lineCountingHasher) Write(p []byte) (n int, err error) {
+	var count int
+	for _, c := range p {
+		if c == '\n' {
+			count++
+		}
+	}
+	l.lines += count
+	return l.h.Write(p)
+}
+
+func (l *lineCountingHasher) Reset() {
+	l.h.Reset()
+	l.lines = 0
+}
+
 func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 	defer meta.wg.Done()
-	var hasher = md5.New()
+	var hasher = newLineCountingHasher()
 	for t := range taskCh {
 		hasher.Reset()
 		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
@@ -576,7 +603,8 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 			log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", t.file)
 		}
 		t.slow = res.Slow
-		t.result = hasher.Sum(nil)
+		t.result = hasher.h.Sum(nil)
+		t.nLines = hasher.lines
 		t.command = res.Cmd
 		t.execSpeed = res.ExecTime
 		// Send back
@@ -659,15 +687,11 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	meta.wg.Add(1)
 	go meta.cleanupLoop(cleanCh)
 
-	// TODO use multiple vm instances  / threads?
-	//for _, vm := range meta.vms {
-	//	vm.Instance()
-	//}
 	type execResult struct {
-		hash          []byte
-		slow          bool
-		consensusFlaw bool
-		waiting       int
+		hash          []byte // hash of the output
+		slow          bool   // whether it was considered slow
+		consensusFlaw bool   // whether it triggered a consensus flaw
+		waiting       int    // the number of clients we're waiting the results from
 	}
 	var executing = make(map[string]*execResult)
 	readResults := func(count int) {
@@ -696,6 +720,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 			if execRs.waiting > 0 {
 				continue
 			}
+			traceLengthSA.Add(t.nLines)
 			// No more results in the pipeline
 			delete(executing, t.file)
 			meta.numTests.Add(1)
