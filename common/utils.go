@@ -93,6 +93,10 @@ var (
 		Name:  "revme",
 		Usage: "Location of reth 'revme' binary",
 	}
+	CuevmFlag = &cli.StringSliceFlag{
+		Name:  "cuevm",
+		Usage: "Location of cuevm 'cuevm' binary",
+	}
 	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -135,6 +139,7 @@ var (
 		NimbusFlag,
 		EvmoneFlag,
 		RethFlag,
+		CuevmFlag,
 	}
 	traceLengthSA = utils.NewSlidingAverage()
 )
@@ -152,6 +157,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 		nimBins         = c.StringSlice(NimbusFlag.Name)
 		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
 		revmBins        = c.StringSlice(RethFlag.Name)
+		cuevmBins       = c.StringSlice(CuevmFlag.Name)
 
 		vms []evms.Evm
 	)
@@ -187,6 +193,9 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range revmBins {
 		vms = append(vms, evms.NewRethVM(bin, fmt.Sprintf("%d", i)))
+	}
+	for i, bin := range cuevmBins {
+		vms = append(vms, evms.NewCuEVM(bin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 
