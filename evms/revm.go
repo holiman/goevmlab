@@ -141,7 +141,7 @@ func (evm *RethVM) Copy(out io.Writer, input io.Reader) {
 		}
 		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
-			fmt.Printf("evmone err: %v, line\n\t%v\n", err, string(data))
+			fmt.Printf("revm err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
 

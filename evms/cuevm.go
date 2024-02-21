@@ -50,14 +50,14 @@ func (evm *CuEVM) Instance(int) Evm {
 }
 
 func (evm *CuEVM) Name() string {
-	return fmt.Sprintf("revm-%s", evm.name)
+	return fmt.Sprintf("cuevm-%s", evm.name)
 }
 
 func (evm *CuEVM) GetStateRoot(path string) (root, command string, err error) {
 	cmd := exec.Command(evm.path, "statetest", "--json-outcome", path)
 	data, err := StdErrOutput(cmd)
 
-	// If revm exits with 1 on stateroot errors, uncomment to ignore:
+	// If cuevm exits with 1 on stateroot errors, uncomment to ignore:
 	//if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 	//	err = nil
 	//}
@@ -91,10 +91,7 @@ func (evm *CuEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tra
 		err    error
 		cmd    *exec.Cmd
 	)
-	cmd = exec.Command(evm.path, "statetest", "--json", path)
-	if speedTest {
-		cmd = exec.Command(evm.path, "statetest", "--json-outcome", path)
-	}
+	cmd = exec.Command(evm.path, "--input", path, "--output", "/dev/null")
 
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
@@ -103,11 +100,11 @@ func (evm *CuEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tra
 		return nil, err
 	}
 
-	evm.Copy(out, stderr)
+	evm.Copy(out, stderr) // stderr is used for traces as json
 	err = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
 
-	// If revm exits with 1 on stateroot errors, uncomment to ignore:
+	// If cuevm exits with 1 on stateroot errors, uncomment to ignore:
 	//if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 	//	err = nil
 	//}
@@ -141,7 +138,7 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 		}
 		var elem logger.StructLog
 		if err := json.Unmarshal(data, &elem); err != nil {
-			fmt.Printf("evmone err: %v, line\n\t%v\n", err, string(data))
+			fmt.Printf("cuevm err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
 
