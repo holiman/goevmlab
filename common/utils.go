@@ -369,7 +369,7 @@ type GeneratorFn func() *fuzzing.GstMaker
 func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	location := c.String(LocationFlag.Name)
 	fn := testFnFromGenerator(generatorFn, name, location)
-	return ExecuteFuzzer(c, false, fn, false)
+	return ExecuteFuzzer(c, false, fn, true)
 }
 
 func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, cleanupFiles bool) error {

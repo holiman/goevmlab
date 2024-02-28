@@ -18,9 +18,9 @@ package evms
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 )
 
@@ -75,13 +75,11 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 	for refOut.Scan() {
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
-			a := string(refOut.Bytes())
-			b := string(scanner.Bytes())
-			if a != b && !strings.Contains(a, "stateRoot") {
+			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
 				fmt.Printf("-------\nprev:%15v: %v\ndiff:%15v: %v\ndiff:%15v: %v\n",
 					"both", prevLine,
-					refVM.Name(), a,
-					vms[i+1].Name(), b)
+					refVM.Name(), string(refOut.Bytes()),
+					vms[i+1].Name(), string(scanner.Bytes()))
 				return false, count
 			}
 		}
