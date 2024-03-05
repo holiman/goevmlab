@@ -151,7 +151,11 @@ COPY --from=golang-builder /go/goevmlab/tracediff /
 COPY --from=golang-builder /go/goevmlab/traceview /
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
+
+
 COPY --from=golang-builder /erigon_vm /erigon_vm
+COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.12.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
+
 COPY --from=golang-builder /evmstate /nimbvm
 
 COPY --from=debian-builder /evmone-statetest /evmone
