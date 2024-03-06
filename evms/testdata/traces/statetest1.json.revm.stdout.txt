@@ -2,6 +2,7 @@
 Running tests in statetest1.json...
 
 Traces:
+{"stateRoot":"0x0000000000000000000000000000000000000000000000000000000000000000","output":"0x","gasUsed":"0x0","pass":true}
 
 Execution result: Ok(
     Halt {
@@ -248,5 +249,4 @@ Environment: Env {
 
 Test name: "randomStatetestmartin-Wed_10_02_29-14338-0" (index: 0, path: statetest1.json) failed:
 Test randomStatetestmartin-Wed_10_02_29-14338-0 failed: state root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134
-Finished execution. Total CPU time: 0.000624s
-Test randomStatetestmartin-Wed_10_02_29-14338-0 failed: state root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134
+Finished execution. Total CPU time: 0.000698s

@@ -2,6 +2,7 @@
 Running tests in stackUnderflow_nonzeroMem.json...
 
 Traces:
+{"stateRoot":"0x0000000000000000000000000000000000000000000000000000000000000000","output":"0x","gasUsed":"0x0","pass":true}
 
 Execution result: Ok(
     Halt {
@@ -170,5 +171,4 @@ Environment: Env {
 
 Test name: "00000000-mixed-0" (index: 0, path: stackUnderflow_nonzeroMem.json) failed:
 Test 00000000-mixed-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
-Finished execution. Total CPU time: 0.000335s
-Test 00000000-mixed-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
+Finished execution. Total CPU time: 0.000039s

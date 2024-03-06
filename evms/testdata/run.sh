@@ -1,12 +1,11 @@
 #!/bin/bash
-
-# evm="/home/martin/workspace/evm"
-# nethtest="/home/martin/workspace/nethtest"
-# besuvm="/home/martin/workspace/besu-vm"
-# erigonvm="/home/martin/workspace/erigon-evm"
-# nimbus="/home/martin/workspace/evmstate"
-# evmone="/home/martin/workspace/evmone-statetest"
-revm="/home/user/workspace/revme"
+evm=$GETH_BIN      # "/home/martin/workspace/evm"
+nethtest=$NETH_BIN #"/home/martin/workspace/nethtest"
+besuvm=$BESU_BIN   #"/home/martin/workspace/besu-vm"
+erigonvm=$ERIG_BIN #"/home/martin/workspace/erigon-evm"
+nimbus=$NIMB_BIN   #"/home/martin/workspace/evmstate"
+evmone=$EVMO_BIN   #"/home/martin/workspace/evmone-statetest"
+revm=$RETH_BIN     #"/home/user/workspace/revme"
 
 ### Geth
 

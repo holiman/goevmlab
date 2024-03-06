@@ -1,4 +1,4 @@
 
 Running tests in statetest_filled.json...
-Finished execution. Total CPU time: 0.000000s
+Finished execution. Total CPU time: 0.000038s
 All tests passed!

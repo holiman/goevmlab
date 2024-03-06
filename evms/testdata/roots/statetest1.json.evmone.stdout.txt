@@ -1,0 +1,24 @@
+Note: Google Test filter = -stCreateTest.CreateOOGafterMaxCodesize:stQuadraticComplexityTest.Call50000_sha256:stTimeConsuming.static_Call50000_sha256:stTimeConsuming.CALLBlake2f_MaxRounds:VMTests/vmPerformance.*:
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from 
+[ RUN      ] .statetest1
+/evmone/test/statetest/statetest_runner.cpp:58: Failure
+Expected equality of these values:
+  state_root
+    Which is: 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134
+  expected.state_hash
+    Which is: 0x0000000000000000000000000000000000000000000000000000000000000000
+Google Test trace:
+/evmone/test/statetest/statetest_runner.cpp:19: Byzantium/0
+
+[  FAILED  ] .statetest1 (0 ms)
+[----------] 1 test from  (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] .statetest1
+
+ 1 FAILED TEST

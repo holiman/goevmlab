@@ -1,0 +1,11 @@
+Note: Google Test filter = -stCreateTest.CreateOOGafterMaxCodesize:stQuadraticComplexityTest.Call50000_sha256:stTimeConsuming.static_Call50000_sha256:stTimeConsuming.CALLBlake2f_MaxRounds:VMTests/vmPerformance.*:
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from 
+[ RUN      ] .statetest_filled
+[       OK ] .statetest_filled (0 ms)
+[----------] 1 test from  (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.

@@ -8,6 +8,6 @@
 {"pc":16,"op":244,"gas":"0x79becf","gasCost":"0x10a2a","memSize":0,"stack":["0x0","0x1","0x1","0x2","0x2","0x1f4","0xffff"],"depth":1,"refund":0,"opname":"DELEGATECALL","error":""}
 {"pc":17,"op":54,"gas":"0x79b4a4","gasCost":"0x2","memSize":32,"stack":["0x0","0x1"],"depth":1,"refund":0,"opname":"CALLDATASIZE","error":""}
 {"pc":18,"op":145,"gas":"0x79b4a2","gasCost":"0x3","memSize":32,"stack":["0x0","0x1","0x12"],"depth":1,"refund":0,"opname":"SWAP2","error":""}
-{"pc":19,"op":142,"gas":"0x79b49f","gasCost":"0x79b49f","memSize":32,"stack":["0x12","0x1","0x0"],"depth":1,"refund":0,"opname":"DUP15","error":"StackUnderflow"}
-{"output":"0x","gasUsed":"0x79bee4","time":60,"error":"StackUnderflow"}
+{"pc":19,"op":142,"gas":"0x79b49f","gasCost":"0x3","memSize":32,"stack":["0x12","0x1","0x0"],"depth":1,"refund":0,"opname":"DUP15","error":"StackUnderflow"}
+{"output":"0x","gasUsed":"0x79bee4","time":75.0902,"error":"StackUnderflow"}
 {"stateRoot":"0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4"}
