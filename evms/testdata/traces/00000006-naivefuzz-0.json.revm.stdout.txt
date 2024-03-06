@@ -176,4 +176,4 @@ Environment: Env {
 
 Test name: "00000006-naivefuzz-0" (index: 0, path: 00000006-naivefuzz-0.json) failed:
 Test 00000006-naivefuzz-0 failed: logs root mismatch: expected 0x0000000000000000000000000000000000000000000000000000000000000000, got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
-Finished execution. Total CPU time: 0.079403s
+Finished execution. Total CPU time: 0.081549s

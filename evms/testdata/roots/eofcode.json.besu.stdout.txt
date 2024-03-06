@@ -1,0 +1,1 @@
+{"output":"","gasUsed":"0x1","test":"00161676-mixed-1","fork":"Cancun","d":0,"g":0,"v":0,"postHash":"0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false,"validationError":"intrinsic gas cost 21016 exceeds gas limit 0"}

@@ -3,7 +3,7 @@
     "name": "00000006-naivefuzz-0_d0g0v0_",
     "pass": false,
     "fork": "London",
-    "timeInMs": 0.7049,
+    "timeInMs": 0.5283,
     "stateRoot": "0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458"
   }
 ]
