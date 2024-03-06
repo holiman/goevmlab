@@ -122,6 +122,7 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 		"stackUnderflow_nonzeroMem.json": "0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4",
 		"00000936-mixed-1.json":          "0xd14c10ed22a1cfb642e374be985ac581c39f3969bd59249e0405aca3beb47a47",
 		"negative_refund.json":           "0xee0bbf0438796320ede24ca3c52e31f04dccbfe1fce282f79fe44e67a23351e9",
+		"eofcode.json":                   "0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f",
 	}
 	for i, finfo := range finfos {
 		testfile := filepath.Join("testdata", "roots", finfo.Name())
