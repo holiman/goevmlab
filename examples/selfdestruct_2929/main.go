@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 // This program creates a testcase surrounding selfdestruct in the context of
@@ -154,7 +155,7 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, acc.Balance)
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
 		}
 
 	}

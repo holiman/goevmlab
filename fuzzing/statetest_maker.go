@@ -191,12 +191,12 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	if traceOutput != nil {
 		cfg.Tracer = logger.NewJSONLogger(&logger.Config{}, traceOutput)
 	}
-	_, _, statedb, root, err := test.RunNoVerify(subtest, cfg, false, rawdb.HashScheme)
+	state, root, err := test.RunNoVerify(subtest, cfg, false, rawdb.HashScheme)
 	if err != nil {
 		return err
 	}
-
-	logs := rlpHash(statedb.Logs())
+	defer state.Close()
+	logs := rlpHash(state.StateDB.Logs())
 	g.SetResult(root, logs)
 	return nil
 }

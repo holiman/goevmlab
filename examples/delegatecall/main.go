@@ -33,6 +33,7 @@ import (
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -88,12 +89,12 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, acc.Balance)
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
 		}
 
 	}
 	statedb.CreateAccount(sender)
-	statedb.SetBalance(sender, big.NewInt(0xfffffffffffffff))
+	statedb.SetBalance(sender, uint256.NewInt(0xfffffffffffffff))
 
 	runtimeConfig := runtime.Config{
 		Value:       big.NewInt(0x1337),
