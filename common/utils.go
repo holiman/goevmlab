@@ -40,7 +40,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -777,7 +777,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 }
 
 // ConvertToStateTest is a utility to turn stuff into sharable state tests.
-func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uint64, target common.Address) error {
+func ConvertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit uint64, target common.Address) error {
 
 	mkr := fuzzing.BasicStateTest(fork)
 	// convert the genesisAlloc

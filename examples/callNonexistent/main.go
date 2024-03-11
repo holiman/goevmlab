@@ -23,9 +23,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
@@ -93,8 +93,8 @@ func runit() error {
 	}
 
 	aAddr := common.HexToAddress("0xff0a")
-	alloc := make(core.GenesisAlloc)
-	alloc[aAddr] = core.GenesisAccount{
+	alloc := make(types.GenesisAlloc)
+	alloc[aAddr] = types.Account{
 		Nonce:   0,
 		Code:    code,
 		Balance: big.NewInt(0xffffffff),
