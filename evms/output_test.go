@@ -34,6 +34,11 @@ func TestVMsOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, finfo := range finfos {
+		if finfo.Name() == "eofcode.json" {
+			// We skip this one. Evmone refuse to run it.
+			// https://github.com/holiman/goevmlab/issues/127
+			continue
+		}
 		testVmsOutput(t, filepath.Join("testdata", "traces", finfo.Name()))
 	}
 }
@@ -131,6 +136,12 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 		combined := append(stderr, stdout...)
 		have, err := vm.ParseStateRoot(combined)
 		if err != nil {
+			if finfo.Name() == "eofcode.json" {
+				// We accept this failure. Evmone refuse to run it.
+				// https://github.com/holiman/goevmlab/issues/127
+				t.Logf("case %d, %v: got error: %v (failure accepted)", i, finfo.Name(), err)
+				continue
+			}
 			t.Errorf("case %d, %v: got error: %v", i, finfo.Name(), err)
 		}
 		want, ok := wants[finfo.Name()]
