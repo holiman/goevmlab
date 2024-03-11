@@ -23,15 +23,16 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -92,8 +93,8 @@ func runit() error {
 	}
 
 	aAddr := common.HexToAddress("0xff0a")
-	alloc := make(core.GenesisAlloc)
-	alloc[aAddr] = core.GenesisAccount{
+	alloc := make(types.GenesisAlloc)
+	alloc[aAddr] = types.Account{
 		Nonce:   0,
 		Code:    code,
 		Balance: big.NewInt(0xffffffff),
@@ -117,7 +118,7 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, acc.Balance)
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
 		}
 
 	}

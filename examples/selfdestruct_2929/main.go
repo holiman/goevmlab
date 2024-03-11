@@ -26,15 +26,16 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 // This program creates a testcase surrounding selfdestruct in the context of
@@ -113,26 +114,26 @@ func runit() error {
 		caller.Op(ops.POP)                         // Ignore returnvalue
 	}
 	// Set up a genesis
-	alloc := make(core.GenesisAlloc)
+	alloc := make(types.GenesisAlloc)
 	// Create those that are supposed to exist
 	for _, addr := range existingAddresses {
-		alloc[addr] = core.GenesisAccount{
+		alloc[addr] = types.Account{
 			Nonce:   1,
 			Balance: big.NewInt(0),
 		}
 	}
 
-	alloc[destAddr] = core.GenesisAccount{
+	alloc[destAddr] = types.Account{
 		Nonce:   1,
 		Code:    destructor.Bytecode(),
 		Balance: big.NewInt(0x1),
 	}
-	alloc[callerAddr] = core.GenesisAccount{
+	alloc[callerAddr] = types.Account{
 		Nonce:   1,
 		Code:    caller.Bytecode(),
 		Balance: big.NewInt(0x1),
 	}
-	alloc[sender] = core.GenesisAccount{
+	alloc[sender] = types.Account{
 		Nonce:   0,
 		Balance: big.NewInt(1000000000000000000), // 1 eth
 	}
@@ -154,7 +155,7 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, acc.Balance)
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
 		}
 
 	}

@@ -24,14 +24,15 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -59,8 +60,8 @@ func runit() error {
 	a.Op(ops.STATICCALL)
 	a.Jump(dest) // Jump back
 
-	alloc := make(core.GenesisAlloc)
-	alloc[aAddr] = core.GenesisAccount{
+	alloc := make(types.GenesisAlloc)
+	alloc[aAddr] = types.Account{
 		Nonce:   0,
 		Code:    a.Bytecode(),
 		Balance: big.NewInt(0xffffffff),
@@ -83,7 +84,7 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, acc.Balance)
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
 		}
 	}
 	statedb.CreateAccount(sender)
