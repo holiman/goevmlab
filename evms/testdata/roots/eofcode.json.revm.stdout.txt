@@ -2,7 +2,6 @@
 Running tests in eofcode.json...
 
 Traces:
-{"stateRoot":"0x0000000000000000000000000000000000000000000000000000000000000000","output":"0x","gasUsed":"0x0","pass":true}
 
 Execution result: Err(
     Transaction(
@@ -134,4 +133,5 @@ Environment: Env {
 
 Test name: "00161676-mixed-1" (index: 0, path: eofcode.json) failed:
 Test 00161676-mixed-1 failed: Unexpected exception: Some("Transaction error: CallGasCostMoreThanGasLimit") but test expects:None
-Finished execution. Total CPU time: 0.000005s
+Finished execution. Total CPU time: 0.000014s
+Test 00161676-mixed-1 failed: Unexpected exception: Some("Transaction error: CallGasCostMoreThanGasLimit") but test expects:None
