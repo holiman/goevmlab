@@ -149,24 +149,32 @@ COPY --from=golang-builder /go/goevmlab/repro /
 COPY --from=golang-builder /go/goevmlab/runtest /
 COPY --from=golang-builder /go/goevmlab/tracediff /
 COPY --from=golang-builder /go/goevmlab/traceview /
+COPY --from=golang-builder /go/goevmlab/evms/testdata/ /testdata/
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
+ENV GETH_BIN=/gethvm
 
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
 COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.12.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
+ENV ERIG_BIN=/erigon_vm
 
 COPY --from=golang-builder /evmstate /nimbvm
+ENV NIMB_BIN=/nimbvm
 
 COPY --from=debian-builder /evmone-statetest /evmone
 COPY --from=debian-builder /libevmone.so.0.12 /lib/libevmone.so.0.12
+ENV EVMO_BIN=/evmone
 
 COPY --from=rust-builder /revm/target/release/revme /revme
+ENV RETH_BIN=/revme
 
 COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
+ENV NETH_BIN=/neth/nethtest
 
 COPY --from=java-builder /out/evmtool /evmtool
 RUN ln -s /evmtool/bin/evm besu-vm
+ENV BESU_BIN=/evmtool/bin/evm
 
 ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--besubatch=/besu-vm","--evmone=/evmone","--fork=Cancun"]
