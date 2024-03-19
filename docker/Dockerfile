@@ -45,6 +45,8 @@ RUN cd go-ethereum && go run build/ci.go install -static ./cmd/evm
 #
 RUN git clone https://github.com/ledgerwatch/erigon --depth 1
 RUN cd erigon && make evm && cp ./build/bin/evm /erigon_vm
+#RUN ls -la /go/pkg/mod/github.com/erigontech/
+
 
 #
 # NIMBUS-ETH1
@@ -58,7 +60,8 @@ RUN cp nimbus-eth1/tools/evmstate/evmstate /evmstate
 
 RUN echo "please" >> /build.sequential
 
-RUN ls -la /go/goevmlab/tracediff
+
+
 
 #---------------------------------------------------------------
 # debian-builder
@@ -156,7 +159,7 @@ ENV GETH_BIN=/gethvm
 
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
-COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.12.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
+COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.14.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
 COPY --from=golang-builder /evmstate /nimbvm
@@ -177,4 +180,6 @@ COPY --from=java-builder /out/evmtool /evmtool
 RUN ln -s /evmtool/bin/evm besu-vm
 ENV BESU_BIN=/evmtool/bin/evm
 
-ENTRYPOINT ["/generic-fuzzer","--gethbatch=/gethvm","--nethbatch=/nethtest","--nimbus=/nimbvm","--revme=/revme", "--erigonbatch=/erigon_vm", "--besubatch=/besu-vm","--evmone=/evmone","--fork=Cancun"]
+COPY readme_docker.md  /README.md
+COPY entrypoint.sh  /entrypoint.sh
+ENTRYPOINT ["/bin/bash"]

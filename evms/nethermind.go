@@ -87,22 +87,29 @@ func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
 // RunStateTest implements the Evm interface
 func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
-		t0     = time.Now()
-		stderr io.ReadCloser
-		err    error
-		cmd    = exec.Command(evm.path, "--trace", "-m", "--input", path)
+		t0      = time.Now()
+		procOut io.ReadCloser
+		err     error
+		cmd     = exec.Command(evm.path, "--trace", "-m", "--input", path)
 	)
-	if speedTest {
+	if !speedTest {
+		// in normal execution, we read traces from standard error
+		if procOut, err = cmd.StderrPipe(); err != nil {
+			return &tracingResult{Cmd: cmd.String()}, err
+		}
+	} else {
+		// In speedtest-mode, we don't want the actual traces, but we do
+		// need to read the stateroot. The stateroot can be found on stdout
 		cmd = exec.Command(evm.path, "-m", "--neverTrace", "--input", path)
-	}
-	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		if procOut, err = cmd.StdoutPipe(); err != nil {
+			return &tracingResult{Cmd: cmd.String()}, err
+		}
 	}
 	if err = cmd.Start(); err != nil {
 		return &tracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
-	evm.Copy(out, stderr)
+	evm.copyUntilEnd(out, procOut, speedTest)
 	// release resources, handle error but ignore non-zero exit codes
 	_ = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
@@ -115,13 +122,13 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 func (vm *NethermindVM) Close() {
 }
 
-// feed reads from the reader, does some geth-specific filtering and
+// feed reads from the reader, does some vm-specific filtering and
 // outputs items onto the channel
 func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
-	evm.copyUntilEnd(out, input)
+	evm.copyUntilEnd(out, input, false)
 }
 
-func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool) stateRoot {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
@@ -133,40 +140,57 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 		data := scanner.Bytes()
 		var elem logger.StructLog
 
-		err := json.Unmarshal(data, &elem)
-		if err != nil {
-			fmt.Printf("nethermind err: %v, line\n\t%v\n", err, string(data))
-			continue
-		}
-		// If the output cannot be marshalled, all fields will be blanks.
-		// We can detect that through 'depth', which should never be less than 1
-		// for any actual opcode
-		if elem.Depth == 0 {
-			/*  Most likely one of these:
-			{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
+		if speedMode {
+			// In speednode, there's no jsonl output, it instead looks like
+			/*
+				[
+				 {
+				   "name" : ..
+				   "pass" : false,
+				   ...
+				   "stateRoot": "0x.."
+				 }
+				]
 			*/
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
-			}
-			// If we have a stateroot, we're done
-			if len(stateRoot.StateRoot) > 0 {
+			// might be a stateroot on stdout, on json not jsonl?
+			if root, err := evm.ParseStateRoot(data); err == nil {
+				stateRoot.StateRoot = root
 				break
 			}
-
-			//fmt.Printf("%v\n", string(data))
-			// For now, just ignore these
 			continue
-		}
-		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
-		// In order to handle that, we need to drop all STOP opcodes.
-		if elem.Op == 0x0 {
-			continue
-		}
-		outp := FastMarshal(&elem)
-		if _, err := out.Write(append(outp, '\n')); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return stateRoot
+		} else {
+			err := json.Unmarshal(data, &elem)
+			if err != nil {
+				fmt.Printf("nethermind err: %v, line\n\t%v\n", err, string(data))
+				continue
+			}
+			// If the output cannot be marshalled, all fields will be blanks.
+			// We can detect that through 'depth', which should never be less than 1
+			// for any actual opcode
+			if elem.Depth == 0 {
+				/*  Most likely one of these:
+				{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
+				{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
+				*/
+				if stateRoot.StateRoot == "" {
+					_ = json.Unmarshal(data, &stateRoot)
+				}
+				// If we have a stateroot, we're done
+				if len(stateRoot.StateRoot) > 0 {
+					break
+				}
+				continue
+			}
+			// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
+			// In order to handle that, we need to drop all STOP opcodes.
+			if elem.Op == 0x0 {
+				continue
+			}
+			outp := FastMarshal(&elem)
+			if _, err := out.Write(append(outp, '\n')); err != nil {
+				fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+				return stateRoot
+			}
 		}
 	}
 	root, _ := json.Marshal(stateRoot)

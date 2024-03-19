@@ -123,6 +123,12 @@ var (
 			"This mode is faster, and can be used even if the clients-under-test has known errors in the trace-output, \n" +
 			"but has a very high chance of missing cases which could be exploitable.",
 	}
+	VerbosityFlag = &cli.IntFlag{
+		Name:  "verbosity",
+		Usage: "sets the verbosity level (-4: DEBUG, 0: INFO, 4: WARN, 8: ERROR)",
+		Value: 0,
+	}
+
 	VmFlags = []cli.Flag{
 		GethFlag,
 		GethBatchFlag,
