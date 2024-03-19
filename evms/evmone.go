@@ -90,10 +90,11 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		stderr io.ReadCloser
 		err    error
 		cmd    *exec.Cmd
+		cmd    = exec.Command(evm.path, "--trace", path)
 	)
-
-	cmd = exec.Command(evm.path, "--trace", path)
-
+	if speedTest {
+		cmd = exec.Command(evm.path, "--trace-summary", path)
+	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
 	}
