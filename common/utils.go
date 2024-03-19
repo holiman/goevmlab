@@ -340,8 +340,6 @@ func TestSpeed(dir string, c *cli.Context) error {
 				logger = log.Warn
 			} else if res.ExecTime > infoThreshold {
 				logger = log.Info
-			} else {
-				logger = log.Debug
 			}
 			logger("Execution speed", "evm", evm.Name(), "file", path,
 				"time", res.ExecTime, "cmd", res.Cmd)
