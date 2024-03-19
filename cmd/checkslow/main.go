@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/exp/slog"
 )
 
 func initApp() *cli.App {
@@ -32,6 +33,7 @@ func initApp() *cli.App {
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Tests execution speed on list of statetests"
 	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, common.VerbosityFlag)
 	app.Action = startTests
 	return app
 }
@@ -39,7 +41,6 @@ func initApp() *cli.App {
 var app = initApp()
 
 func main() {
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelInfo, true)))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -47,6 +48,8 @@ func main() {
 }
 
 func startTests(c *cli.Context) error {
+	loglevel := slog.Level(c.Int(common.VerbosityFlag.Name))
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
 
 	if c.NArg() != 1 {
 		return fmt.Errorf("input state test directory needed")

@@ -18,14 +18,15 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
-	"io"
-	"sync/atomic"
+	"golang.org/x/exp/slog"
 )
 
 var app = initApp()
@@ -38,12 +39,12 @@ func initApp() *cli.App {
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags, common.SkipTraceFlag)
 	app.Flags = append(app.Flags, common.ThreadFlag)
+	app.Flags = append(app.Flags, common.VerbosityFlag)
 	app.Action = startFuzzer
 	return app
 }
 
 func main() {
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelInfo, true)))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -51,6 +52,9 @@ func main() {
 }
 
 func startFuzzer(c *cli.Context) error {
+	loglevel := slog.Level(c.Int(common.VerbosityFlag.Name))
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
+
 	if c.NArg() != 1 {
 		return fmt.Errorf("file (or regexp) needed")
 	}
