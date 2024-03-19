@@ -27,10 +27,10 @@ import (
 // The NethermindBatchVM spins up one 'master' instance of the VM, and uses that to execute tests
 type NethermindBatchVM struct {
 	NethermindVM
-	cmd    *exec.Cmd // the 'master' process
-	stdout io.ReadCloser
-	stdin  io.WriteCloser
-	mu     sync.Mutex
+	cmd     *exec.Cmd // the 'master' process
+	procOut io.ReadCloser
+	stdin   io.WriteCloser
+	mu      sync.Mutex
 }
 
 func NewNethermindBatchVM(path, name string) *NethermindBatchVM {
@@ -52,18 +52,25 @@ func (evm *NethermindBatchVM) Instance(threadId int) Evm {
 // RunStateTest implements the Evm interface
 func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
 	var (
-		t0     = time.Now()
-		err    error
-		stdout io.ReadCloser
-		stdin  io.WriteCloser
+		t0      = time.Now()
+		err     error
+		procOut io.ReadCloser
+		stdin   io.WriteCloser
+		cmd     = exec.Command(evm.path, "-x", "--trace", "-m")
 	)
 	if evm.cmd == nil {
-		cmd := exec.Command(evm.path, "-x", "--trace", "-m")
-		if speedTest {
-			cmd = exec.Command(evm.path, "-x", "--trace", "-m", "--neverTrace")
-		}
-		if stdout, err = cmd.StderrPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+		if !speedTest {
+			// in normal execution, we read traces from standard error
+			if procOut, err = cmd.StderrPipe(); err != nil {
+				return &tracingResult{Cmd: cmd.String()}, err
+			}
+		} else {
+			// In speedtest-mode, we don't want the actual traces, but we do
+			// need to read the stateroot. The stateroot can be found on stdout
+			cmd = exec.Command(evm.path, "-x", "-m", "--neverTrace")
+			if procOut, err = cmd.StdoutPipe(); err != nil {
+				return &tracingResult{Cmd: cmd.String()}, err
+			}
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
 			return &tracingResult{Cmd: cmd.String()}, err
@@ -72,14 +79,14 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 			return &tracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
-		evm.stdout = stdout
+		evm.procOut = procOut
 		evm.stdin = stdin
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
-	evm.copyUntilEnd(out, evm.stdout)
+	evm.copyUntilEnd(out, evm.procOut, speedTest)
 	duration, slow := evm.stats.TraceDone(t0)
 	return &tracingResult{
 		Slow:     slow,
@@ -100,7 +107,7 @@ func (vm *NethermindBatchVM) Close() {
 func (evm *NethermindBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
 		evm.cmd = exec.Command(evm.path, "--neverTrace", "-m", "-s", "-x")
-		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
+		if evm.procOut, err = evm.cmd.StdoutPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
 		if evm.stdin, err = evm.cmd.StdinPipe(); err != nil {
@@ -113,6 +120,6 @@ func (evm *NethermindBatchVM) GetStateRoot(path string) (root, command string, e
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
+	sRoot := evm.copyUntilEnd(io.Discard, evm.procOut, true)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }
