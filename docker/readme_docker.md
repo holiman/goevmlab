@@ -23,5 +23,8 @@ docker run -it -v /home/user/fuzzing:/fuzztmp --entrypoint /generic-fuzzer --out
 ## Checkslow
 
 ```
-docker run -it -v /home/user/fuzzing:/fuzztmp --entrypoint --outdir=/fuzztmp --nethbatch=/nethtest --nimbus=/nimbvm --revme=/revme --erigon=/erigon_vm --besubatch=/besu-vm --evmone=/evmone --fork=Cancun /fuzztmp
+
+docker run -it -v /home/user/workspace/goevmlab/trophies/2024-02-20_slow_tests/fuzztmp:/fuzztmp --entrypoint bash holiman/omnifuzz
+
+$ /checkslow  --nethbatch=$NETH_BIN --evmone=$EVMO_BIN --verbosity -4  /fuzztmp/
 ```
