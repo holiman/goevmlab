@@ -89,7 +89,6 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		t0     = time.Now()
 		stderr io.ReadCloser
 		err    error
-		cmd    *exec.Cmd
 		cmd    = exec.Command(evm.path, "--trace", path)
 	)
 	if speedTest {
