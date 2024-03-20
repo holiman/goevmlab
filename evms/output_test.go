@@ -50,14 +50,15 @@ func testVmsOutput(t *testing.T, testfile string) {
 		stderr string
 	}
 	var cases = []testCase{
-		{NewBesuVM("", ""), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
-		{NewBesuBatchVM("", ""), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
-		{NewNethermindVM("", ""), "", fmt.Sprintf("%v.nethermind.stderr.txt", testfile)},
-		{NewErigonVM("", ""), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
-		{NewGethEVM("", ""), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
-		{NewNimbusEVM("", ""), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
-		{NewEvmoneVM("", ""), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
-		{NewRethVM("", ""), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
+		{NewBesuVM("", "besuvm"), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
+		{NewBesuBatchVM("", "besuba"), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
+		{NewNethermindVM("", "nether"), "", fmt.Sprintf("%v.nethermind.stderr.txt", testfile)},
+		{NewErigonVM("", "erigon"), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
+		{NewGethEVM("", "gethvm"), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
+		{NewNimbusEVM("", "nimbus"), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
+		{NewEvmoneVM("", "evmone"), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
+		{NewRethVM("", "rethvm"), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
+		{NewEelsEVM("", "eelsvm"), "", fmt.Sprintf("%v.eels.stderr.txt", testfile)},
 	}
 	var readers []io.Reader
 	var vms []Evm
