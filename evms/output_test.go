@@ -113,6 +113,10 @@ func TestStateRootRethVM(t *testing.T) {
 	testStateRootOnly(t, NewRethVM("", ""), "revm")
 }
 
+func TestStateRootEelsVM(t *testing.T) {
+	testStateRootOnly(t, NewEelsEVM("", "eels"), "eels")
+}
+
 func testStateRootOnly(t *testing.T, vm Evm, name string) {
 
 	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))
