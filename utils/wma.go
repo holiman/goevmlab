@@ -18,6 +18,9 @@ func NewSlidingAverage() *SlidingAverage {
 func (sa *SlidingAverage) Add(sample int) {
 	current := math.Float64frombits(sa.val.Load())
 	updated := 0.95*current + 0.05*float64(sample)
+	if current == 0.0 { // speed it up a bit in the beginning, first sample
+		updated = 0.80 * float64(sample)
+	}
 	sa.val.Store(math.Float64bits(updated))
 }
 
