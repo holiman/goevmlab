@@ -144,6 +144,11 @@ RUN apt-get install -qy --no-install-recommends libssl-dev
 # besu requires openjdk-17-jre
 RUN apt-get install -qy --no-install-recommends  openjdk-17-jre 
 
+# Install execution-specs (EELS)
+RUN apt-get install -qy --no-install-recommends pipx git && \
+  git clone https://github.com/ethereum/execution-specs.git --branch statetests --depth 1 && \
+  PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
+
 # Go-evmlab targets
 COPY --from=golang-builder /go/goevmlab/generic-fuzzer /
 COPY --from=golang-builder /go/goevmlab/checkslow  /
