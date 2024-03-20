@@ -126,7 +126,7 @@ func (evm *EelsEVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input)
 }
 
-// copyUntilEnd reads from the reader, does some geth-specific filtering and
+// copyUntilEnd reads from the reader, does some vm-specific filtering and
 // outputs items onto the channel
 func (evm *EelsEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	buf := bufferPool.Get().([]byte)
@@ -135,29 +135,6 @@ func (evm *EelsEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(buf, 32*1024*1024)
-	// When geth encounters an error, it may already have spat out the info, prematurely.
-	// We need to merge it back to one item
-	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
-	var prev *logger.StructLog
-	var yield = func(current *logger.StructLog) {
-		if prev == nil {
-			prev = current
-			return
-		}
-		data := FastMarshal(prev)
-		if _, err := out.Write(append(data, '\n')); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-		}
-		if current == nil { // final flush
-			return
-		}
-		if prev.Pc == current.Pc && prev.Depth == current.Depth {
-			// Yup, that happened here. Set the error and continue
-			prev = nil
-		} else {
-			prev = current
-		}
-	}
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		if len(data) > 0 && data[0] == '#' {
@@ -193,9 +170,11 @@ func (evm *EelsEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		if elem.Op == 0x0 {
 			continue
 		}
-		yield(&elem)
+		outp := FastMarshal(&elem)
+		if _, err := out.Write(append(outp, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		}
 	}
-	yield(nil)
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
