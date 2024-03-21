@@ -6,6 +6,7 @@ erigonvm=$ERIG_BIN #"/home/martin/workspace/erigon-evm"
 nimbus=$NIMB_BIN   #"/home/martin/workspace/evmstate"
 evmone=$EVMO_BIN   #"/home/martin/workspace/evmone-statetest"
 revm=$RETH_BIN     #"/home/user/workspace/revme"
+eels=$EELS_BIN
 
 ### Geth
 
@@ -142,3 +143,22 @@ if [[ -n "$revm" ]]; then
     cd ..
 fi
 
+# execution-specs
+if [[ -n "$eels" ]]; then
+    echo "eels"
+    cd ./cases
+    # The traces
+    for i in *.json; do
+        $eels statetest --json --nomemory --noreturndata $i \
+         2>../traces/$i.eels.stderr.txt \
+         1>../traces/$i.eels.stdout.txt
+    done
+    # And the stateroots, where we invoke the evm the same way that
+    # GetStateRoot does
+    for i in *.json; do
+        $eels statetest $i \
+         2>../roots/$i.eels.stderr.txt \
+         1>../roots/$i.eels.stdout.txt
+    done
+    cd ..
+fi
