@@ -1,0 +1,74 @@
+#
+# The Mega Dockerfile
+#
+# This dockerfile is an attempt to bundle the following components into 
+# one big dockerfile:
+#
+# - [x] Goevmlab binaries
+# - [x] Go-ethereum binary 'evm'
+# - [ ] Erigon binary 'evm'
+# - [ ] EvmOne vm binary 'evmone'
+# - [ ] Reth VM binary 'revme' 
+# - [ ] Besu
+# - [ ] Nethermind
+# - [ ] Nimbus-eth1
+# - [x] EELS
+#
+
+#---------------------------------------------------------------
+# golang-builder (debian-based)
+#---------------------------------------------------------------
+FROM golang:latest as golang-builder 
+
+#
+# Go-evmlab
+#
+
+RUN git clone https://github.com/SamWilsn/goevmlab --depth 1  --branch eels-evm
+RUN cd goevmlab && \
+  go build ./cmd/generic-fuzzer && \
+  go build ./cmd/checkslow && \
+  go build ./cmd/minimizer && \
+  go build ./cmd/repro && \
+  go build ./cmd/runtest && \
+  go build ./cmd/tracediff && \
+  go build ./cmd/traceview
+
+#
+# GETH
+#
+
+RUN git clone https://github.com/ethereum/go-ethereum --depth 1
+RUN cd go-ethereum && go run build/ci.go install -static ./cmd/evm
+
+#
+# Main non-builder
+#
+
+FROM debian:testing
+
+RUN apt-get update -q
+
+# Install execution-specs (EELS)
+RUN apt-get install -qy --no-install-recommends pipx git && \
+   git clone https://github.com/ethereum/execution-specs.git --branch statetests --depth 1
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
+ENV EELS_BIN=/ethereum-spec-evm
+
+# Go-evmlab targets
+COPY --from=golang-builder /go/goevmlab/generic-fuzzer /
+COPY --from=golang-builder /go/goevmlab/checkslow  /
+COPY --from=golang-builder /go/goevmlab/minimizer /
+COPY --from=golang-builder /go/goevmlab/repro /
+COPY --from=golang-builder /go/goevmlab/runtest /
+COPY --from=golang-builder /go/goevmlab/tracediff /
+COPY --from=golang-builder /go/goevmlab/traceview /
+COPY --from=golang-builder /go/goevmlab/evms/testdata/ /testdata/
+
+COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
+ENV GETH_BIN=/gethvm
+
+
+COPY readme_docker.md  /README.md
+COPY entrypoint.sh  /entrypoint.sh
+ENTRYPOINT ["/bin/bash"]

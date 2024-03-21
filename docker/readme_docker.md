@@ -1,6 +1,7 @@
 This is a dockerfile containing all VMs, plus go-evmlab itself.
 The evm binaries are available as ENV vars:
 
+- `$GETH_BIN`=/gethvm
 - `$ERIG_BIN`=/erigon_vm
 - `$NIMB_BIN`=/nimbvm
 - `$EVMO_BIN`=/evmone
@@ -16,10 +17,17 @@ If you want to do fuzzing, you should ensure that the directory where tests are
 saved is mounted outside the docker container
 
 ```
-docker run -it -v /home/user/fuzzing:/fuzztmp \
-    --entrypoint /generic-fuzzer --outdir=/fuzztmp \
-    --nethbatch=$NETH_BIN --nimbus=$NIMB_BIN --revme=$RETH_BIN
-    --erigonbatch=$ERIG_BIN --besubatch=$BESU_BIN --evmone=$EVMO_BIN --eelsbatch=$EELS_BIN \
+docker run -it -v /home/user/fuzzing:/fuzztmp
+
+$ /generic-fuzzer --outdir=/fuzztmp \
+    --gethbatch=$GETH_BIN \
+    --nethbatch=$NETH_BIN \
+    --nimbus=$NIMB_BIN \
+    --revme=$RETH_BIN \
+    --erigonbatch=$ERIG_BIN \
+    --besubatch=$BESU_BIN \
+    --evmone=$EVMO_BIN \
+    --eelsbatch=$EELS_BIN \
     --fork=Cancun
 ```
 
