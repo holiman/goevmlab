@@ -27,15 +27,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 	"github.com/urfave/cli/v2"
 )
 
@@ -144,8 +145,8 @@ func evaluate(ctx *cli.Context) error {
 		ending[i] = byte(ops.JUMPDEST)
 	}
 	// And dump it into state
-	alloc := make(core.GenesisAlloc)
-	alloc[payloadAddr] = core.GenesisAccount{
+	alloc := make(types.GenesisAlloc)
+	alloc[payloadAddr] = types.Account{
 		Nonce: 1,
 		Code:  payloadCode,
 	}
@@ -175,7 +176,7 @@ Fork: %v
 	a.Push(0).Op(ops.MSTORE) // mem location
 	a.Jump(loc)
 
-	alloc[attackerAddr] = core.GenesisAccount{
+	alloc[attackerAddr] = types.Account{
 		Nonce:   1,
 		Code:    a.Bytecode(),
 		Balance: big.NewInt(0xffffffff),
@@ -189,7 +190,7 @@ Fork: %v
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, acc.Balance)
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
 		}
 	}
 	statedb.CreateAccount(sender)
@@ -229,7 +230,7 @@ Fork: %v
 }
 
 // convertToStateTest is a utility to turn stuff into sharable state tests.
-func convertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uint64,
+func convertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit uint64,
 	target common.Address) error {
 
 	mkr := fuzzing.BasicStateTest(fork)

@@ -34,6 +34,11 @@ func TestVMsOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, finfo := range finfos {
+		if finfo.Name() == "eofcode.json" {
+			// We skip this one. Evmone refuse to run it.
+			// https://github.com/holiman/goevmlab/issues/127
+			continue
+		}
 		testVmsOutput(t, filepath.Join("testdata", "traces", finfo.Name()))
 	}
 }
@@ -45,14 +50,15 @@ func testVmsOutput(t *testing.T, testfile string) {
 		stderr string
 	}
 	var cases = []testCase{
-		{NewBesuVM("", ""), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
-		{NewBesuBatchVM("", ""), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
-		{NewNethermindVM("", ""), "", fmt.Sprintf("%v.nethermind.stderr.txt", testfile)},
-		{NewErigonVM("", ""), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
-		{NewGethEVM("", ""), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
-		{NewNimbusEVM("", ""), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
-		{NewEvmoneVM("", ""), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
-		{NewRethVM("", ""), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
+		{NewBesuVM("", "besuvm"), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
+		{NewBesuBatchVM("", "besuba"), fmt.Sprintf("%v.besu.stdout.txt", testfile), ""},
+		{NewNethermindVM("", "nether"), "", fmt.Sprintf("%v.nethermind.stderr.txt", testfile)},
+		{NewErigonVM("", "erigon"), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
+		{NewGethEVM("", "gethvm"), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
+		{NewNimbusEVM("", "nimbus"), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
+		{NewEvmoneVM("", "evmone"), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
+		{NewRethVM("", "rethvm"), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
+		{NewEelsEVM("", "eelsvm"), "", fmt.Sprintf("%v.eels.stderr.txt", testfile)},
 	}
 	var readers []io.Reader
 	var vms []Evm
@@ -107,6 +113,10 @@ func TestStateRootRethVM(t *testing.T) {
 	testStateRootOnly(t, NewRethVM("", ""), "revm")
 }
 
+func TestStateRootEelsVM(t *testing.T) {
+	testStateRootOnly(t, NewEelsEVM("", "eels"), "eels")
+}
+
 func testStateRootOnly(t *testing.T, vm Evm, name string) {
 
 	finfos, err := os.ReadDir(filepath.Join("testdata", "cases"))
@@ -122,6 +132,7 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 		"stackUnderflow_nonzeroMem.json": "0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4",
 		"00000936-mixed-1.json":          "0xd14c10ed22a1cfb642e374be985ac581c39f3969bd59249e0405aca3beb47a47",
 		"negative_refund.json":           "0xee0bbf0438796320ede24ca3c52e31f04dccbfe1fce282f79fe44e67a23351e9",
+		"eofcode.json":                   "0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f",
 	}
 	for i, finfo := range finfos {
 		testfile := filepath.Join("testdata", "roots", finfo.Name())
@@ -130,6 +141,12 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 		combined := append(stderr, stdout...)
 		have, err := vm.ParseStateRoot(combined)
 		if err != nil {
+			if finfo.Name() == "eofcode.json" {
+				// We accept this failure. Evmone refuse to run it.
+				// https://github.com/holiman/goevmlab/issues/127
+				t.Logf("case %d, %v: got error: %v (failure accepted)", i, finfo.Name(), err)
+				continue
+			}
 			t.Errorf("case %d, %v: got error: %v", i, finfo.Name(), err)
 		}
 		want, ok := wants[finfo.Name()]

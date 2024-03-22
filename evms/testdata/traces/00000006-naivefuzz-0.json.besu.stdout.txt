@@ -8,7 +8,7 @@
 {"pc":13,"op":96,"gas":"0xaebad","gasCost":"0x3","memSize":0,"stack":["0x0","0x0","0x0","0x0"],"depth":1,"refund":0,"opName":"PUSH1"}
 {"pc":15,"op":96,"gas":"0xaebaa","gasCost":"0x3","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0"],"depth":1,"refund":0,"opName":"PUSH1"}
 {"pc":17,"op":90,"gas":"0xaeba7","gasCost":"0x2","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0x4"],"depth":1,"refund":0,"opName":"GAS"}
-{"pc":18,"op":242,"gas":"0xaeba5","gasCost":"0x64","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0x4","0xaeba5"],"depth":1,"refund":0,"opName":"CALLCODE"}
+{"pc":18,"op":242,"gas":"0xaeba5","gasCost":"0xabff8","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0x4","0xaeba5"],"depth":1,"refund":0,"opName":"CALLCODE"}
 {"pc":19,"op":80,"gas":"0xaeb32","gasCost":"0x2","memSize":0,"stack":["0x1"],"depth":1,"refund":0,"opName":"POP"}
 {"pc":20,"op":127,"gas":"0xaeb30","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH32"}
 {"pc":53,"op":96,"gas":"0xaeb2d","gasCost":"0x3","memSize":0,"stack":["0x600254506003545060016003557f7f6008545060006004557f60016004556000"],"depth":1,"refund":0,"opName":"PUSH1"}
@@ -507,7 +507,7 @@
 {"pc":2613,"op":96,"gas":"0x49386","gasCost":"0x3","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x0","0x0","0x0","0x0"],"depth":1,"refund":0,"opName":"PUSH1"}
 {"pc":2615,"op":133,"gas":"0x49383","gasCost":"0x3","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x0","0x0","0x0","0x0","0x0"],"depth":1,"refund":0,"opName":"DUP6"}
 {"pc":2616,"op":90,"gas":"0x49380","gasCost":"0x2","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x0","0x0","0x0","0x0","0x0","0x7dce2faf43218578e3fcf2ad22df9918a89e2fba"],"depth":1,"refund":0,"opName":"GAS"}
-{"pc":2617,"op":241,"gas":"0x4937e","gasCost":"0x64","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x0","0x0","0x0","0x0","0x0","0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x4937e"],"depth":1,"refund":0,"opName":"CALL"}
+{"pc":2617,"op":241,"gas":"0x4937e","gasCost":"0x48132","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x0","0x0","0x0","0x0","0x0","0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x4937e"],"depth":1,"refund":0,"opName":"CALL"}
 {"pc":0,"op":127,"gas":"0x480ce","gasCost":"0x3","memSize":0,"stack":[],"depth":2,"refund":0,"opName":"PUSH32"}
 {"pc":33,"op":96,"gas":"0x480cb","gasCost":"0x3","memSize":0,"stack":["0x6008545060006004557f600160045560006004556000600060006000600060f9"],"depth":2,"refund":0,"opName":"PUSH1"}
 {"pc":35,"op":82,"gas":"0x480c8","gasCost":"0x6","memSize":0,"stack":["0x6008545060006004557f600160045560006004556000600060006000600060f9","0x0"],"depth":2,"refund":0,"opName":"MSTORE"}
@@ -886,7 +886,7 @@
 {"pc":1781,"op":96,"gas":"0x58f7","gasCost":"0x3","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0","0x0","0x0","0x0"],"depth":2,"refund":0,"opName":"PUSH1"}
 {"pc":1783,"op":133,"gas":"0x58f4","gasCost":"0x3","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0","0x0","0x0","0x0","0x0"],"depth":2,"refund":0,"opName":"DUP6"}
 {"pc":1784,"op":90,"gas":"0x58f1","gasCost":"0x2","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0","0x0","0x0","0x0","0x0","0x94a843a7335fc63be036fbdecc40b1365f3c5f26"],"depth":2,"refund":0,"opName":"GAS"}
-{"pc":1785,"op":241,"gas":"0x58ef","gasCost":"0x64","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0","0x0","0x0","0x0","0x0","0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x58ef"],"depth":2,"refund":0,"opName":"CALL"}
+{"pc":1785,"op":241,"gas":"0x58ef","gasCost":"0x578d","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0","0x0","0x0","0x0","0x0","0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x58ef"],"depth":2,"refund":0,"opName":"CALL"}
 {"pc":0,"op":96,"gas":"0x5729","gasCost":"0x3","memSize":0,"stack":[],"depth":3,"refund":0,"opName":"PUSH1"}
 {"pc":2,"op":96,"gas":"0x5726","gasCost":"0x3","memSize":0,"stack":["0x1"],"depth":3,"refund":0,"opName":"PUSH1"}
 {"pc":4,"op":85,"gas":"0x5723","gasCost":"0x4e20","memSize":0,"stack":["0x1","0x4"],"depth":3,"refund":0,"opName":"SSTORE"}
@@ -900,11 +900,9 @@
 {"pc":18,"op":96,"gas":"0x88d","gasCost":"0x3","memSize":0,"stack":["0x0","0x0","0x0","0x0"],"depth":3,"refund":19900,"opName":"PUSH1"}
 {"pc":20,"op":96,"gas":"0x88a","gasCost":"0x3","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0"],"depth":3,"refund":19900,"opName":"PUSH1"}
 {"pc":22,"op":90,"gas":"0x887","gasCost":"0x2","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0xf9"],"depth":3,"refund":19900,"opName":"GAS"}
-{"pc":23,"op":242,"gas":"0x885","gasCost":"0xa28","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0xf9","0x885"],"depth":3,"refund":19900,"opName":"CALLCODE","error":"Out of gas"}
+{"pc":23,"op":242,"gas":"0x885","gasCost":"0x12ad","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0xf9","0x885"],"depth":3,"refund":19900,"opName":"CALLCODE","error":"Out of gas"}
 {"pc":1786,"op":80,"gas":"0x162","gasCost":"0x2","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0"],"depth":2,"refund":0,"opName":"POP"}
 {"pc":1787,"op":80,"gas":"0x160","gasCost":"0x2","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26"],"depth":2,"refund":0,"opName":"POP"}
-{"pc":1788,"op":0,"gas":"0x15e","gasCost":"0x0","memSize":1472,"stack":[],"depth":2,"refund":0,"opName":"STOP"}
 {"pc":2618,"op":80,"gas":"0x13aa","gasCost":"0x2","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x1"],"depth":1,"refund":0,"opName":"POP"}
 {"pc":2619,"op":80,"gas":"0x13a8","gasCost":"0x2","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba"],"depth":1,"refund":0,"opName":"POP"}
-{"pc":2620,"op":0,"gas":"0x13a6","gasCost":"0x0","memSize":2240,"stack":[],"depth":1,"refund":0,"opName":"STOP"}
 {"output":"","gasUsed":"0xb8665","test":"00000006-naivefuzz-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}

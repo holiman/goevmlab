@@ -40,7 +40,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -56,6 +56,14 @@ var (
 	GethBatchFlag = &cli.StringSliceFlag{
 		Name:  "gethbatch",
 		Usage: "Location of go-ethereum 'evm' binary",
+	}
+	EelsFlag = &cli.StringSliceFlag{
+		Name:  "eels",
+		Usage: "Location of 'ethereum-spec-evm' binary",
+	}
+	EelsBatchFlag = &cli.StringSliceFlag{
+		Name:  "eelsbatch",
+		Usage: "Location of 'ethereum-spec-evm' binary",
 	}
 	NethermindFlag = &cli.StringSliceFlag{
 		Name:  "nethermind",
@@ -127,9 +135,17 @@ var (
 			"This mode is faster, and can be used even if the clients-under-test has known errors in the trace-output, \n" +
 			"but has a very high chance of missing cases which could be exploitable.",
 	}
+	VerbosityFlag = &cli.IntFlag{
+		Name:  "verbosity",
+		Usage: "sets the verbosity level (-4: DEBUG, 0: INFO, 4: WARN, 8: ERROR)",
+		Value: 0,
+	}
+
 	VmFlags = []cli.Flag{
 		GethFlag,
 		GethBatchFlag,
+		EelsFlag,
+		EelsBatchFlag,
 		NethermindFlag,
 		NethBatchFlag,
 		BesuFlag,
@@ -148,6 +164,8 @@ func initVMs(c *cli.Context) []evms.Evm {
 	var (
 		gethBins        = c.StringSlice(GethFlag.Name)
 		gethBatchBins   = c.StringSlice(GethBatchFlag.Name)
+		eelsBins        = c.StringSlice(EelsFlag.Name)
+		eelsBatchBins   = c.StringSlice(EelsBatchFlag.Name)
 		nethBins        = c.StringSlice(NethermindFlag.Name)
 		nethBatchBins   = c.StringSlice(NethBatchFlag.Name)
 		besuBins        = c.StringSlice(BesuFlag.Name)
@@ -166,6 +184,12 @@ func initVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range gethBatchBins {
 		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("gethbatch-%d", i)))
+	}
+	for i, bin := range eelsBins {
+		vms = append(vms, evms.NewEelsEVM(bin, fmt.Sprintf("eels-%d", i)))
+	}
+	for i, bin := range eelsBatchBins {
+		vms = append(vms, evms.NewEelsBatchVM(bin, fmt.Sprintf("eelsbatch-%d", i)))
 	}
 	for i, bin := range nethBins {
 		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("nethermind-%d", i)))
@@ -786,7 +810,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 }
 
 // ConvertToStateTest is a utility to turn stuff into sharable state tests.
-func ConvertToStateTest(name, fork string, alloc core.GenesisAlloc, gasLimit uint64, target common.Address) error {
+func ConvertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit uint64, target common.Address) error {
 
 	mkr := fuzzing.BasicStateTest(fork)
 	// convert the genesisAlloc

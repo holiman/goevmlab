@@ -30,6 +30,11 @@ import (
 	"github.com/ethereum/go-ethereum/tests"
 )
 
+// DisallowEOF makes it so that any statetest that are created never
+// contain 0xEF-prefixed code.
+// See https://github.com/holiman/goevmlab/issues/127
+const DisallowEOF = true
+
 // The sender
 var sender = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
 var pKey = hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
@@ -70,6 +75,13 @@ func (g *GstMaker) SetPre(genesis *GenesisAlloc) {
 }
 
 func (g *GstMaker) AddAccount(address common.Address, a GenesisAccount) {
+	// See https://github.com/holiman/goevmlab/issues/127
+	// We must not allow any code in genesis to start with `0xEF`, otherwise
+	// evmone will reject the test.
+	// If the constant 'DisallowEof' is set, then we change `0xEF...` into `0xEE...`
+	if DisallowEOF && len(a.Code) > 0 && a.Code[0] == 0xEF {
+		a.Code[0] = 0xEE
+	}
 	alloc := *g.pre
 	alloc[address] = a
 }
@@ -82,6 +94,13 @@ func (g *GstMaker) GetDestination() common.Address {
 // SetCode sets the code at the given address (creating the account
 // if it did not previously exist)
 func (g *GstMaker) SetCode(address common.Address, code []byte) {
+	// See https://github.com/holiman/goevmlab/issues/127
+	// We must not allow any code in genesis to start with `0xEF`, otherwise
+	// evmone will reject the test.
+	// If the constant 'DisallowEof' is set, then we change `0xEF...` into `0xEE...`
+	if DisallowEOF && len(code) > 0 && code[0] == 0xEF {
+		code[0] = 0xEE
+	}
 	alloc := *g.pre
 	account, exist := alloc[address]
 	if !exist {
@@ -172,12 +191,12 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	if traceOutput != nil {
 		cfg.Tracer = logger.NewJSONLogger(&logger.Config{}, traceOutput)
 	}
-	_, _, statedb, root, err := test.RunNoVerify(subtest, cfg, false, rawdb.HashScheme)
+	state, root, err := test.RunNoVerify(subtest, cfg, false, rawdb.HashScheme)
 	if err != nil {
 		return err
 	}
-
-	logs := rlpHash(statedb.Logs())
+	defer state.Close()
+	logs := rlpHash(state.StateDB.Logs())
 	g.SetResult(root, logs)
 	return nil
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/exp/slog"
 )
 
 var (
@@ -55,13 +56,13 @@ func initApp() *cli.App {
 		common.LocationFlag,
 		engineFlag,
 		forkFlag,
+		common.VerbosityFlag,
 	)
 	app.Action = startFuzzer
 	return app
 }
 
 func main() {
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelInfo, true)))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -69,6 +70,9 @@ func main() {
 }
 
 func startFuzzer(ctx *cli.Context) error {
+	loglevel := slog.Level(ctx.Int(common.VerbosityFlag.Name))
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
+
 	var (
 		fNames = ctx.StringSlice(engineFlag.Name)
 		fork   = ctx.String(forkFlag.Name)
