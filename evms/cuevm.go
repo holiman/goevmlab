@@ -19,15 +19,23 @@ package evms
 import (
 	"bufio"
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mmcloughlin/addchain/internal/bigint"
 )
 
 type CuEVM struct {
@@ -35,6 +43,92 @@ type CuEVM struct {
 	name string
 
 	stats *VmStat
+}
+
+type account struct {
+	Address  string
+	Balance  string
+	Nonce    string
+	CodeHash string `json:"codeHash"`
+	Storage  map[string]string
+}
+
+type cuevmState struct {
+	StateRoot string
+	Accounts  []account
+}
+
+func (state *cuevmState) ComputeStateRoot() error {
+	if state.StateRoot != "" {
+		return nil
+	}
+
+	stateTrie := trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), nil))
+	for i := range state.Accounts {
+		account := state.Accounts[i]
+		stateAccount := types.NewEmptyStateAccount()
+		nonce, err := strconv.ParseUint(account.Nonce, 16)
+		if err != nil {
+			return err
+		}
+
+		balance, success := bigint.Hex(account.Balance)
+		if !success {
+			return fmt.Errorf("failed to parse balance: %v", account.Balance)
+		}
+
+		codeHash, err := hex.DecodeString(account.CodeHash)
+		if err != nil {
+			return err
+		}
+
+		storageTrie := trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), nil))
+		for storageKey, storageVal := range account.Storage {
+			paddedKey := make([]byte, 32)
+			temp, err := hex.DecodeString(storageKey)
+			if err != nil {
+				return fmt.Errorf("faild to parse storage key: %v", storageKey)
+			}
+			copy(paddedKey[32-len(temp):], temp)
+			trieKey := crypto.Keccak256(paddedKey)
+
+			temp, err = hex.DecodeString(storageVal)
+			if err != nil {
+				return fmt.Errorf("faild to parse storage value: %v", storageVal)
+			}
+
+			trieValue, err := rlp.EncodeToBytes(temp)
+
+			if err != nil {
+				return err
+			}
+
+			storageTrie.Update(trieKey, trieValue)
+		}
+		root := storageTrie.Hash()
+
+		stateAccount.Nonce = nonce
+		stateAccount.Balance = balance
+		stateAccount.CodeHash = codeHash
+		stateAccount.Root = root
+
+		temp, err := hex.DecodeString(account.Address)
+		if err != nil {
+			return err
+		}
+
+		stateKey := crypto.Keccak256(temp)
+		stateVal, err := rlp.EncodeToBytes(stateAccount)
+
+		if err != nil {
+			return err
+		}
+
+		stateTrie.Update(stateKey, stateVal)
+	}
+
+	state.StateRoot = stateTrie.Hash().Hex()
+	return nil
 }
 
 func NewCuEVM(path string, name string) *CuEVM {
@@ -123,17 +217,22 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
-	var stateRoot stateRoot
+	var stateRoot cuevmState
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(buf, 32*1024*1024)
 
 	for scanner.Scan() {
 		data := scanner.Bytes()
 
-		if bytes.Contains(data, []byte("stateRoot")) {
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
-				continue
+		if bytes.Contains(data, []byte("accounts")) {
+			fmt.Printf("data: %v\n", string(data))
+			if stateRoot.Accounts == nil {
+				err := json.Unmarshal(data, &stateRoot)
+				if err != nil {
+					fmt.Printf("Error unmarshalling stateRoot: %v\n", err)
+					continue
+				}
+				stateRoot.ComputeStateRoot()
 			}
 		}
 		var elem logger.StructLog
