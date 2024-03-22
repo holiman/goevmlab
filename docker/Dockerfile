@@ -151,18 +151,16 @@ RUN apt-get install -qy --no-install-recommends pipx git && \
 ENV EELS_BIN=/ethereum-spec-evm
 
 # Go-evmlab targets
-COPY --from=golang-builder /go/goevmlab/generic-fuzzer /
-COPY --from=golang-builder /go/goevmlab/checkslow  /
-COPY --from=golang-builder /go/goevmlab/minimizer /
-COPY --from=golang-builder /go/goevmlab/repro /
-COPY --from=golang-builder /go/goevmlab/runtest /
-COPY --from=golang-builder /go/goevmlab/tracediff /
-COPY --from=golang-builder /go/goevmlab/traceview /
-COPY --from=golang-builder /go/goevmlab/evms/testdata/ /testdata/
+COPY --from=golang-builder /go/goevmlab/generic-fuzzer /usr/bin
+COPY --from=golang-builder /go/goevmlab/checkslow  /usr/bin
+COPY --from=golang-builder /go/goevmlab/minimizer /usr/bin
+COPY --from=golang-builder /go/goevmlab/repro /usr/bin
+COPY --from=golang-builder /go/goevmlab/runtest /usr/bin
+COPY --from=golang-builder /go/goevmlab/tracediff /usr/bin
+COPY --from=golang-builder /go/goevmlab/traceview /usr/bin
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
-
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
 COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.14.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
@@ -188,4 +186,14 @@ ENV BESU_BIN=/evmtool/bin/evm
 
 COPY readme_docker.md  /README.md
 COPY entrypoint.sh  /entrypoint.sh
+
+ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
+ --nethbatch=$NETH_BIN \
+ --nimbus=$NIMB_BIN \
+ --revme=$RETH_BIN \
+ --erigonbatch=$ERIG_BIN \
+ --besubatch=$BESU_BIN \
+ --evmone=$EVMO_BIN \
+ --eelsbatch=$EELS_BIN"
+
 ENTRYPOINT ["/bin/bash"]

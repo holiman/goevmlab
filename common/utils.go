@@ -46,6 +46,7 @@ import (
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/utils"
 	"github.com/urfave/cli/v2"
+	"net/http"
 )
 
 var (
@@ -110,6 +111,10 @@ var (
 		Name:  "outdir",
 		Usage: "Location to place artefacts",
 		Value: "/tmp",
+	}
+	NotifyFlag = &cli.StringFlag{
+		Name:  "ntfy",
+		Usage: "Topic to sent 'https://ntfy.sh/'-ping on exit (e.g. due to consensus issue)",
 	}
 	PrefixFlag = &cli.StringFlag{
 		Name:  "prefix",
@@ -263,13 +268,14 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	var (
 		vms     = initVMs(c)
 		outputs []*os.File
+		outdir  = c.String(LocationFlag.Name)
 	)
 	if len(vms) < 1 {
 		return true, fmt.Errorf("No vms specified!")
 	}
 	// Open/create outputs for writing
 	for _, evm := range vms {
-		out, err := os.OpenFile(fmt.Sprintf("./%v-output.jsonl", evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
+		out, err := os.OpenFile(fmt.Sprintf("%v/%v-output.jsonl", outdir, evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
 			return true, fmt.Errorf("failed opening file %v", err)
 		}
@@ -308,7 +314,8 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 		readers = append(readers, f)
 	}
 	// Compare outputs
-	if eq, _ := evms.CompareFiles(vms, readers); !eq {
+	if eq, _, diff := evms.CompareFiles(vms, readers); !eq {
+		fmt.Printf(diff)
 		out := new(strings.Builder)
 		fmt.Fprintf(out, "Consensus error\n")
 		fmt.Fprintf(out, "Testcase: %v\n", path)
@@ -316,9 +323,11 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 			fmt.Fprintf(out, "- %v: %v\n", vms[i].Name(), f.Name())
 			fmt.Fprintf(out, "  - command: %v\n", commands[i])
 		}
+		fmt.Fprintf(out, "\nTo view the difference with tracediff:\n\ttracediff %v %v\n", outputs[0].Name(), outputs[0].Name())
 		fmt.Println(out)
 		return false, fmt.Errorf("Consensus error")
 	}
+
 	for _, f := range outputs {
 		f.Close()
 	}
@@ -382,8 +391,7 @@ func testFnFromGenerator(fn GeneratorFn, name, location string) TestProviderFn {
 type GeneratorFn func() *fuzzing.GstMaker
 
 func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) error {
-	location := c.String(LocationFlag.Name)
-	fn := testFnFromGenerator(generatorFn, name, location)
+	fn := testFnFromGenerator(generatorFn, name, c.String(LocationFlag.Name))
 	return ExecuteFuzzer(c, false, fn, true)
 }
 
@@ -406,6 +414,8 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 		consensusCh:         make(chan string, 4), // channel for signalling consensus errors
 		vms:                 vms,
 		deleteFilesWhenDone: cleanupFiles,
+		outdir:              c.String(LocationFlag.Name),
+		notifyTopic:         c.String(NotifyFlag.Name),
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
@@ -530,6 +540,8 @@ type testMeta struct {
 	wg          sync.WaitGroup
 	vms         []evms.Evm
 	numTests    atomic.Uint64
+	outdir      string
+	notifyTopic string
 
 	deleteFilesWhenDone bool
 }
@@ -661,11 +673,13 @@ func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
 }
 
 func (meta *testMeta) handleConsensusFlaw(testfile string) {
-	fmt.Fprintf(os.Stdout, "Consensus error\n")
-	fmt.Fprintf(os.Stdout, "Testcase: %v\n", testfile)
+	output := new(strings.Builder)
+	fmt.Fprintf(output, "Consensus error\n")
+	fmt.Fprintf(output, "Testcase: %v\n", testfile)
 	var readers []io.Reader
+	var diffargs []string
 	for _, evm := range meta.vms {
-		filename := fmt.Sprintf("./%v-output.jsonl", evm.Name())
+		filename := fmt.Sprintf("%v/%v-output.jsonl", meta.outdir, evm.Name())
 		out, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
 			log.Error("Failed opening file", "err", err)
@@ -676,14 +690,24 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 			log.Error("Failed running vm", "err", err)
 			panic(err)
 		}
-		fmt.Fprintf(os.Stdout, "- %v: %v\n", evm.Name(), filename)
-		fmt.Fprintf(os.Stdout, "  - command: %v\n", res.Cmd)
+		fmt.Fprintf(output, "- %v: %v\n", evm.Name(), filename)
+		fmt.Fprintf(output, "  - command: %v\n", res.Cmd)
+		diffargs = append(diffargs, filename)
 		_ = out.Sync()
 		_, _ = out.Seek(0, 0)
 		readers = append(readers, out)
 	}
+	fmt.Fprintf(output, "\nTo view the difference with tracediff:\n\ttracediff %v %v\n", diffargs[0], diffargs[1])
+
 	// Compare outputs (and show diff)
-	evms.CompareFiles(meta.vms, readers)
+	_, _, diff := evms.CompareFiles(meta.vms, readers)
+	fmt.Fprintf(output, diff)
+	fmt.Println(output.String())
+	if meta.notifyTopic != "" {
+		http.Post(fmt.Sprintf("https://ntfy.sh/%v", meta.notifyTopic), "text/plain",
+			strings.NewReader(output.String()))
+	}
+
 	for _, f := range readers {
 		f.(*os.File).Close()
 	}
