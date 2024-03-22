@@ -28,6 +28,8 @@ import (
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/exp/slog"
+	"net/http"
+	"strings"
 )
 
 var (
@@ -57,6 +59,7 @@ func initApp() *cli.App {
 		engineFlag,
 		forkFlag,
 		common.VerbosityFlag,
+		common.NotifyFlag,
 	)
 	app.Action = startFuzzer
 	return app
@@ -69,7 +72,11 @@ func main() {
 	}
 }
 
-func startFuzzer(ctx *cli.Context) error {
+func startFuzzer(ctx *cli.Context) (err error) {
+	if topic := ctx.String(common.NotifyFlag.Name); topic != "" {
+		http.Post(fmt.Sprintf("https://ntfy.sh/%v", topic), "text/plain",
+			strings.NewReader("Fuzzer starting"))
+	}
 	loglevel := slog.Level(ctx.Int(common.VerbosityFlag.Name))
 	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
 

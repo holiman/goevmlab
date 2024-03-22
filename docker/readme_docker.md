@@ -10,6 +10,8 @@ The evm binaries are available as ENV vars:
 - `$BESU_BIN`=/evmtool/bin/evm
 - `$EELS_BIN`=/ethereum-spec-evm
 
+There's also an env var $FUZZ_CLIENTS which provides the arguments if you want to do fuzzing with all clients.
+
 
 ## Fuzzing
 
@@ -19,16 +21,7 @@ saved is mounted outside the docker container
 ```
 docker run -it -v /home/user/fuzzing:/fuzztmp
 
-$ /generic-fuzzer --outdir=/fuzztmp \
-    --gethbatch=$GETH_BIN \
-    --nethbatch=$NETH_BIN \
-    --nimbus=$NIMB_BIN \
-    --revme=$RETH_BIN \
-    --erigonbatch=$ERIG_BIN \
-    --besubatch=$BESU_BIN \
-    --evmone=$EVMO_BIN \
-    --eelsbatch=$EELS_BIN \
-    --fork=Cancun
+$ generic-fuzzer --outdir=/fuzztmp  --fork=Cancun $FUZZ_CLIENTS
 ```
 
 ## Generating reference output
@@ -45,5 +38,5 @@ $ bash run.sh
 ```
 docker run -it -v /home/user/workspace/goevmlab/trophies/2024-02-20_slow_tests/fuzztmp:/fuzztmp --entrypoint bash holiman/omnifuzz
 
-$ /checkslow  --nethbatch=$NETH_BIN --evmone=$EVMO_BIN --verbosity -4  /fuzztmp/
+$ checkslow  --nethbatch=$NETH_BIN --evmone=$EVMO_BIN --verbosity -4  /fuzztmp/
 ```
