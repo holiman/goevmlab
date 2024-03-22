@@ -25,7 +25,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -35,7 +34,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/mmcloughlin/addchain/internal/bigint"
+	"github.com/ethereum/go-ethereum/triedb"
+	"github.com/holiman/uint256"
 )
 
 type CuEVM struct {
@@ -50,7 +50,7 @@ type account struct {
 	Balance  string
 	Nonce    string
 	CodeHash string `json:"codeHash"`
-	Storage  map[string]string
+	Storage  [][]string
 }
 
 type cuevmState struct {
@@ -63,18 +63,20 @@ func (state *cuevmState) ComputeStateRoot() error {
 		return nil
 	}
 
-	stateTrie := trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), nil))
+	stateTrie := trie.NewEmpty(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	for i := range state.Accounts {
 		account := state.Accounts[i]
 		stateAccount := types.NewEmptyStateAccount()
-		nonce, err := strconv.ParseUint(account.Nonce, 16)
+		nonceBig, err := uint256.FromHex(account.Nonce)
 		if err != nil {
 			return err
 		}
 
-		balance, success := bigint.Hex(account.Balance)
-		if !success {
-			return fmt.Errorf("failed to parse balance: %v", account.Balance)
+		nonce := nonceBig.Uint64()
+
+		balance, err := uint256.FromHex(account.Balance)
+		if err != nil {
+			return err
 		}
 
 		codeHash, err := hex.DecodeString(account.CodeHash)
@@ -82,8 +84,10 @@ func (state *cuevmState) ComputeStateRoot() error {
 			return err
 		}
 
-		storageTrie := trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), nil))
-		for storageKey, storageVal := range account.Storage {
+		storageTrie := trie.NewEmpty(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil))
+		for i := range account.Storage {
+			storageKey := account.Storage[i][0]
+			storageVal := account.Storage[i][1]
 			paddedKey := make([]byte, 32)
 			temp, err := hex.DecodeString(storageKey)
 			if err != nil {
@@ -109,6 +113,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 
 		stateAccount.Nonce = nonce
 		stateAccount.Balance = balance
+
 		stateAccount.CodeHash = codeHash
 		stateAccount.Root = root
 
