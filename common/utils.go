@@ -315,7 +315,7 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 	}
 	// Compare outputs
 	if eq, _, diff := evms.CompareFiles(vms, readers); !eq {
-		fmt.Printf(diff)
+		fmt.Print(diff)
 		out := new(strings.Builder)
 		fmt.Fprintf(out, "Consensus error\n")
 		fmt.Fprintf(out, "Testcase: %v\n", path)
@@ -701,11 +701,13 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 
 	// Compare outputs (and show diff)
 	_, _, diff := evms.CompareFiles(meta.vms, readers)
-	fmt.Fprintf(output, diff)
+	fmt.Fprint(output, diff)
 	fmt.Println(output.String())
 	if meta.notifyTopic != "" {
-		http.Post(fmt.Sprintf("https://ntfy.sh/%v", meta.notifyTopic), "text/plain",
-			strings.NewReader(output.String()))
+		if _, err := http.Post(fmt.Sprintf("https://ntfy.sh/%v", meta.notifyTopic), "text/plain",
+			strings.NewReader(output.String())); err != nil {
+			fmt.Printf("Failed to post notification: %v\n", err)
+		}
 	}
 
 	for _, f := range readers {

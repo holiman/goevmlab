@@ -74,7 +74,7 @@ func main() {
 
 func startFuzzer(ctx *cli.Context) (err error) {
 	if topic := ctx.String(common.NotifyFlag.Name); topic != "" {
-		http.Post(fmt.Sprintf("https://ntfy.sh/%v", topic), "text/plain",
+		_, _ = http.Post(fmt.Sprintf("https://ntfy.sh/%v", topic), "text/plain",
 			strings.NewReader("Fuzzer starting"))
 	}
 	loglevel := slog.Level(ctx.Int(common.VerbosityFlag.Name))
