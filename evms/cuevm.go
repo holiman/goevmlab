@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -36,6 +37,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
+	"github.com/pkg/errors"
 )
 
 type CuEVM struct {
@@ -54,7 +56,7 @@ type account struct {
 }
 
 type cuevmState struct {
-	StateRoot string
+	StateRoot string `json:"stateRoot"`
 	Accounts  []account
 }
 
@@ -69,19 +71,19 @@ func (state *cuevmState) ComputeStateRoot() error {
 		stateAccount := types.NewEmptyStateAccount()
 		nonceBig, err := uint256.FromHex(account.Nonce)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		nonce := nonceBig.Uint64()
 
 		balance, err := uint256.FromHex(account.Balance)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
-		codeHash, err := hex.DecodeString(account.CodeHash)
+		codeHash, err := hex.DecodeString(strings.TrimPrefix(account.CodeHash, "0x"))
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		storageTrie := trie.NewEmpty(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil))
@@ -89,22 +91,22 @@ func (state *cuevmState) ComputeStateRoot() error {
 			storageKey := account.Storage[i][0]
 			storageVal := account.Storage[i][1]
 			paddedKey := make([]byte, 32)
-			temp, err := hex.DecodeString(storageKey)
+			temp, err := hex.DecodeString(strings.TrimPrefix(storageKey, "0x"))
 			if err != nil {
-				return fmt.Errorf("faild to parse storage key: %v", storageKey)
+				return errors.WithStack(err)
 			}
 			copy(paddedKey[32-len(temp):], temp)
 			trieKey := crypto.Keccak256(paddedKey)
 
-			temp, err = hex.DecodeString(storageVal)
+			temp, err = hex.DecodeString(strings.TrimPrefix(storageVal, "0x"))
 			if err != nil {
-				return fmt.Errorf("faild to parse storage value: %v", storageVal)
+				return errors.WithStack(err)
 			}
 
 			trieValue, err := rlp.EncodeToBytes(temp)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			storageTrie.Update(trieKey, trieValue)
@@ -117,22 +119,24 @@ func (state *cuevmState) ComputeStateRoot() error {
 		stateAccount.CodeHash = codeHash
 		stateAccount.Root = root
 
-		temp, err := hex.DecodeString(account.Address)
+		temp, err := hex.DecodeString(strings.TrimPrefix(account.Address, "0x"))
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		stateKey := crypto.Keccak256(temp)
 		stateVal, err := rlp.EncodeToBytes(stateAccount)
 
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		stateTrie.Update(stateKey, stateVal)
 	}
 
-	state.StateRoot = stateTrie.Hash().Hex()
+	root := stateTrie.Hash().Hex()
+	state.StateRoot = root
+	fmt.Fprintf(os.Stdout, "computed root: %v\n", root)
 	return nil
 }
 
@@ -230,14 +234,18 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 		data := scanner.Bytes()
 
 		if bytes.Contains(data, []byte("accounts")) {
-			fmt.Printf("data: %v\n", string(data))
-			if stateRoot.Accounts == nil {
-				err := json.Unmarshal(data, &stateRoot)
-				if err != nil {
+			if stateRoot.Accounts == nil || len(stateRoot.Accounts) == 0 {
+				fmt.Printf("stateRootData: %v\n", string(data))
+				if err := json.Unmarshal(data, &stateRoot); err != nil {
 					fmt.Printf("Error unmarshalling stateRoot: %v\n", err)
 					continue
 				}
-				stateRoot.ComputeStateRoot()
+				fmt.Printf("computing root: %v\n", stateRoot.StateRoot == "")
+
+				if err := stateRoot.ComputeStateRoot(); err != nil {
+					fmt.Printf("Error computing stateRoot: %+v\n", err)
+					continue
+				}
 			}
 		}
 		var elem logger.StructLog
