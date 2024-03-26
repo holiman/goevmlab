@@ -103,6 +103,12 @@ func (state *cuevmState) ComputeStateRoot() error {
 		for i := range account.Storage {
 			storageKey := account.Storage[i][0]
 			storageVal := account.Storage[i][1]
+
+			fmt.Printf("storageKey: %v, storageVal: %v\n", storageKey, storageVal)
+			if storageVal == "0x0" { // todo better removed from inside cuevm
+				continue
+			}
+
 			paddedKey := make([]byte, 32)
 			temp, err := String2Hex(storageKey)
 			if err != nil {
@@ -125,6 +131,8 @@ func (state *cuevmState) ComputeStateRoot() error {
 			storageTrie.Update(trieKey, trieValue)
 		}
 		root := storageTrie.Hash()
+
+		fmt.Printf("root: %v\n", root.Hex())
 
 		stateAccount.Nonce = nonce
 		stateAccount.Balance = balance
