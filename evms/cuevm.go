@@ -60,6 +60,19 @@ type cuevmState struct {
 	Accounts  []account
 }
 
+type evmStateRoot struct {
+	StateRoot string `json:"stateRoot"`
+}
+
+func String2Hex(s string) ([]byte, error) {
+	s = strings.TrimPrefix(s, "0x")
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	data, err := hex.DecodeString(s)
+	return data, errors.WithStack(err)
+}
+
 func (state *cuevmState) ComputeStateRoot() error {
 	if state.StateRoot != "" {
 		return nil
@@ -81,7 +94,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 			return errors.WithStack(err)
 		}
 
-		codeHash, err := hex.DecodeString(strings.TrimPrefix(account.CodeHash, "0x"))
+		codeHash, err := String2Hex(account.CodeHash)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -91,14 +104,14 @@ func (state *cuevmState) ComputeStateRoot() error {
 			storageKey := account.Storage[i][0]
 			storageVal := account.Storage[i][1]
 			paddedKey := make([]byte, 32)
-			temp, err := hex.DecodeString(strings.TrimPrefix(storageKey, "0x"))
+			temp, err := String2Hex(storageKey)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 			copy(paddedKey[32-len(temp):], temp)
 			trieKey := crypto.Keccak256(paddedKey)
 
-			temp, err = hex.DecodeString(strings.TrimPrefix(storageVal, "0x"))
+			temp, err = String2Hex(storageVal)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -119,7 +132,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 		stateAccount.CodeHash = codeHash
 		stateAccount.Root = root
 
-		temp, err := hex.DecodeString(strings.TrimPrefix(account.Address, "0x"))
+		temp, err := String2Hex(account.Address)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -136,7 +149,6 @@ func (state *cuevmState) ComputeStateRoot() error {
 
 	root := stateTrie.Hash().Hex()
 	state.StateRoot = root
-	fmt.Fprintf(os.Stdout, "computed root: %v\n", root)
 	return nil
 }
 
@@ -226,7 +238,7 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
-	var stateRoot cuevmState
+	var cuevmState cuevmState
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(buf, 32*1024*1024)
 
@@ -234,15 +246,14 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 		data := scanner.Bytes()
 
 		if bytes.Contains(data, []byte("accounts")) {
-			if stateRoot.Accounts == nil || len(stateRoot.Accounts) == 0 {
+			if cuevmState.Accounts == nil || len(cuevmState.Accounts) == 0 {
 				fmt.Printf("stateRootData: %v\n", string(data))
-				if err := json.Unmarshal(data, &stateRoot); err != nil {
+				if err := json.Unmarshal(data, &cuevmState); err != nil {
 					fmt.Printf("Error unmarshalling stateRoot: %v\n", err)
 					continue
 				}
-				fmt.Printf("computing root: %v\n", stateRoot.StateRoot == "")
 
-				if err := stateRoot.ComputeStateRoot(); err != nil {
+				if err := cuevmState.ComputeStateRoot(); err != nil {
 					fmt.Printf("Error computing stateRoot: %+v\n", err)
 					continue
 				}
@@ -263,6 +274,7 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
 	}
+	stateRoot := evmStateRoot{StateRoot: cuevmState.StateRoot}
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to output: %v\n", err)
