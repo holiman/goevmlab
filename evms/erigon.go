@@ -17,7 +17,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -124,17 +123,14 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 // copyUntilEnd reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+	scanner := NewJsonlScanner("erigon", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	// Start with 1MB buffer, allow up to 32 MB
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024)
-	for scanner.Scan() {
-		data := scanner.Bytes()
+
+	for {
 		var elem logger.StructLog
-		err := json.Unmarshal(data, &elem)
-		if err != nil {
-			fmt.Printf("erigon err: %v, line\n\t%v\n", err, string(data))
-			continue
+		if err := scanner.Next(&elem); err != nil {
+			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
@@ -145,7 +141,7 @@ func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
+				_ = json.Unmarshal(scanner.Bytes(), &stateRoot)
 			}
 			// If we have a stateroot, we're done
 			if len(stateRoot.StateRoot) > 0 {

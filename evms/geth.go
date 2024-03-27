@@ -151,8 +151,8 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			prev = current
 		}
 	}
-	var elem logger.StructLog
 	for {
+		var elem logger.StructLog
 		if err := scanner.Next(&elem); err != nil {
 			break
 		}
@@ -165,7 +165,7 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(scanner.scanner.Bytes(), &stateRoot)
+				_ = json.Unmarshal(scanner.Bytes(), &stateRoot)
 			}
 			// If we have a stateroot, we're done
 			if len(stateRoot.StateRoot) > 0 {
