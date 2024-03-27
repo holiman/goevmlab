@@ -61,7 +61,7 @@ github.com/urfave/cli/v2.(*Command).Run(0x1ec98a0, 0xc0002d17c0, {0xc00028d8c0, 
 	} else if false {
 		fmt.Fprint(os.Stderr, out2)
 		fmt.Fprint(os.Stdout, out2)
-	} else if false {
+	} else {
 		fmt.Fprint(os.Stderr, out)
 		fmt.Fprint(os.Stdout, out)
 	}

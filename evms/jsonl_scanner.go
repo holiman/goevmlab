@@ -97,5 +97,4 @@ func (s *jsonlScanner) Next(elem any) (err error) {
 		}
 		return err
 	}
-	return nil
 }
