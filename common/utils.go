@@ -637,6 +637,8 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 		}
 		if res.Slow {
 			log.Warn("Slow test found", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", t.file)
+		} else {
+			log.Debug("Test executed", "evm", evm.Name(), "time", res.ExecTime, "cmd", res.Cmd, "file", t.file)
 		}
 		t.slow = res.Slow
 		t.result = hasher.h.Sum(nil)

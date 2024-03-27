@@ -1,0 +1,24 @@
+{"pc":0,"op":96,"gas":"0x4757","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH1"}
+# This is a comment
+# this too
+{"pc":2,"op":96,"gas":"0x4754","gasCost":"0x3","memSize":0,"stack":["0x0"],"depth":1,"refund":0,"opName":"PUSH1"}
+{"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH1"}
+INFO [03-27|11:35:41.867] Spurious log output from the application oops
+{"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH1"}
+{"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH1"}
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x40 pc=0xd05322]
+
+goroutine 1 [running]:
+github.com/ethereum/go-ethereum/eth/tracers/logger.(*jsonLogger).OnOpcode(0xc0000128d0, 0x0, 0x7f, 0x79bff8, 0x3, {0x1634008, 0xc0000138d8}, {0x0, 0x0, 0x0}, ...)
+        /home/user/go/src/github.com/ethereum/go-ethereum/eth/tracers/logger/logger_json.go:67 +0xa2
+github.com/ethereum/go-ethereum/core/vm.(*EVMInterpreter).Run(0xc000040780, 0xc000000540, {0x20d8400, 0x0, 0x0}, 0x0)
+        /home/user/go/src/github.com/ethereum/go-ethereum/core/vm/interpreter.go:280 +0xb95
+github.com/ethereum/go-ethereum/core/vm.(*EVM).Call(0xc0002e90e0, {0x16253c0, 0xc000681860}, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...)
+        /home/user/go/src/github.com/ethereum/go-ethereum/core/vm/evm.go:223 +0x8a5
+github.com/ethereum/go-ethereum/core.(*StateTransition).TransitionDb(0xc00052ccf8)
+        /home/user/go/src/github.com/ethereum/go-ethereum/core/state_transition.go:436 +0x6d6
+
+{"pc":15,"op":84,"gas":"0xef","gasCost":"0x834","memSize":0,"stack":["0x1"],"depth":1,"refund":0,"opName":"SLOAD","error":"out of gas"}
+{"output":"","gasUsed":"0x4757","error":"out of gas"}
+{"stateRoot": "0xaaaaaaaaaaabbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccc"}
