@@ -17,7 +17,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -126,12 +125,9 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 // copyUntilEnd reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
-	buf := bufferPool.Get().([]byte)
-	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
-	defer bufferPool.Put(buf)
+	scanner := NewJsonlScanner("geth", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(buf, 32*1024*1024)
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
@@ -155,18 +151,10 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			prev = current
 		}
 	}
-	for scanner.Scan() {
-		data := scanner.Bytes()
-		if len(data) > 0 && data[0] == '#' {
-			// Output preceded by # is ignored, but can be used for debugging, e.g.
-			// to check that the generated tests cover the intended surface.
-			fmt.Printf("%v: %v\n", evm.Name(), string(data))
-			continue
-		}
-		var elem logger.StructLog
-		if err := json.Unmarshal(data, &elem); err != nil {
-			fmt.Printf("geth err: %v, line\n\t%v\n", err, string(data))
-			continue
+	var elem logger.StructLog
+	for {
+		if err := scanner.Next(&elem); err != nil {
+			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
@@ -177,7 +165,7 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
 			*/
 			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
+				_ = json.Unmarshal(scanner.scanner.Bytes(), &stateRoot)
 			}
 			// If we have a stateroot, we're done
 			if len(stateRoot.StateRoot) > 0 {
