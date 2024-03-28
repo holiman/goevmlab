@@ -26,7 +26,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -132,33 +131,23 @@ func (evm *EelsEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	defer scanner.Release()
 	var stateRoot stateRoot
 	for {
-		var elem logger.StructLog
+		var elem opLog
 		if scanner.Next(&elem) != nil {
 			break
 		}
-		// If the output cannot be marshalled, all fields will be blanks.
-		// We can detect that through 'depth', which should never be less than 1
-		// for any actual opcode
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
+			break
+		}
+		// General parsing error, some jsonl-output with nothing meaningful
 		if elem.Depth == 0 {
-			/* It might be the stateroot
-			{"output":"","gasUsed":"0x2d1cc4","error":"gas uint64 overflow"}
-			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-			*/
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(scanner.Bytes(), &stateRoot)
-			}
-			// If we have a stateroot, we're done
-			if len(stateRoot.StateRoot) > 0 {
-				break
-			}
 			continue
 		}
-		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
-		// In order to handle that, we need to drop all STOP opcodes.
+		// Drop the stops
 		if elem.Op == 0x0 {
 			continue
 		}
-		outp := FastMarshal(&elem)
+		outp := CustomMarshal(&elem)
 		if _, err := out.Write(append(outp, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}

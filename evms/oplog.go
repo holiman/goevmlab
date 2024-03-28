@@ -14,17 +14,16 @@ import (
 //   - also has the ability to soup up a stateroot,
 //   - and is a bit more lax in parsing (e.g allows negative refund)
 type opLog struct {
-	Pc            uint64        `json:"pc"`
-	Op            vm.OpCode     `json:"op"`
-	Gas           uint64        `json:"gas"`
-	GasCost       uint64        `json:"gasCost"`
-	Memory        []byte        `json:"memory,omitempty"`
-	MemorySize    int           `json:"memSize"`
-	Stack         []uint256.Int `json:"stack"`
-	ReturnData    []byte        `json:"returnData,omitempty"`
-	Depth         int           `json:"depth"`
-	RefundCounter uint64        `json:"refund"`
-	Err           error         `json:"-"`
+	Pc         uint64        `json:"pc"`
+	Op         vm.OpCode     `json:"op"`
+	Gas        uint64        `json:"gas"`
+	GasCost    uint64        `json:"gasCost"`
+	Memory     []byte        `json:"memory,omitempty"`
+	MemorySize int           `json:"memSize"`
+	Stack      []uint256.Int `json:"stack"`
+	ReturnData []byte        `json:"returnData,omitempty"`
+	Depth      int           `json:"depth"`
+	Err        error         `json:"-"`
 
 	// stateroot as output by geth, reth, eels, nethermind
 	StateRoot1 string `json:"stateRoot"`
@@ -34,14 +33,14 @@ type opLog struct {
 
 // overrides for gencodec
 type opLogMarshaling struct {
-	Gas           math.HexOrDecimal64
-	GasCost       math.HexOrDecimal64
-	Memory        hexutil.Bytes
-	ReturnData    hexutil.Bytes
-	RefundCounter math.HexOrDecimal64
-	MemorySize    math.HexOrDecimal64
-	Stack         []hexutil.U256
-	OpName        string `json:"opName"` // adds call to OpName() in MarshalJSON
+	Gas        math.HexOrDecimal64
+	GasCost    math.HexOrDecimal64
+	Memory     hexutil.Bytes
+	ReturnData hexutil.Bytes
+	//RefundCounter HexOrDecimalSigned64
+	MemorySize math.HexOrDecimal64
+	Stack      []hexutil.U256
+	OpName     string `json:"opName"` // adds call to OpName() in MarshalJSON
 }
 
 // OpName formats the operand name in a human-readable format.

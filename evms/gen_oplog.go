@@ -16,20 +16,19 @@ var _ = (*opLogMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (o opLog) MarshalJSON() ([]byte, error) {
 	type opLog struct {
-		Pc            uint64              `json:"pc"`
-		Op            vm.OpCode           `json:"op"`
-		Gas           math.HexOrDecimal64 `json:"gas"`
-		GasCost       math.HexOrDecimal64 `json:"gasCost"`
-		Memory        hexutil.Bytes       `json:"memory,omitempty"`
-		MemorySize    math.HexOrDecimal64 `json:"memSize"`
-		Stack         []hexutil.U256      `json:"stack"`
-		ReturnData    hexutil.Bytes       `json:"returnData,omitempty"`
-		Depth         int                 `json:"depth"`
-		RefundCounter math.HexOrDecimal64 `json:"refund"`
-		Err           error               `json:"-"`
-		StateRoot1    string              `json:"stateRoot"`
-		StateRoot2    string              `json:"postHash"`
-		OpName        string              `json:"opName"`
+		Pc         uint64              `json:"pc"`
+		Op         vm.OpCode           `json:"op"`
+		Gas        math.HexOrDecimal64 `json:"gas"`
+		GasCost    math.HexOrDecimal64 `json:"gasCost"`
+		Memory     hexutil.Bytes       `json:"memory,omitempty"`
+		MemorySize math.HexOrDecimal64 `json:"memSize"`
+		Stack      []hexutil.U256      `json:"stack"`
+		ReturnData hexutil.Bytes       `json:"returnData,omitempty"`
+		Depth      int                 `json:"depth"`
+		Err        error               `json:"-"`
+		StateRoot1 string              `json:"stateRoot"`
+		StateRoot2 string              `json:"postHash"`
+		OpName     string              `json:"opName"`
 	}
 	var enc opLog
 	enc.Pc = o.Pc
@@ -46,7 +45,6 @@ func (o opLog) MarshalJSON() ([]byte, error) {
 	}
 	enc.ReturnData = o.ReturnData
 	enc.Depth = o.Depth
-	enc.RefundCounter = math.HexOrDecimal64(o.RefundCounter)
 	enc.Err = o.Err
 	enc.StateRoot1 = o.StateRoot1
 	enc.StateRoot2 = o.StateRoot2
@@ -57,19 +55,18 @@ func (o opLog) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (o *opLog) UnmarshalJSON(input []byte) error {
 	type opLog struct {
-		Pc            *uint64              `json:"pc"`
-		Op            *vm.OpCode           `json:"op"`
-		Gas           *math.HexOrDecimal64 `json:"gas"`
-		GasCost       *math.HexOrDecimal64 `json:"gasCost"`
-		Memory        *hexutil.Bytes       `json:"memory,omitempty"`
-		MemorySize    *math.HexOrDecimal64 `json:"memSize"`
-		Stack         []hexutil.U256       `json:"stack"`
-		ReturnData    *hexutil.Bytes       `json:"returnData,omitempty"`
-		Depth         *int                 `json:"depth"`
-		RefundCounter *math.HexOrDecimal64 `json:"refund"`
-		Err           error                `json:"-"`
-		StateRoot1    *string              `json:"stateRoot"`
-		StateRoot2    *string              `json:"postHash"`
+		Pc         *uint64              `json:"pc"`
+		Op         *vm.OpCode           `json:"op"`
+		Gas        *math.HexOrDecimal64 `json:"gas"`
+		GasCost    *math.HexOrDecimal64 `json:"gasCost"`
+		Memory     *hexutil.Bytes       `json:"memory,omitempty"`
+		MemorySize *math.HexOrDecimal64 `json:"memSize"`
+		Stack      []hexutil.U256       `json:"stack"`
+		ReturnData *hexutil.Bytes       `json:"returnData,omitempty"`
+		Depth      *int                 `json:"depth"`
+		Err        error                `json:"-"`
+		StateRoot1 *string              `json:"stateRoot"`
+		StateRoot2 *string              `json:"postHash"`
 	}
 	var dec opLog
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -104,9 +101,6 @@ func (o *opLog) UnmarshalJSON(input []byte) error {
 	}
 	if dec.Depth != nil {
 		o.Depth = *dec.Depth
-	}
-	if dec.RefundCounter != nil {
-		o.RefundCounter = uint64(*dec.RefundCounter)
 	}
 	if dec.Err != nil {
 		o.Err = dec.Err

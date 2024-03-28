@@ -15,17 +15,17 @@ func JsonMarshal(log *logger.StructLog) []byte {
 
 func FastMarshal(log *logger.StructLog) []byte {
 	o := &opLog{
-		Pc:            log.Pc,
-		Op:            log.Op,
-		Gas:           log.Gas,
-		GasCost:       log.GasCost,
-		Memory:        log.Memory,
-		MemorySize:    log.MemorySize,
-		Stack:         log.Stack,
-		ReturnData:    log.ReturnData,
-		Depth:         log.Depth,
-		RefundCounter: log.RefundCounter,
-		Err:           log.Err,
+		Pc:         log.Pc,
+		Op:         log.Op,
+		Gas:        log.Gas,
+		GasCost:    log.GasCost,
+		Memory:     log.Memory,
+		MemorySize: log.MemorySize,
+		Stack:      log.Stack,
+		ReturnData: log.ReturnData,
+		Depth:      log.Depth,
+		//RefundCounter: int64(log.RefundCounter),
+		Err: log.Err,
 	}
 	return CustomMarshal(o)
 }
@@ -65,8 +65,9 @@ func CustomMarshal(log *opLog) []byte {
 	}
 	// Refunds
 	if !ClearRefunds {
-		b = append(b, []byte(`,"refund":`)...)
-		b = strconv.AppendUint(b, uint64(log.RefundCounter), 10)
+		panic("refunds parsing is not implemented now")
+		//b = append(b, []byte(`,"refund":`)...)
+		//b = strconv.AppendUint(b, uint64(log.RefundCounter), 10)
 	}
 	// Returndata
 	if !ClearReturndata {

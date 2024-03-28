@@ -156,8 +156,8 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			break
 		}
 		// If we have a stateroot, we're done
-		if len(elem.StateRoot) != 0 {
-			stateRoot.StateRoot = elem.StateRoot
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
 			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.

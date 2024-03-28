@@ -25,12 +25,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/holiman/uint256"
 )
 
 type RethVM struct {
@@ -125,41 +120,6 @@ func (evm *RethVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 func (vm *RethVM) Close() {
 }
 
-//go:generate go run github.com/fjl/gencodec -type revmStructLog -field-override revmStructLogMarshaling -out gen_revm_structlog.go
-
-type revmStructLog struct {
-	Pc            uint64                      `json:"pc"`
-	Op            vm.OpCode                   `json:"op"`
-	Gas           uint64                      `json:"gas"`
-	GasCost       uint64                      `json:"gasCost"`
-	Memory        []byte                      `json:"memory,omitempty"`
-	MemorySize    int                         `json:"memSize"`
-	Stack         []uint256.Int               `json:"stack"`
-	ReturnData    []byte                      `json:"returnData,omitempty"`
-	Storage       map[common.Hash]common.Hash `json:"-"`
-	Depth         int                         `json:"depth"`
-	RefundCounter uint64                      `json:"refund"`
-
-	Err error `json:"-"`
-}
-
-// OpName formats the operand name in a human-readable format.
-func (s *revmStructLog) OpName() string {
-	return s.Op.String()
-}
-
-// overrides for gencodec
-type revmStructLogMarshaling struct {
-	Gas           math.HexOrDecimal64
-	GasCost       math.HexOrDecimal64
-	Memory        hexutil.Bytes
-	MemorySize    math.HexOrDecimal64 `json:"memSize"`
-	ReturnData    hexutil.Bytes
-	Stack         []hexutil.U256
-	RefundCounter math.HexOrDecimal64 `json:"refund"`
-	OpName        string              `json:"opName"` // adds call to OpName() in MarshalJSON
-}
-
 func (evm *RethVM) Copy(out io.Writer, input io.Reader) {
 	scanner := NewJsonlScanner("revm", input, os.Stderr)
 	defer scanner.Release()
@@ -167,8 +127,8 @@ func (evm *RethVM) Copy(out io.Writer, input io.Reader) {
 
 	var elem opLog
 	for scanner.Next(&elem) == nil {
-		if len(elem.StateRoot) != 0 {
-			stateRoot.StateRoot = elem.StateRoot
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
 			break
 		}
 		// Drop all STOP opcodes as geth does
