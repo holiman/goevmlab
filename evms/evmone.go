@@ -17,7 +17,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -26,7 +25,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -121,38 +119,28 @@ func (vm *EvmoneVM) Close() {
 }
 
 func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
-	buf := bufferPool.Get().([]byte)
-	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
-	defer bufferPool.Put(buf)
+	scanner := NewJsonlScanner("evmone", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(buf, 32*1024*1024)
 
-	for scanner.Scan() {
-		data := scanner.Bytes()
-
-		if bytes.Contains(data, []byte("stateRoot")) {
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
-				continue
-			}
+	for {
+		var elem opLog
+		if err := scanner.Next(&elem); err != nil {
+			break
 		}
-		// Evmone sometimes report a negative refund
-		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+9] = byte(' ')
+		// If we have a stateroot, we're done
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
+			break
 		}
-		var elem logger.StructLog
-		if err := json.Unmarshal(data, &elem); err != nil {
-			fmt.Printf("evmone err: %v, line\n\t%v\n", err, string(data))
+		if elem.Depth == 0 {
 			continue
 		}
-
 		// Drop all STOP opcodes as geth does
 		if elem.Op == 0x0 {
 			continue
 		}
-		jsondata := FastMarshal(&elem)
+		jsondata := CustomMarshal(&elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
