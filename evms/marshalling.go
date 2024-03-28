@@ -13,11 +13,26 @@ func JsonMarshal(log *logger.StructLog) []byte {
 	return data
 }
 
-var FastMarshal = CustomMarshal
+func FastMarshal(log *logger.StructLog) []byte {
+	o := &opLog{
+		Pc:            log.Pc,
+		Op:            log.Op,
+		Gas:           log.Gas,
+		GasCost:       log.GasCost,
+		Memory:        log.Memory,
+		MemorySize:    log.MemorySize,
+		Stack:         log.Stack,
+		ReturnData:    log.ReturnData,
+		Depth:         log.Depth,
+		RefundCounter: log.RefundCounter,
+		Err:           log.Err,
+	}
+	return CustomMarshal(o)
+}
 
 // CustomMarshal writes a logger.Structlog element into a concise json format.
 // OBS! This output format will omit all stack element except the last 6 items.
-func CustomMarshal(log *logger.StructLog) []byte {
+func CustomMarshal(log *opLog) []byte {
 	b := make([]byte, 0, 200)
 
 	// Depth : PC

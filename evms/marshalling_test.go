@@ -15,7 +15,7 @@ func TestMarshalling(t *testing.T) {
 		el := uint256.NewInt(uint64(i))
 		log.Stack = append(log.Stack, *el)
 	}
-	if out := CustomMarshal(log); !json.Valid(out) {
+	if out := FastMarshal(log); !json.Valid(out) {
 		t.Fatalf("invalid json: %v", string(out))
 	}
 }

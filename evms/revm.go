@@ -17,7 +17,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -30,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/uint256"
 )
@@ -163,46 +161,21 @@ type revmStructLogMarshaling struct {
 }
 
 func (evm *RethVM) Copy(out io.Writer, input io.Reader) {
-	buf := bufferPool.Get().([]byte)
-	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
-	defer bufferPool.Put(buf)
+	scanner := NewJsonlScanner("revm", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(buf, 32*1024*1024)
 
-	for scanner.Scan() {
-		data := scanner.Bytes()
-
-		if bytes.Contains(data, []byte("stateRoot")) {
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
-				continue
-			}
-		}
-		var rElem revmStructLog
-		if err := json.Unmarshal(data, &rElem); err != nil {
-			fmt.Printf("revm err: %v, line\n\t%v\n", err, string(data))
-			continue
-		}
-		var elem = logger.StructLog{
-			Pc:            rElem.Pc,
-			Op:            rElem.Op,
-			Gas:           rElem.Gas,
-			GasCost:       rElem.GasCost,
-			Memory:        rElem.Memory,
-			MemorySize:    rElem.MemorySize,
-			Stack:         rElem.Stack,
-			ReturnData:    rElem.ReturnData,
-			Storage:       rElem.Storage,
-			Depth:         rElem.Depth,
-			RefundCounter: rElem.RefundCounter,
-			Err:           rElem.Err,
+	var elem opLog
+	for scanner.Next(&elem) == nil {
+		if len(elem.StateRoot) != 0 {
+			stateRoot.StateRoot = elem.StateRoot
+			break
 		}
 		// Drop all STOP opcodes as geth does
 		if elem.Op == 0x0 {
 			continue
 		}
-		jsondata := FastMarshal(&elem)
+		jsondata := CustomMarshal(&elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}

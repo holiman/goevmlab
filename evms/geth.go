@@ -25,7 +25,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -131,13 +130,13 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
-	var prev *logger.StructLog
-	var yield = func(current *logger.StructLog) {
+	var prev *opLog
+	var yield = func(current *opLog) {
 		if prev == nil {
 			prev = current
 			return
 		}
-		data := FastMarshal(prev)
+		data := CustomMarshal(prev)
 		if _, err := out.Write(append(data, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
@@ -152,25 +151,19 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		}
 	}
 	for {
-		var elem logger.StructLog
+		var elem opLog
 		if err := scanner.Next(&elem); err != nil {
+			break
+		}
+		// If we have a stateroot, we're done
+		if len(elem.StateRoot) != 0 {
+			stateRoot.StateRoot = elem.StateRoot
 			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
 		if elem.Depth == 0 {
-			/* It might be the stateroot
-			{"output":"","gasUsed":"0x2d1cc4","error":"gas uint64 overflow"}
-			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-			*/
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(scanner.Bytes(), &stateRoot)
-			}
-			// If we have a stateroot, we're done
-			if len(stateRoot.StateRoot) > 0 {
-				break
-			}
 			continue
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
