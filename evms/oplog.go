@@ -32,8 +32,6 @@ type opLog struct {
 	StateRoot2 string `json:"postHash"`
 }
 
-}
-
 // overrides for gencodec
 type opLogMarshaling struct {
 	Gas           math.HexOrDecimal64
