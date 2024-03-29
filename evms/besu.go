@@ -120,10 +120,6 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input)
 }
 
-type besuStateRoot struct {
-	StateRoot string `json:"postHash"`
-}
-
 func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	scanner := NewJsonlScanner("besu", input, os.Stderr)
 	defer scanner.Release()
