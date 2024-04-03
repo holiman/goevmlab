@@ -104,7 +104,6 @@ func (state *cuevmState) ComputeStateRoot() error {
 			storageKey := account.Storage[i][0]
 			storageVal := account.Storage[i][1]
 
-			fmt.Printf("storageKey: %v, storageVal: %v\n", storageKey, storageVal)
 			if storageVal == "0x0" { // todo better removed from inside cuevm
 				continue
 			}
@@ -132,7 +131,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 		}
 		root := storageTrie.Hash()
 
-		fmt.Printf("root: %v\n", root.Hex())
+		fmt.Printf("address: %s root: %v\n", account.Address, root.Hex())
 
 		stateAccount.Nonce = nonce
 		stateAccount.Balance = balance
@@ -151,6 +150,14 @@ func (state *cuevmState) ComputeStateRoot() error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
+
+		// todo compare this
+		fmt.Printf("stateKey: %v\n", hex.EncodeToString(stateKey))
+		fmt.Printf("stateVal: %v\n", hex.EncodeToString(stateVal))
+
+		fmt.Printf("address: %v\n", account.Address)
+		s, _ := json.MarshalIndent(stateAccount, "", "  ")
+		fmt.Printf("stateAccount: %s\n", s)
 
 		stateTrie.Update(stateKey, stateVal)
 	}
@@ -177,6 +184,7 @@ func (evm *CuEVM) Name() string {
 }
 
 func (evm *CuEVM) GetStateRoot(path string) (root, command string, err error) {
+	// todo update this for stateRoot only tests
 	cmd := exec.Command(evm.path, "statetest", "--json-outcome", path)
 	data, err := StdErrOutput(cmd)
 
