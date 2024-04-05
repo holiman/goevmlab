@@ -18,7 +18,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -27,7 +26,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -129,48 +127,27 @@ func (evm *EelsEVM) Copy(out io.Writer, input io.Reader) {
 // copyUntilEnd reads from the reader, does some vm-specific filtering and
 // outputs items onto the channel
 func (evm *EelsEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
-	buf := bufferPool.Get().([]byte)
-	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
-	defer bufferPool.Put(buf)
+	scanner := NewJsonlScanner("eels", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(buf, 32*1024*1024)
-	for scanner.Scan() {
-		data := scanner.Bytes()
-		if len(data) > 0 && data[0] == '#' {
-			// Output preceded by # is ignored, but can be used for debugging, e.g.
-			// to check that the generated tests cover the intended surface.
-			fmt.Printf("%v: %v\n", evm.Name(), string(data))
-			continue
+	for {
+		var elem opLog
+		if scanner.Next(&elem) != nil {
+			break
 		}
-		var elem logger.StructLog
-		if err := json.Unmarshal(data, &elem); err != nil {
-			fmt.Printf("eels err: %v, line\n\t%v\n", err, string(data))
-			continue
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
+			break
 		}
-		// If the output cannot be marshalled, all fields will be blanks.
-		// We can detect that through 'depth', which should never be less than 1
-		// for any actual opcode
+		// General parsing error, some jsonl-output with nothing meaningful
 		if elem.Depth == 0 {
-			/* It might be the stateroot
-			{"output":"","gasUsed":"0x2d1cc4","error":"gas uint64 overflow"}
-			{"stateRoot": "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-			*/
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
-			}
-			// If we have a stateroot, we're done
-			if len(stateRoot.StateRoot) > 0 {
-				break
-			}
 			continue
 		}
-		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
-		// In order to handle that, we need to drop all STOP opcodes.
+		// Drop the stops
 		if elem.Op == 0x0 {
 			continue
 		}
-		outp := FastMarshal(&elem)
+		outp := CustomMarshal(&elem)
 		if _, err := out.Write(append(outp, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}

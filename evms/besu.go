@@ -17,8 +17,6 @@
 package evms
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -123,42 +120,15 @@ func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input)
 }
 
-type besuStateRoot struct {
-	StateRoot string `json:"postHash"`
-}
-
 func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
-	buf := bufferPool.Get().([]byte)
-	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
-	defer bufferPool.Put(buf)
+	scanner := NewJsonlScanner("besu", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(buf, 32*1024*1024)
-	for scanner.Scan() {
-		data := scanner.Bytes()
-		var elem logger.StructLog
-		// Besu sometimes report a negative refund
-		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+9] = byte(' ')
-		}
-		err := json.Unmarshal(data, &elem)
-		if err != nil {
-			fmt.Printf("besu err: %v, line\n\t%v\n", err, string(data))
-			continue
-		}
-		// If the output cannot be marshalled, all fields will be blanks.
-		// We can detect that through 'depth', which should never be less than 1
-		// for any actual opcode
-		if elem.Depth == 0 {
-			if stateRoot.StateRoot == "" {
-				var tempRoot besuStateRoot
-				if err := json.Unmarshal(data, &tempRoot); err == nil {
-					// Besu calls state root "postHash"
-					stateRoot.StateRoot = tempRoot.StateRoot
-				}
-			}
-			// If we have a stateroot, we're done
+	var elem opLog
+	for scanner.Next(&elem) == nil {
+		// If we have a stateroot, we're done
+		if len(elem.StateRoot2) != 0 {
+			stateRoot.StateRoot = elem.StateRoot2
 			break
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
@@ -166,7 +136,7 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		if elem.Op == 0x0 {
 			continue
 		}
-		outp := FastMarshal(&elem)
+		outp := CustomMarshal(&elem)
 		if _, err := out.Write(append(outp, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return stateRoot

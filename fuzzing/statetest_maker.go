@@ -51,7 +51,7 @@ type GstMaker struct {
 
 func NewGstMaker() *GstMaker {
 	alloc := make(GenesisAlloc)
-	rnd := common.HexToHash("0x20000")
+	rnd := common.HexToHash("0x200000")
 	gst := &GstMaker{
 		env: &stEnv{
 			// The ENV portion

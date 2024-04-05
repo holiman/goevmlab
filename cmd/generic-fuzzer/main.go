@@ -79,7 +79,7 @@ func startFuzzer(ctx *cli.Context) (err error) {
 	}
 	loglevel := slog.Level(ctx.Int(common.VerbosityFlag.Name))
 	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
-
+	log.Root().Write(loglevel, "Set loglevel", "level", loglevel)
 	var (
 		fNames = ctx.StringSlice(engineFlag.Name)
 		fork   = ctx.String(forkFlag.Name)
