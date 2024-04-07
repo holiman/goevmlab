@@ -158,7 +158,7 @@ COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
-COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.14.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
+COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.15.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
 COPY --from=golang-builder /evmstate /nimbvm
@@ -180,7 +180,6 @@ RUN ln -s /evmtool/bin/evm besu-vm
 ENV BESU_BIN=/evmtool/bin/evm
 
 COPY readme_docker.md  /README.md
-COPY entrypoint.sh  /entrypoint.sh
 
 ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
  --nethbatch=$NETH_BIN \
