@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
@@ -264,7 +263,7 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 				}
 			}
 		}
-		var elem logger.StructLog
+		var elem opLog
 		if err := json.Unmarshal(data, &elem); err != nil {
 			fmt.Printf("cuevm err: %v, line\n\t%v\n", err, string(data))
 			continue
@@ -274,7 +273,7 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 		if elem.Op == 0x0 {
 			continue
 		}
-		jsondata := FastMarshal(&elem)
+		jsondata := CustomMarshal(&elem)
 		if _, err := out.Write(append(jsondata, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
