@@ -131,8 +131,6 @@ func (state *cuevmState) ComputeStateRoot() error {
 		}
 		root := storageTrie.Hash()
 
-		fmt.Printf("address: %s root: %v\n", account.Address, root.Hex())
-
 		stateAccount.Nonce = nonce
 		stateAccount.Balance = balance
 
@@ -150,14 +148,6 @@ func (state *cuevmState) ComputeStateRoot() error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-
-		// todo compare this
-		fmt.Printf("stateKey: %v\n", hex.EncodeToString(stateKey))
-		fmt.Printf("stateVal: %v\n", hex.EncodeToString(stateVal))
-
-		fmt.Printf("address: %v\n", account.Address)
-		s, _ := json.MarshalIndent(stateAccount, "", "  ")
-		fmt.Printf("stateAccount: %s\n", s)
 
 		stateTrie.Update(stateKey, stateVal)
 	}
@@ -263,7 +253,6 @@ func (evm *CuEVM) Copy(out io.Writer, input io.Reader) {
 
 		if bytes.Contains(data, []byte("accounts")) {
 			if cuevmState.Accounts == nil || len(cuevmState.Accounts) == 0 {
-				fmt.Printf("stateRootData: %v\n", string(data))
 				if err := json.Unmarshal(data, &cuevmState); err != nil {
 					fmt.Printf("Error unmarshalling stateRoot: %v\n", err)
 					continue
