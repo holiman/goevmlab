@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 )
 
@@ -55,7 +56,8 @@ type stateRoot struct {
 
 // CompareFiles returns true if the files are equal, along with the number of line s
 // compared
-func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
+func CompareFiles(vms []Evm, readers []io.Reader) (bool, int, string) {
+	var output = new(strings.Builder)
 	var scanners []*bufio.Scanner
 	for _, r := range readers {
 		scanner := bufio.NewScanner(r)
@@ -76,11 +78,11 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 		for i, scanner := range scanners[1:] {
 			scanner.Scan()
 			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
-				fmt.Printf("-------\nprev:%15v: %v\ndiff:%15v: %v\ndiff:%15v: %v\n",
+				fmt.Fprintf(output, "-------\nprev:%15v: %v\ndiff:%15v: %v\ndiff:%15v: %v\n",
 					"both", prevLine,
 					refVM.Name(), string(refOut.Bytes()),
 					vms[i+1].Name(), string(scanner.Bytes()))
-				return false, count
+				return false, count, output.String()
 			}
 		}
 		prevLine = string(refOut.Bytes())
@@ -89,15 +91,15 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int) {
 	// The source is 'done', need to also check if the other scanners are done
 	for i, scanner := range scanners[1:] {
 		if scanner.Scan() {
-			fmt.Printf("diff: \n%15v: %v\n%15v: %v\n",
+			fmt.Fprintf(output, "diff: \n%15v: %v\n%15v: %v\n",
 				refVM.Name(),
 				string("--  depleted --"),
 				vms[i+1].Name(),
 				string(scanner.Bytes()))
-			return false, count
+			return false, count, output.String()
 		}
 	}
-	return true, count
+	return true, count, output.String()
 }
 
 var bufferPool = sync.Pool{
