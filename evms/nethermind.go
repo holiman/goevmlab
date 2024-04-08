@@ -17,7 +17,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -26,7 +25,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -129,68 +127,40 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 }
 
 func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool) stateRoot {
-	buf := bufferPool.Get().([]byte)
-	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
-	defer bufferPool.Put(buf)
+	if speedMode {
+		// In speednode, there's no jsonl output, it instead looks like
+		var r []stateRoot
+		err := json.NewDecoder(input).Decode(&r)
+		if err != nil {
+			return r[0]
+		}
+		log.Warn("Error parsing nethermind output", "error", err)
+		return stateRoot{}
+	}
+	scanner := NewJsonlScanner("neth", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(buf, 32*1024*1024)
-
-	for scanner.Scan() {
-		data := scanner.Bytes()
-		var elem logger.StructLog
-
-		if speedMode {
-			// In speednode, there's no jsonl output, it instead looks like
-			/*
-				[
-				 {
-				   "name" : ..
-				   "pass" : false,
-				   ...
-				   "stateRoot": "0x.."
-				 }
-				]
-			*/
-			// might be a stateroot on stdout, on json not jsonl?
-			if root, err := evm.ParseStateRoot(data); err == nil {
-				stateRoot.StateRoot = root
-				break
-			}
+	for {
+		var elem opLog
+		if err := scanner.Next(&elem); err != nil {
+			break
+		}
+		// If we have a stateroot, we're done
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
+			break
+		}
+		if elem.Depth == 0 {
 			continue
-		} else {
-			err := json.Unmarshal(data, &elem)
-			if err != nil {
-				fmt.Printf("nethermind err: %v, line\n\t%v\n", err, string(data))
-				continue
-			}
-			// If the output cannot be marshalled, all fields will be blanks.
-			// We can detect that through 'depth', which should never be less than 1
-			// for any actual opcode
-			if elem.Depth == 0 {
-				/*  Most likely one of these:
-				{"output":"","gasUsed":"0x2d1cc4","time":233624,"error":"gas uint64 overflow"}
-				{"stateRoot": "a2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
-				*/
-				if stateRoot.StateRoot == "" {
-					_ = json.Unmarshal(data, &stateRoot)
-				}
-				// If we have a stateroot, we're done
-				if len(stateRoot.StateRoot) > 0 {
-					break
-				}
-				continue
-			}
-			// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.
-			// In order to handle that, we need to drop all STOP opcodes.
-			if elem.Op == 0x0 {
-				continue
-			}
-			outp := FastMarshal(&elem)
-			if _, err := out.Write(append(outp, '\n')); err != nil {
-				fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-				return stateRoot
-			}
+		}
+		// Drop stops
+		if elem.Op == 0x0 {
+			continue
+		}
+		outp := CustomMarshal(&elem)
+		if _, err := out.Write(append(outp, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+			return stateRoot
 		}
 	}
 	root, _ := json.Marshal(stateRoot)

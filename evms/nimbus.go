@@ -17,7 +17,6 @@
 package evms
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -25,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/log"
 	"time"
 )
@@ -119,20 +117,20 @@ func (vm *NimbusEVM) Close() {
 }
 
 func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
+	scanner := NewJsonlScanner("geth", input, os.Stderr)
+	defer scanner.Release()
 	var stateRoot stateRoot
-	scanner := bufio.NewScanner(input)
-	scanner.Buffer(make([]byte, 1024*1024), 32*1024*1024) // Start with 1MB buffer, allow up to 32 MB
 
 	// When nimbus encounters an error, it may already have spat out the info prematurely.
 	// We need to merge it back to one item, just like geth
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
-	var prev *logger.StructLog
-	var yield = func(current *logger.StructLog) {
+	var prev *opLog
+	var yield = func(current *opLog) {
 		if prev == nil {
 			prev = current
 			return
 		}
-		data := FastMarshal(prev)
+		data := CustomMarshal(prev)
 		if _, err := out.Write(append(data, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
@@ -147,27 +145,20 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 		}
 	}
 
-	for scanner.Scan() {
-		data := scanner.Bytes()
-
-		// Nimbus sometimes report a negative refund
-		if i := bytes.Index(data, []byte(`"refund":-`)); i > 0 {
-			// we can just make it positive, it will be zeroed later
-			data[i+9] = byte(' ')
+	for {
+		var elem opLog
+		if err := scanner.Next(&elem); err != nil {
+			break
 		}
-
-		var elem logger.StructLog
-		if err := json.Unmarshal(data, &elem); err != nil {
-			fmt.Printf("nimb err: %v, line\n\t%v\n", err, string(data))
-			continue
+		// If we have a stateroot, we're done
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
+			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
 		if elem.Depth == 0 {
-			if stateRoot.StateRoot == "" {
-				_ = json.Unmarshal(data, &stateRoot)
-			}
 			continue
 		}
 		// When geth encounters end of code, it continues anyway, on a 'virtual' STOP.

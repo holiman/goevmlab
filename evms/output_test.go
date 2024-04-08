@@ -80,7 +80,8 @@ func testVmsOutput(t *testing.T, testfile string) {
 		readers = append(readers, bytes.NewReader(parsedOutput.Bytes()))
 		vms = append(vms, tc.vm)
 	}
-	if eq, _ := CompareFiles(vms, readers); !eq {
+	if eq, _, data := CompareFiles(vms, readers); !eq {
+		t.Log(data)
 		t.Errorf("Expected equality, didn't get it, file: %v", testfile)
 	}
 }

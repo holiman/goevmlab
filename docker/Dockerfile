@@ -58,7 +58,6 @@ RUN cd nimbus-eth1 && make -j8 update
 RUN cd nimbus-eth1 && make -j8 evmstate 
 RUN cp nimbus-eth1/tools/evmstate/evmstate /evmstate
 
-RUN echo "please" >> /build.sequential
 
 
 
@@ -77,7 +76,6 @@ RUN echo "please" >> /build.sequential
 FROM debian:testing as debian-builder
 RUN apt-get update -q && apt-get install -qy --no-install-recommends git make \
     ca-certificates g++ cmake ninja-build libgmp-dev
-COPY --from=golang-builder /build.sequential /build.sequential
 
 RUN git clone https://github.com/ethereum/evmone.git --depth 1 --recurse-submodules
 RUN cd evmone && cmake -S . -B build -DEVMONE_TESTING=ON -DEVMONE_PRECOMPILES_SILKPRE=1
@@ -94,7 +92,6 @@ RUN cp /evmone/build/lib/libevmone.so.0.12 /libevmone.so.0.12
 
 FROM lukemathwalker/cargo-chef:latest-rust-1 AS rust-builder
 RUN apt-get update -q && apt-get install -qy --no-install-recommends libclang-dev pkg-config
-COPY --from=debian-builder /build.sequential /build.sequential
 RUN git clone https://github.com/bluealloy/revm.git --depth 1 
 RUN cd revm && cargo build --release --package revme
 
@@ -110,7 +107,6 @@ RUN cd revm && cargo build --release --package revme
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS dotnet-builder
 RUN git clone https://github.com/NethermindEth/nethermind --depth 1 --recurse-submodules
-COPY --from=rust-builder /build.sequential /build.sequential
 
 RUN cd nethermind/src/Nethermind/Nethermind.Test.Runner && dotnet publish --self-contained true -r linux-x64 -c Release
 RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Runner/release_linux-x64 /out/neth
@@ -128,7 +124,6 @@ FROM ubuntu:23.10 as java-builder
 RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates 
 RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
 RUN apt-get install -qy --no-install-recommends git openjdk-17-jre-headless=17* libjemalloc-dev=5.* 
-COPY --from=dotnet-builder /build.sequential /build.sequential
 RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
 RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
 
@@ -151,18 +146,16 @@ RUN apt-get install -qy --no-install-recommends pipx git && \
 ENV EELS_BIN=/ethereum-spec-evm
 
 # Go-evmlab targets
-COPY --from=golang-builder /go/goevmlab/generic-fuzzer /
-COPY --from=golang-builder /go/goevmlab/checkslow  /
-COPY --from=golang-builder /go/goevmlab/minimizer /
-COPY --from=golang-builder /go/goevmlab/repro /
-COPY --from=golang-builder /go/goevmlab/runtest /
-COPY --from=golang-builder /go/goevmlab/tracediff /
-COPY --from=golang-builder /go/goevmlab/traceview /
-COPY --from=golang-builder /go/goevmlab/evms/testdata/ /testdata/
+COPY --from=golang-builder /go/goevmlab/generic-fuzzer /usr/bin
+COPY --from=golang-builder /go/goevmlab/checkslow  /usr/bin
+COPY --from=golang-builder /go/goevmlab/minimizer /usr/bin
+COPY --from=golang-builder /go/goevmlab/repro /usr/bin
+COPY --from=golang-builder /go/goevmlab/runtest /usr/bin
+COPY --from=golang-builder /go/goevmlab/tracediff /usr/bin
+COPY --from=golang-builder /go/goevmlab/traceview /usr/bin
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
-
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
 COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.14.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
@@ -188,4 +181,14 @@ ENV BESU_BIN=/evmtool/bin/evm
 
 COPY readme_docker.md  /README.md
 COPY entrypoint.sh  /entrypoint.sh
+
+ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
+ --nethbatch=$NETH_BIN \
+ --nimbus=$NIMB_BIN \
+ --revme=$RETH_BIN \
+ --erigonbatch=$ERIG_BIN \
+ --besubatch=$BESU_BIN \
+ --evmone=$EVMO_BIN \
+ --eelsbatch=$EELS_BIN"
+
 ENTRYPOINT ["/bin/bash"]
