@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"os"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"os"
 )
 
 func main() {
@@ -38,41 +39,40 @@ func makeTest() error {
 	gst := fuzzing.BasicStateTest("Cancun")
 
 	a := common.HexToAddress("0xaa")
-	b := common.HexToAddress("0xbb")
 
-	// 0xaa calls 0xbb, then checks TLOAD(4) and puts it into state
+	// bb is the initcode of the contract to be created
 	{
+		bb := program.NewProgram()
+
+		// Calculate code length based on the output of TLOAD
+		// If TLOAD results in 0, the code length is 10
+		// For anything else, it is too large
+		bb.Push(1)
+		bb.Op(ops.TLOAD)
+
+		bb.Push(1)
+		bb.Push(1)
+		bb.Op(ops.TSTORE)
+
+		bb.Op(ops.ISZERO)
+		bb.Push(24576) // MAX_CODE_SIZE 0x6000
+		bb.Op(ops.MUL)
+		bb.Push(10)
+		bb.Op(ops.ADD)
+		bb.Push(0)
+
+		bb.Op(ops.RETURN)
+
+		// Repeat the whole thing above one more time
 		aa := program.NewProgram()
-		aa.CallCode(nil, b, nil, 0, 0, 0, 0)
+		aa.Mstore(bb.Bytecode(), 0)
 
-		aa.Push(4)
-		aa.Op(ops.TLOAD)
-
-		aa.Push(1)
-		aa.Op(ops.SSTORE)
+		// Call the initcode twice using the CREATE2 opcode
+		aa.Push(0).Push(len(bb.Bytecode())).Push(0).Push(0).Op(ops.CREATE2)
+		aa.Push(0).Push(len(bb.Bytecode())).Push(0).Push(0).Op(ops.CREATE2)
 
 		gst.AddAccount(a, fuzzing.GenesisAccount{
 			Code:    aa.Bytecode(),
-			Balance: big.NewInt(0),
-			Storage: make(map[common.Hash]common.Hash),
-		})
-	}
-
-	// 0xbb does a TSTORE, then exits on revert
-	{
-
-		bb := program.NewProgram()
-		bb.Tstore(4, 1)
-
-		// Now call a precompile
-
-		bb.Call(nil, common.HexToAddress("0x6"), nil, 0, 0, 0, 0)
-
-		bb.Push0()
-		bb.Push0()
-		bb.Op(ops.REVERT) // Now exit with error
-		gst.AddAccount(b, fuzzing.GenesisAccount{
-			Code:    bb.Bytecode(),
 			Balance: big.NewInt(0),
 			Storage: make(map[common.Hash]common.Hash),
 		})
