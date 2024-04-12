@@ -36,13 +36,19 @@ var fullTraceFlag = &cli.BoolFlag{
 		"looking for a differing stateroot.",
 }
 
+var patienceFlag = &cli.UintFlag{
+	Name:  "patience",
+	Usage: "If set to a high value, the minmizer will spend more time retrying it's various minimization routines",
+	Value: 5,
+}
+
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Test-case minimizer"
 	app.Flags = append(app.Flags, common.VmFlags...)
-	app.Flags = append(app.Flags, fullTraceFlag)
+	app.Flags = append(app.Flags, fullTraceFlag, patienceFlag)
 	app.Action = startFuzzer
 	return app
 }
@@ -64,6 +70,7 @@ func startFuzzer(c *cli.Context) error {
 	var (
 		testPath  = c.Args().First()
 		compareFn func(path string, c *cli.Context) (bool, error)
+		patience  = c.Int(patienceFlag.Name)
 	)
 	compareFn = func(path string, c *cli.Context) (bool, error) {
 		agree, err := common.RootsEqual(path, c)
@@ -131,13 +138,15 @@ func startFuzzer(c *cli.Context) error {
 	}
 
 	// Try decreasing gas
-	gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
-		gst[testname].Tx.GasLimit[0] = uint64(i)
-		log.Info("Mutating gas", "value", i)
-		return !inConsensus()
-	})
-	// And restore the gas again
-	gst[testname].Tx.GasLimit[0] = uint64(gas)
+	{
+		gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
+			gst[testname].Tx.GasLimit[0] = uint64(i)
+			log.Info("Mutating gas", "value", i)
+			return !inConsensus()
+		})
+		// And restore the gas again
+		gst[testname].Tx.GasLimit[0] = uint64(gas)
+	}
 
 	// Try removing accounts
 	for target, acc := range gst[testname].Pre {
@@ -176,7 +185,7 @@ func startFuzzer(c *cli.Context) error {
 				// restore it
 				acc.Code = m.current
 				gst[testname].Pre[target] = acc
-				if fails > 5 {
+				if fails > patience {
 					break
 				}
 			}
@@ -210,7 +219,7 @@ func startFuzzer(c *cli.Context) error {
 				// restore it
 				acc.Code = m.current
 				gst[testname].Pre[target] = acc
-				if fails > 5 {
+				if fails > patience {
 					break
 				}
 			}

@@ -98,6 +98,12 @@ func (p *Program) Push(val interface{}) *Program {
 	return p
 }
 
+// Push0 implements PUSH0 (0x5f)
+func (p *Program) Push0() *Program {
+	p.Op(ops.PUSH0)
+	return p
+}
+
 // Bytecode returns the Program bytecode
 func (p *Program) Bytecode() []byte {
 	return p.code
@@ -321,11 +327,6 @@ func (p *Program) CreateAndCall(code []byte, isCreate2 bool, callOp ops.OpCode) 
 	p.Op(callOp)
 	p.Op(ops.POP) // pop the retval
 	p.Op(ops.POP) // pop the address
-}
-
-// Push0 implements PUSH0 (0x5f)
-func (p *Program) Push0() {
-	p.Op(ops.PUSH0)
 }
 
 // RJump implements RJUMP (0x5c) - relative jump
