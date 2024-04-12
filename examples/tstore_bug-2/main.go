@@ -39,37 +39,37 @@ func makeTest() error {
 	gst := fuzzing.BasicStateTest("Cancun")
 
 	a := common.HexToAddress("0xaa")
-
+	var bbCode []byte
 	// bb is the initcode of the contract to be created
 	{
 		bb := program.NewProgram()
 
-		// Calculate code length based on the output of TLOAD
-		// If TLOAD results in 0, the code length is 10
-		// For anything else, it is too large
+		// Use the value of TLOAD(1) as the size of the returned data.
+		// As long as TLOAD(1) is zero, we error out by returning too large initcode
 		bb.Push(1)
 		bb.Op(ops.TLOAD)
+		bb.Push(0x600a)
+		bb.Op(ops.SUB) // stack: [ 0x600a - tload(1) ]
 
-		bb.Push(1)
-		bb.Push(1)
-		bb.Op(ops.TSTORE)
+		bb.Tstore(1, 0x6000) // do the TSTORE(1), which _should_ be rolled back and thus a no-op.
 
-		bb.Op(ops.ISZERO)
-		bb.Push(24576) // MAX_CODE_SIZE 0x6000
-		bb.Op(ops.MUL)
-		bb.Push(10)
-		bb.Op(ops.ADD)
 		bb.Push(0)
-
 		bb.Op(ops.RETURN)
+		bbUnaligned := bb.Bytecode()
+		// Make it align to 32 byte, then the trace is simpler using MSTORE
+		// instead of MSTORE8. We just zfill with STOP
+		bbCode = make([]byte, 32*((len(bbUnaligned)+31)/32))
+		copy(bbCode, bbUnaligned)
+	}
 
-		// Repeat the whole thing above one more time
+	// aa is the code which invokes CREATE2 twice, with bbCode as initcode
+	{
 		aa := program.NewProgram()
-		aa.Mstore(bb.Bytecode(), 0)
+		aa.Mstore(bbCode, 0)
 
 		// Call the initcode twice using the CREATE2 opcode
-		aa.Push(0).Push(len(bb.Bytecode())).Push(0).Push(0).Op(ops.CREATE2)
-		aa.Push(0).Push(len(bb.Bytecode())).Push(0).Push(0).Op(ops.CREATE2)
+		aa.Push0().Push(len(bbCode)).Push0().Push0().Op(ops.CREATE2)
+		aa.Push0().Push(len(bbCode)).Push0().Push0().Op(ops.CREATE2)
 
 		gst.AddAccount(a, fuzzing.GenesisAccount{
 			Code:    aa.Bytecode(),
