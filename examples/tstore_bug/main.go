@@ -87,7 +87,9 @@ func makeTest() error {
 		return err
 	}
 	defer traceOut.Close()
-	gst.Fill(traceOut)
+	if err := gst.Fill(traceOut); err != nil {
+		return err
+	}
 	t := gst.ToGeneralStateTest("tstore_test-1")
 	output, err := json.MarshalIndent(t, "", "  ")
 	if err != nil {
