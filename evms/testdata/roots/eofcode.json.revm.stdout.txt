@@ -21,10 +21,9 @@ State before: CacheState {
                         nonce: 0,
                         code_hash: 0x9dbf3648db8210552e9c4f75c6a1c3057c0ca432043bd648be15fe7be05646f5,
                         code: Some(
-                            Bytecode {
-                                bytecode: 0xef00,
-                                state: Raw,
-                            },
+                            LegacyRaw(
+                                0xef00,
+                            ),
                         ),
                     },
                     storage: {},
@@ -39,30 +38,6 @@ State before: CacheState {
 
 State after: CacheState {
     accounts: {
-        0x0000000000000000000000000000000000000000: CacheAccount {
-            account: Some(
-                PlainAccount {
-                    info: AccountInfo {
-                        balance: 0x0_U256,
-                        nonce: 1,
-                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
-                        code: Some(
-                            Bytecode {
-                                bytecode: 0x00,
-                                state: Analysed {
-                                    len: 0,
-                                    jump_map: JumpMap {
-                                        map: "00",
-                                    },
-                                },
-                            },
-                        ),
-                    },
-                    storage: {},
-                },
-            ),
-            status: InMemoryChange,
-        },
         0x00000000000000000000000000000000000000f4: CacheAccount {
             account: Some(
                 PlainAccount {
@@ -71,10 +46,9 @@ State after: CacheState {
                         nonce: 0,
                         code_hash: 0x9dbf3648db8210552e9c4f75c6a1c3057c0ca432043bd648be15fe7be05646f5,
                         code: Some(
-                            Bytecode {
-                                bytecode: 0xef00,
-                                state: Raw,
-                            },
+                            LegacyRaw(
+                                0xef00,
+                            ),
                         ),
                     },
                     storage: {},
@@ -128,10 +102,13 @@ Environment: Env {
         gas_priority_fee: None,
         blob_hashes: [],
         max_fee_per_blob_gas: None,
+        eof_initcodes: [],
+        eof_initcodes_hashed: {},
     },
 }
 
 Test name: "00161676-mixed-1" (index: 0, path: eofcode.json) failed:
-Test 00161676-mixed-1 failed: Unexpected exception: Some("Transaction error: CallGasCostMoreThanGasLimit") but test expects:None
-Finished execution. Total CPU time: 0.000014s
-Test 00161676-mixed-1 failed: Unexpected exception: Some("Transaction error: CallGasCostMoreThanGasLimit") but test expects:None
+Test 00161676-mixed-1 failed: unexpected exception: got Some("transaction validation error: call gas cost exceeds the gas limit"), expected None
+Finished execution. Total CPU time: 0.000013s
+Encountered 1 errors out of 1 total tests
+Test 00161676-mixed-1 failed: unexpected exception: got Some("transaction validation error: call gas cost exceeds the gas limit"), expected None

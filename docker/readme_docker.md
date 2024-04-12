@@ -16,7 +16,8 @@ There's also an env var $FUZZ_CLIENTS which provides the arguments if you want t
 
 Mount the reference tests, and execute the `run.sh` to create them:
 ```
-docker run -it -v /home/user/workspace/goevmlab/evms/testdata/:/testdata --entrypoint /bin/bash
+docker run -it -v /home/user/workspace/goevmlab/evms/testdata/:/testdata  holiman/omnifuzz
+$ cd /testdata
 $ bash run.sh
 
 ```
