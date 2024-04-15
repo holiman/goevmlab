@@ -63,11 +63,17 @@ type evmStateRoot struct {
 	StateRoot string `json:"stateRoot"`
 }
 
-func String2Hex(s string) ([]byte, error) {
+func String2Hex(s string, length int) ([]byte, error) {
 	s = strings.TrimPrefix(s, "0x")
 	if len(s)%2 == 1 {
 		s = "0" + s
 	}
+
+	if length > 0 && len(s) < length {
+		padding := strings.Repeat("0", length-len(s))
+		s = padding + s
+	}
+
 	data, err := hex.DecodeString(s)
 	return data, errors.WithStack(err)
 }
@@ -93,7 +99,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 			return errors.WithStack(err)
 		}
 
-		codeHash, err := String2Hex(account.CodeHash)
+		codeHash, err := String2Hex(account.CodeHash, 40)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -108,14 +114,14 @@ func (state *cuevmState) ComputeStateRoot() error {
 			}
 
 			paddedKey := make([]byte, 32)
-			temp, err := String2Hex(storageKey)
+			temp, err := String2Hex(storageKey, 64)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 			copy(paddedKey[32-len(temp):], temp)
 			trieKey := crypto.Keccak256(paddedKey)
 
-			temp, err = String2Hex(storageVal)
+			temp, err = String2Hex(storageVal, 64)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -136,7 +142,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 		stateAccount.CodeHash = codeHash
 		stateAccount.Root = root
 
-		temp, err := String2Hex(account.Address)
+		temp, err := String2Hex(account.Address, 40)
 		if err != nil {
 			return errors.WithStack(err)
 		}
