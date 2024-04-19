@@ -22,6 +22,24 @@ Expected exception: None
 
 State before: CacheState {
     accounts: {
+        0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x00000000000000000000000000000000000000000000000057505a1a0d706535_U256,
+                        nonce: 0,
+                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
+                        code: Some(
+                            LegacyRaw(
+                                0x,
+                            ),
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
         0x1000000000000000000000000000000000000000: CacheAccount {
             account: Some(
                 PlainAccount {
@@ -50,24 +68,6 @@ State before: CacheState {
                         code: Some(
                             LegacyRaw(
                                 0x67826dc603850e0db2671d105b8732a34b876a3c7d943050b8659794f0bd7d3e841d35a2231ef697f8cde11728fa2051e87933cf858e4e5e91baa74fc165e9ffe4c7b15b67a600e88f095989dc6668f47ed704be2b7641c7f86732f4d5419b41e6887cca98e0943f141a5c66df7e98bd0c6d6c4cec6593afaa8ce1769c96cd0751aa76a98c8196fa8c92e70d7b78da1799c91c7f05de3181109b8194387746f9ec15a6e0233f75629e43368a6e0bd4e0a04e9f395117afcd072774ce6812d13dc7330585800278a92140b6508e3a3be377d4825dbf618a393c7c061e75a8a49672a33afe0f017f2e33549e321838b083d48893f27e3dced4592e9ea08fe3f80970d6334b6c6f1fde8bcc81d03a7ccc244231cb666e06dba6d0c1c5158ef0db6994192acb6ad4cac6abc8449d80fc2c3271471946e0d9606bd390266d7f712766f476506876283ad67450d7ab4d61f6f370f6ee014ab802ec9d7ed96dc0b9ce7bd14b76193dc1f0d11ce19283c7f651d4d2e7c180715ff7fcbc99625ea8b28c7d7613cc516dad16d17f29a93220ce0ddb0a65d3d474dbc39cba5bcb3d4fcf609f0464ef19107dc07f4511df27522ab2475fbb2ba0720711a903dbecfa0429bf11e6e90cbb0f13d4ee73050c52c865e0216b4096186fc604fb563fa59f126963ee91d55e407fdffe826bca1558f793f3a218dd9ba6906f1fdea9e498f0b0e1874331115e31aaad694d87227362a9ec3e1c1b69e11cdb23097bbc0c692e7deadfa91616b8aec24564487dc74f8e17e6a133b5dbe576838697de73f8568874197203ef1a3a54f7edb0dbd60f9d52db6b5c14771656789b77f0d817ed731a20db4b9e5b83d26bffefab084a31c4afda76168156612f281da0be688e5bdb1f31ed78bc62343a766577abad6573482449e68b3acfe820993ddf5785384d51aaa061622dab5d6fdbf2a9bf550736ad42293387d706935884797df6ccfae5218d01559bac159497edb6a665eae52f524975568a69159c0cae9044d258c55b6210f4d178008d29ab1df7fcebb789e2a8cdbaa9c67c42cd1ebe81716ead6d0e94c721279dd3a0b3de311596d5a15a61023f608f63792c6916f07a47292878449ccce511e6991b3dc636a178159a3d9a062274cd9a673d7accba17c2cb06de468e0bf78e55af17e19973f2c3f5d4c21c1698903d73b9a92491f91aa1e71426060d385ed594e21b02b261022d5230623a6c4c6850e7ab6a3ef66f83a2739845b4ba85c4fdfbd0054a0123ad93eff4b525b067f4b08d285f36f3bc67ac6a985b906c3484936d72b7cbc5a02e618666f0c50eecdc7f11f20fc1dc41c2fd957752e55ede4e56f4f536a04d436ad418a1ca44c0173c108166f1806ba284f9c95467c7c13670005de594347bdec538cd56c2743bfdfa7683ae0df68bbcb53461be606ef617322e646948e3e4124dbe061257a81a,
-                            ),
-                        ),
-                    },
-                    storage: {},
-                },
-            ),
-            status: Loaded,
-        },
-        0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
-            account: Some(
-                PlainAccount {
-                    info: AccountInfo {
-                        balance: 0x00000000000000000000000000000000000000000000000057505a1a0d706535_U256,
-                        nonce: 0,
-                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
-                        code: Some(
-                            LegacyRaw(
-                                0x,
                             ),
                         ),
                     },
@@ -101,6 +101,24 @@ State before: CacheState {
 
 State after: CacheState {
     accounts: {
+        0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x00000000000000000000000000000000000000000000000057505a1a0cb94a35_U256,
+                        nonce: 1,
+                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
+                        code: Some(
+                            LegacyRaw(
+                                0x,
+                            ),
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: InMemoryChange,
+        },
         0x1000000000000000000000000000000000000000: CacheAccount {
             account: Some(
                 PlainAccount {
@@ -136,24 +154,6 @@ State after: CacheState {
                 },
             ),
             status: Loaded,
-        },
-        0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
-            account: Some(
-                PlainAccount {
-                    info: AccountInfo {
-                        balance: 0x00000000000000000000000000000000000000000000000057505a1a0cb94a35_U256,
-                        nonce: 1,
-                        code_hash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
-                        code: Some(
-                            LegacyRaw(
-                                0x,
-                            ),
-                        ),
-                    },
-                    storage: {},
-                },
-            ),
-            status: InMemoryChange,
         },
         0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
             account: Some(
@@ -248,6 +248,6 @@ Environment: Env {
 
 Test name: "randomStatetestmartin-Wed_10_02_29-14338-0" (index: 0, path: statetest1.json) failed:
 Test randomStatetestmartin-Wed_10_02_29-14338-0 failed: state root mismatch: got 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134, expected 0x0000000000000000000000000000000000000000000000000000000000000000
-Finished execution. Total CPU time: 0.000096s
+Finished execution. Total CPU time: 0.000119s
 Encountered 1 errors out of 1 total tests
 Test randomStatetestmartin-Wed_10_02_29-14338-0 failed: state root mismatch: got 0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134, expected 0x0000000000000000000000000000000000000000000000000000000000000000

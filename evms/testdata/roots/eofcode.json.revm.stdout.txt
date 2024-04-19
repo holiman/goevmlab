@@ -109,6 +109,6 @@ Environment: Env {
 
 Test name: "00161676-mixed-1" (index: 0, path: eofcode.json) failed:
 Test 00161676-mixed-1 failed: unexpected exception: got Some("transaction validation error: call gas cost exceeds the gas limit"), expected None
-Finished execution. Total CPU time: 0.000013s
+Finished execution. Total CPU time: 0.000015s
 Encountered 1 errors out of 1 total tests
 Test 00161676-mixed-1 failed: unexpected exception: got Some("transaction validation error: call gas cost exceeds the gas limit"), expected None
