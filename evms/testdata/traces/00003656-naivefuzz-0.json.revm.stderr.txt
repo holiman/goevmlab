@@ -39,5 +39,4 @@
 {"pc":12,"op":80,"gas":"0xf4","gasCost":"0x2","stack":["0x0"],"depth":1,"returnData":"0x","refund":"0x0","memSize":"0","opName":"POP"}
 {"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","stack":[],"depth":1,"returnData":"0x","refund":"0x0","memSize":"0","opName":"PUSH1"}
 {"pc":15,"op":84,"gas":"0xef","gasCost":"0x0","stack":["0x3"],"depth":1,"returnData":"0x","refund":"0x0","memSize":"0","opName":"SLOAD","error":"OutOfGas"}
-{"stateRoot":"0x0000000000000000000000000000000000000000000000000000000000000000","output":"0x","gasUsed":"0x99df","pass":false,"fork":"London"}
 {"stateRoot":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b","logsRoot":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","output":"0x","gasUsed":39391,"pass":false,"errorMsg":"logs root mismatch: got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347, expected 0x0000000000000000000000000000000000000000000000000000000000000000","evmResult":"Halt: OutOfGas(Basic)","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","fork":"LONDON","test":"00003656-naivefuzz-0","d":0,"g":0,"v":0}

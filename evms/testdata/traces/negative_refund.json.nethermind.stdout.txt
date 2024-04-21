@@ -3,7 +3,7 @@
     "name": "00000606-mixed-0_d0g0v0_",
     "pass": false,
     "fork": "Shanghai",
-    "timeInMs": 111.9595,
+    "timeInMs": 218.9218,
     "stateRoot": "0xee0bbf0438796320ede24ca3c52e31f04dccbfe1fce282f79fe44e67a23351e9"
   }
 ]

@@ -432,6 +432,24 @@ Expected exception: None
 
 State before: CacheState {
     accounts: {
+        0x00000000000000000000000000000000000000f5: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0x0_U256,
+                        nonce: 0,
+                        code_hash: 0x659f2a4292289af13ef75ef29dc1a53ef9d6253affbd7854503ee8e3d31553c3,
+                        code: Some(
+                            LegacyRaw(
+                                0x6000600060007706a335646000600060006000600060045af1507f600260006002556001,
+                            ),
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
         0x00000000000000000000000000000000000000f1: CacheAccount {
             account: Some(
                 PlainAccount {
@@ -470,6 +488,13 @@ State before: CacheState {
             ),
             status: Loaded,
         },
+    },
+    contracts: {},
+    has_state_clear: false,
+}
+
+State after: CacheState {
+    accounts: {
         0x00000000000000000000000000000000000000f5: CacheAccount {
             account: Some(
                 PlainAccount {
@@ -488,22 +513,7 @@ State before: CacheState {
             ),
             status: Loaded,
         },
-    },
-    contracts: {},
-    has_state_clear: false,
-}
-
-State after: CacheState {
-    accounts: {
         0x000000000000000000000000000000000000000c: CacheAccount {
-            account: None,
-            status: LoadedNotExisting,
-        },
-        0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
-            account: None,
-            status: LoadedNotExisting,
-        },
-        0x000000000000000000000000000000000000000d: CacheAccount {
             account: None,
             status: LoadedNotExisting,
         },
@@ -531,23 +541,9 @@ State after: CacheState {
             account: None,
             status: LoadedNotExisting,
         },
-        0x00000000000000000000000000000000000000f5: CacheAccount {
-            account: Some(
-                PlainAccount {
-                    info: AccountInfo {
-                        balance: 0x0_U256,
-                        nonce: 0,
-                        code_hash: 0x659f2a4292289af13ef75ef29dc1a53ef9d6253affbd7854503ee8e3d31553c3,
-                        code: Some(
-                            LegacyRaw(
-                                0x6000600060007706a335646000600060006000600060045af1507f600260006002556001,
-                            ),
-                        ),
-                    },
-                    storage: {},
-                },
-            ),
-            status: Loaded,
+        0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
+            account: None,
+            status: LoadedNotExisting,
         },
         0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b: CacheAccount {
             account: Some(
@@ -566,6 +562,10 @@ State after: CacheState {
                 },
             ),
             status: InMemoryChange,
+        },
+        0x000000000000000000000000000000000000000d: CacheAccount {
+            account: None,
+            status: LoadedNotExisting,
         },
         0x17c3328bc4714dc8c7a1910f3768b172314d9d00: CacheAccount {
             account: Some(
@@ -644,6 +644,6 @@ Environment: Env {
 
 Test name: "00000606-mixed-0" (index: 0, path: negative_refund.json) failed:
 Test 00000606-mixed-0 failed: logs root mismatch: got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347, expected 0x0000000000000000000000000000000000000000000000000000000000000000
-Finished execution. Total CPU time: 0.000134s
+Finished execution. Total CPU time: 0.000231s
 Encountered 1 errors out of 1 total tests
 Test 00000606-mixed-0 failed: logs root mismatch: got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347, expected 0x0000000000000000000000000000000000000000000000000000000000000000
