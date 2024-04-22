@@ -1,5 +1,0 @@
-
-Running tests in 00003656-naivefuzz-0.json...
-Finished execution. Total CPU time: 0.004348s
-Encountered 1 errors out of 1 total tests
-Test 00003656-naivefuzz-0 failed: logs root mismatch: got 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347, expected 0x0000000000000000000000000000000000000000000000000000000000000000

@@ -1,5 +1,0 @@
-
-Running tests in eofcode.json...
-Finished execution. Total CPU time: 0.000013s
-Encountered 1 errors out of 1 total tests
-Test 00161676-mixed-1 failed: unexpected exception: got Some("transaction validation error: call gas cost exceeds the gas limit"), expected None
