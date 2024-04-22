@@ -54,6 +54,11 @@ type account struct {
 	Storage  [][]string
 }
 
+func (Account account) String() string {
+	return fmt.Sprintf("Account{Address: %v, Balance: %v, Nonce: %v, CodeHash: %v, Storage: %v}",
+		Account.Address, Account.Balance, Account.Nonce, Account.CodeHash, Account.Storage)
+}
+
 type cuevmState struct {
 	StateRoot string `json:"stateRoot"`
 	Accounts  []account
@@ -63,17 +68,25 @@ type evmStateRoot struct {
 	StateRoot string `json:"stateRoot"`
 }
 
-func String2Hex(s string, length int) ([]byte, error) {
+// Remove prefix "0x" and padd with zeros to length `length`
+func padWithZeros(s string, length int) string {
 	s = strings.TrimPrefix(s, "0x")
-	if len(s)%2 == 1 {
-		s = "0" + s
+	s = strings.TrimPrefix(s, "0X")
+	if len(s) < length {
+		return strings.Repeat("0", length-len(s)) + s
 	}
+	return s
+}
 
-	if length > 0 && len(s) < length {
-		padding := strings.Repeat("0", length-len(s))
-		s = padding + s
+func addHexPrefix(s string) string {
+	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
+		return s
 	}
+	return "0x" + s
+}
 
+func String2Hex(s string, length int) ([]byte, error) {
+	s = padWithZeros(s, length)
 	data, err := hex.DecodeString(s)
 	return data, errors.WithStack(err)
 }
@@ -84,22 +97,25 @@ func (state *cuevmState) ComputeStateRoot() error {
 	}
 
 	stateTrie := trie.NewEmpty(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil))
+
 	for i := range state.Accounts {
 		account := state.Accounts[i]
 		stateAccount := types.NewEmptyStateAccount()
-		nonceBig, err := uint256.FromHex(account.Nonce)
+		nonceBig, err := uint256.FromHex(addHexPrefix(account.Nonce))
+
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		nonce := nonceBig.Uint64()
 
-		balance, err := uint256.FromHex(account.Balance)
+		balance, err := uint256.FromHex(addHexPrefix(account.Balance))
+
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
-		codeHash, err := String2Hex(account.CodeHash, 40)
+		codeHash, err := String2Hex(account.CodeHash, 64)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -109,24 +125,25 @@ func (state *cuevmState) ComputeStateRoot() error {
 			storageKey := account.Storage[i][0]
 			storageVal := account.Storage[i][1]
 
-			if storageVal == "0x0" { // todo better removed from inside cuevm
+			if storageVal == "0x0" {
 				continue
 			}
 
-			paddedKey := make([]byte, 32)
-			temp, err := String2Hex(storageKey, 64)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			copy(paddedKey[32-len(temp):], temp)
-			trieKey := crypto.Keccak256(paddedKey)
+			key, err := uint256.FromHex(addHexPrefix(storageKey))
 
-			temp, err = String2Hex(storageVal, 64)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 
-			trieValue, err := rlp.EncodeToBytes(temp)
+			value, err := uint256.FromHex(addHexPrefix(storageVal))
+
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			trieKey := crypto.Keccak256(key.PaddedBytes(32))
+
+			trieValue, err := rlp.EncodeToBytes(value)
 
 			if err != nil {
 				return errors.WithStack(err)
