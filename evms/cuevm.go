@@ -98,6 +98,8 @@ func (state *cuevmState) ComputeStateRoot() error {
 
 	stateTrie := trie.NewEmpty(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil))
 
+	zero := uint256.NewInt(0)
+
 	for i := range state.Accounts {
 		account := state.Accounts[i]
 		stateAccount := types.NewEmptyStateAccount()
@@ -113,6 +115,10 @@ func (state *cuevmState) ComputeStateRoot() error {
 
 		if err != nil {
 			return errors.WithStack(err)
+		}
+
+		if nonceBig.Eq(zero) && balance.Eq(zero) && len(account.Storage) == 0 {
+			continue
 		}
 
 		codeHash, err := String2Hex(account.CodeHash, 64)
