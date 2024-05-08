@@ -44,8 +44,8 @@ RUN cd go-ethereum && go run build/ci.go install -static ./cmd/evm
 # Erigon
 #
 RUN git clone https://github.com/ledgerwatch/erigon --depth 1
-RUN cd erigon && make evm && cp ./build/bin/evm /erigon_vm
-#RUN ls -la /go/pkg/mod/github.com/erigontech/
+RUN cd erigon && mkdir /erigon/ && make evm && cp ./build/bin/evm /erigon_vm
+RUN cd erigon && cp $(bash ./turbo/silkworm/silkworm_lib_path.sh) /libsilkworm_capi.so
 
 
 #
@@ -141,7 +141,7 @@ RUN apt-get install -qy --no-install-recommends  openjdk-17-jre
 
 # Install execution-specs (EELS)
 RUN apt-get install -qy --no-install-recommends pipx git && \
-  git clone https://github.com/ethereum/execution-specs.git --branch statetests --depth 1 && \
+  git clone https://github.com/ethereum/execution-specs.git --depth 1 && \
   PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
 ENV EELS_BIN=/ethereum-spec-evm
 
@@ -158,7 +158,7 @@ COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
-COPY --from=golang-builder /go/pkg/mod/github.com/erigontech/silkworm-go@v0.14.0/lib/linux_x64/libsilkworm_capi.so /lib/libsilkworm_capi.so
+COPY --from=golang-builder /libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
 COPY --from=golang-builder /evmstate /nimbvm
@@ -180,7 +180,6 @@ RUN ln -s /evmtool/bin/evm besu-vm
 ENV BESU_BIN=/evmtool/bin/evm
 
 COPY readme_docker.md  /README.md
-COPY entrypoint.sh  /entrypoint.sh
 
 ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
  --nethbatch=$NETH_BIN \

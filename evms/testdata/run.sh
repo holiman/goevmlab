@@ -131,14 +131,14 @@ if [[ -n "$revm" ]]; then
     for i in *.json; do
         $revm statetest --json  $i \
          2>../traces/$i.revm.stderr.txt \
-         1>../traces/$i.revm.stdout.txt
+         1>/dev/null
     done
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
         $revm statetest --json-outcome $i \
          2>../roots/$i.revm.stderr.txt \
-         1>../roots/$i.revm.stdout.txt
+         1>/dev/null
     done
     cd ..
 fi
