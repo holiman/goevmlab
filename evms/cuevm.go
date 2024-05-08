@@ -117,7 +117,8 @@ func (state *cuevmState) ComputeStateRoot() error {
 			return errors.WithStack(err)
 		}
 
-		if nonceBig.Eq(zero) && balance.Eq(zero) && len(account.Storage) == 0 {
+		// skip empty account
+		if nonceBig.Eq(zero) && balance.Eq(zero) && len(account.Storage) == 0 && strings.Compare(strings.ToLower(account.CodeHash), "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470") == 0 {
 			continue
 		}
 
