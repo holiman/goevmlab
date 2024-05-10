@@ -241,7 +241,7 @@ func (evm *CuEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tra
 		err    error
 		cmd    *exec.Cmd
 	)
-	cmd = exec.Command(evm.path, "--input", path, "--output", "/dev/null")
+	cmd = exec.Command(evm.path, "--input", path)
 
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return nil, err
