@@ -139,7 +139,7 @@ RUN apt-get install -qy --no-install-recommends libssl-dev
 # besu requires openjdk-17-jre
 RUN apt-get install -qy --no-install-recommends  openjdk-17-jre 
 # evmone requires GLIBC_2.38 (https://github.com/holiman/goevmlab/issues/144)
-RUN apt-get update -q && apt-get install -qy --no-install-recommends ca-certificates g++
+RUN apt-get update && apt-get install -qy --no-install-recommends libstdc++-13-dev
 
 # Install execution-specs (EELS)
 RUN apt-get install -qy --no-install-recommends pipx git && \
