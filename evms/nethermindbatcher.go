@@ -22,6 +22,8 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // The NethermindBatchVM spins up one 'master' instance of the VM, and uses that to execute tests
@@ -84,7 +86,10 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, err = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	if err != nil {
+		log.Error("Error writing to nethermind", "err", err)
+	}
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.procOut, speedTest)
 	duration, slow := evm.stats.TraceDone(t0)
