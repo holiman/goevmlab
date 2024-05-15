@@ -19,17 +19,18 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync/atomic"
+
+	"net/http"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/slog"
-	"net/http"
-	"strings"
 )
 
 var (

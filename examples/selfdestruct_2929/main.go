@@ -19,15 +19,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/holiman/goevmlab/fuzzing"
 	"math/big"
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/holiman/goevmlab/fuzzing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
@@ -155,7 +157,7 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
 		}
 
 	}
@@ -178,7 +180,7 @@ func runit() error {
 			BerlinBlock:         new(big.Int),
 		},
 		EVMConfig: vm.Config{
-			Tracer: logger.NewMarkdownLogger(nil, os.Stdout),
+			Tracer: logger.NewMarkdownLogger(nil, os.Stdout).Hooks(),
 		},
 	}
 	// Run with tracing
