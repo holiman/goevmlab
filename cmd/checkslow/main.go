@@ -18,13 +18,13 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/slog"
 )
 
 func initApp() *cli.App {

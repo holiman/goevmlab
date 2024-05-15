@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
@@ -180,7 +181,7 @@ Fork: %v
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
 		}
 	}
 	statedb.CreateAccount(sender)
@@ -193,7 +194,7 @@ Fork: %v
 		BlockNumber: new(big.Int).SetUint64(1),
 		ChainConfig: ruleset,
 		EVMConfig: vm.Config{
-			Tracer: tracer,
+			Tracer: tracer.Hooks(),
 		},
 	}
 	// Run with tracing

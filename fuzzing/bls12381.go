@@ -22,8 +22,8 @@ import (
 	"math/rand"
 	"sync"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
 )
@@ -156,11 +156,6 @@ func NewFP2toG2() []byte {
 	return append(a, b...)
 }
 
-var (
-	g1Pool = NewPool(bls12381.NewG1)
-	g2Pool = NewPool(bls12381.NewG2)
-)
-
 // randInt64 returns a new random int64
 // With 3% probability it outputs 0
 // With 92% probability it outputs a number [0..30)
@@ -182,31 +177,26 @@ func randInt64() int64 {
 // e(aMul1 * G1, bMul1 * G2) * e(aMul2 * G1, bMul2 * G2) * ... * e(aMuln * G1, bMuln * G2) == e(G1, G2) ^ s
 // with s = sum(x: 1 -> n: (aMulx * bMulx))
 func NewPairing() []byte {
-	var g1 = g1Pool.Get()
-	defer g1Pool.Put(g1)
-	var g2 = g2Pool.Get()
-	defer g2Pool.Put(g2)
+	_, _, _, genG2 := bls12381.Generators()
 	pairs := randInt64()
 	var res []byte
 	target := new(big.Int)
 	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
 	for k := 0; k < int(pairs); k++ {
-		a, b := g1.One(), g2.One()
 		aMul := new(big.Int).SetBytes(NewFieldElement())
 		bMul := new(big.Int).SetBytes(NewFieldElement())
-		a = g1.MulScalar(a, a, aMul)
-		b = g2.MulScalar(b, b, bMul)
-		res = append(res, g1.EncodePoint(a)...)
-		res = append(res, g2.EncodePoint(b)...)
+		g1 := new(bls12381.G1Affine).ScalarMultiplicationBase(aMul)
+		g2 := new(bls12381.G2Affine).ScalarMultiplication(&genG2, bMul)
+		res = append(res, g1.Marshal()...)
+		res = append(res, g2.Marshal()...)
 		// Add to s
 		target = target.Add(target, aMul.Mul(aMul, bMul))
 	}
 	// RHS: e(G1, G2) ^ s
-	ta, tb := g1.One(), g2.One()
-	g1.MulScalar(ta, ta, target)
-	g1.Neg(ta, ta)
-	res = append(res, g1.EncodePoint(ta)...)
-	res = append(res, g2.EncodePoint(tb)...)
+	ta := new(bls12381.G1Affine).ScalarMultiplicationBase(target)
+	ta.Neg(ta)
+	res = append(res, ta.Marshal()...)
+	res = append(res, genG2.Marshal()...)
 	return res
 }
 
@@ -222,29 +212,26 @@ func NewFieldElement() []byte {
 }
 
 func NewG1Point() []byte {
-	var g1 = g1Pool.Get()
-	defer g1Pool.Put(g1)
 	a := NewFieldElement()
-	b, err := g1.MapToCurve(a)
+	g1 := new(bls12381.G1Affine)
+	_, err := g1.SetBytes(a)
 	if err != nil {
 		panic(err)
 	}
-	return g1.EncodePoint(b)
+	return g1.Marshal()
 }
 
 func NewG2Point() []byte {
-	var g2 = g2Pool.Get()
-	defer g2Pool.Put(g2)
-
 	a := NewFieldElement()
 	b := NewFieldElement()
 	x := append(a, b...)
 	// Compute mapping
-	res, err := g2.MapToCurve(x)
+	g2 := new(bls12381.G2Affine)
+	_, err := g2.SetBytes(x)
 	if err != nil {
 		panic(err)
 	}
-	return g2.EncodePoint(res)
+	return g2.Marshal()
 }
 
 type Pool[T any] struct {

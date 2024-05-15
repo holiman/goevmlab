@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
@@ -84,7 +85,7 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
 		}
 	}
 	statedb.CreateAccount(sender)
@@ -107,7 +108,7 @@ func runit() error {
 			IstanbulBlock:       new(big.Int),
 		},
 		EVMConfig: vm.Config{
-			Tracer: &dumbTracer{},
+			Tracer: new(dumbTracer).Hooks(),
 		},
 	}
 	// Run with tracing
@@ -125,36 +126,35 @@ type dumbTracer struct {
 	counter uint64
 }
 
-func (d *dumbTracer) CaptureTxStart(gasLimit uint64) {}
-
-func (d *dumbTracer) CaptureTxEnd(restGas uint64) {}
-
-func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	if op == vm.STATICCALL {
-		d.counter++
-	}
-	if op == vm.EXTCODESIZE {
-		d.counter++
+func (d *dumbTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnTxStart: d.CaptureStart,
+		OnOpcode:  d.CaptureState,
+		OnFault:   d.CaptureFault,
+		OnTxEnd:   d.CaptureEnd,
 	}
 }
 
-func (d *dumbTracer) CaptureEnter(typ vm.OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
+func (d *dumbTracer) CaptureState(pc uint64, op byte, gas uint64, cost uint64, scope tracing.OpContext, input []byte, depth int, err error) {
+	if op == byte(vm.STATICCALL) {
+		d.counter++
+	}
+	if op == byte(vm.EXTCODESIZE) {
+		d.counter++
+	}
 }
 
-func (d *dumbTracer) CaptureExit(output []byte, gasUsed uint64, err error) {
-}
-
-func (d *dumbTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
+func (n *dumbTracer) CaptureFault(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
 	fmt.Printf("CaptureFault %v\n", err)
 }
 
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+func (n *dumbTracer) CaptureStart(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
 	fmt.Printf("captureStart\n")
 	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", to.Hex())
+	fmt.Printf("	to: %v\n", tx.To().Hex())
 }
 
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
+func (d *dumbTracer) CaptureEnd(receipt *types.Receipt, err error) {
 	fmt.Printf("\nCaptureEnd\n")
 	fmt.Printf("Counter: %d\n", d.counter)
 }
