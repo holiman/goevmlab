@@ -44,19 +44,19 @@ RUN cd go-ethereum && go run build/ci.go install -static ./cmd/evm
 # Erigon
 #
 RUN git clone https://github.com/ledgerwatch/erigon --depth 1
-RUN cd erigon && mkdir /erigon/ && make evm && cp ./build/bin/evm /erigon_vm
-RUN cd erigon && cp $(bash ./turbo/silkworm/silkworm_lib_path.sh) /libsilkworm_capi.so
+RUN cd erigon && mkdir /erigon/ && make evm && \
+	cp ./build/bin/evm /erigon_vm && \
+        cp $(bash ./turbo/silkworm/silkworm_lib_path.sh) /libsilkworm_capi.so
 
 
 #
 # NIMBUS-ETH1
 #
 
-RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules
 RUN apt-get update -q && apt-get install -qy --no-install-recommends make
+RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules
 RUN cd nimbus-eth1 && make -j8 update 
-RUN cd nimbus-eth1 && make -j8 evmstate 
-RUN cp nimbus-eth1/tools/evmstate/evmstate /evmstate
+RUN cd nimbus-eth1 && make -j8 evmstate && cp ./tools/evmstate/evmstate /evmstate
 
 
 
@@ -121,9 +121,9 @@ RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Run
 
 FROM ubuntu:23.10 as java-builder
 
-RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates 
-RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
-RUN apt-get install -qy --no-install-recommends git openjdk-17-jre-headless=17* libjemalloc-dev=5.* 
+RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates \
+  openjdk-17-jre-headless=17* libjemalloc-dev=5.* 
+RUN git clone https://github.com/hyperledger/besu.git  --depth 1 #--recurse-submodules
 RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
 RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
 
@@ -135,15 +135,17 @@ FROM debian:testing
 
 RUN apt-get update -q
 # nethtest requires libssl-dev
-RUN apt-get install -qy --no-install-recommends libssl-dev
 # besu requires openjdk-17-jre
-RUN apt-get install -qy --no-install-recommends  openjdk-17-jre 
-# evmone requires GLIBC_2.38 (https://github.com/holiman/goevmlab/issues/144)
-RUN apt-get update && apt-get install -qy --no-install-recommends libstdc++-13-dev
+# evmone requires GLIBC_2.38 (libstdc++-13-dev) (https://github.com/holiman/goevmlab/issues/144)
+# EELS requires pipx, git
+RUN apt-get install -qy --no-install-recommends \
+	libssl-dev  \
+	openjdk-17-jre \ 
+	libstdc++-13-dev \
+	pipx git
 
 # Install execution-specs (EELS)
-RUN apt-get install -qy --no-install-recommends pipx git && \
-  git clone https://github.com/ethereum/execution-specs.git --depth 1 && \
+RUN git clone https://github.com/ethereum/execution-specs.git --depth 1 && \
   PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
 ENV EELS_BIN=/ethereum-spec-evm
 
