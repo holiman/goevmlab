@@ -32,15 +32,31 @@ func fillPrecompileTest(gst *GstMaker, fork string) {
 	})
 }
 
+// randSize returns a new random int64
+// With 3% probability it outputs 0
+// With 92% probability it outputs a number [0..256)
+// With 5% probability it outputs a number [0..1024)
+func randSize() int64 {
+	b := rand.Int31n(100)
+	// Zero or not?
+	if b < 3 {
+		return 0
+	}
+	if b < 95 {
+		return rand.Int63n(257)
+	}
+	return rand.Int63n(1024)
+}
+
 func randCallPrecompile() []byte {
 	// fill the memory
 	p := program.NewProgram()
-	data := make([]byte, 1024)
+	size := randSize()
+	data := make([]byte, size)
 	_, _ = crand.Read(data)
 	p.Mstore(data, 0)
 	memInFn := func() (offset, size interface{}) {
-		offset, size = 0, rand.Uint32()%uint32(len(data))
-		return
+		return 0, len(data)
 	}
 	memOutFn := func() (offset, size interface{}) {
 		offset, size = 0, 64
