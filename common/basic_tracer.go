@@ -19,30 +19,19 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"math/big"
-)
 
-var (
-	// compile time type check
-	_ tracers.Tracer = (*BasicTracer)(nil)
+	"github.com/ethereum/go-ethereum/core/tracing"
 )
 
 type BasicTracer struct{}
 
-func (n *BasicTracer) CaptureTxStart(uint64) {}
-func (n *BasicTracer) CaptureTxEnd(uint64)   {}
-func (n *BasicTracer) CaptureStart(*vm.EVM, common.Address, common.Address, bool, []byte, uint64, *big.Int) {
+func (n *BasicTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnFault: n.CaptureFault,
+	}
 }
-func (n *BasicTracer) CaptureEnd([]byte, uint64, error) {}
-func (n *BasicTracer) CaptureEnter(vm.OpCode, common.Address, common.Address, []byte, uint64, *big.Int) {
-}
-func (n *BasicTracer) CaptureExit([]byte, uint64, error) {}
-func (n *BasicTracer) CaptureState(uint64, vm.OpCode, uint64, uint64, *vm.ScopeContext, []byte, int, error) {
-}
-func (n *BasicTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
+
+func (n *BasicTracer) CaptureFault(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
 	fmt.Printf("CaptureFault %v\n", err)
 }
 

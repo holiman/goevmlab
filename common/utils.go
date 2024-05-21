@@ -691,7 +691,7 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 	var diffargs []string
 	for _, evm := range meta.vms {
 		filename := fmt.Sprintf("%v/%v-output.jsonl", meta.outdir, evm.Name())
-		out, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0755)
+		out, err := os.Create(filename)
 		if err != nil {
 			log.Error("Failed opening file", "err", err)
 			panic(err)

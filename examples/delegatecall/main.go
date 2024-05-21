@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
@@ -89,12 +90,12 @@ func runit() error {
 		statedb.SetCode(addr, acc.Code)
 		statedb.SetNonce(addr, acc.Nonce)
 		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance))
+			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
 		}
 
 	}
 	statedb.CreateAccount(sender)
-	statedb.SetBalance(sender, uint256.NewInt(0xfffffffffffffff))
+	statedb.SetBalance(sender, uint256.NewInt(0xfffffffffffffff), tracing.BalanceChangeUnspecified)
 
 	runtimeConfig := runtime.Config{
 		Value:       big.NewInt(0x1337),
@@ -115,7 +116,7 @@ func runit() error {
 			IstanbulBlock:       new(big.Int),
 		},
 		EVMConfig: vm.Config{
-			Tracer: &common2.PrintingTracer{},
+			Tracer: new(common2.PrintingTracer).Hooks(),
 		},
 	}
 	// Run with tracing

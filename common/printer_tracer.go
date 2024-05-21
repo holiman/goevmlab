@@ -18,33 +18,37 @@ package common
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"math/big"
 	"strings"
-)
 
-var (
-	// compile time type check
-	_ tracers.Tracer = (*BasicTracer)(nil)
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/vm"
 )
 
 type PrintingTracer struct {
 	BasicTracer
 }
 
-func (n *PrintingTracer) CaptureStart(vm *vm.EVM, from, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	fmt.Printf("Start: from %x to %x, value: %#x\n", from, to, value)
+func (n *PrintingTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnTxStart: n.CaptureStart,
+		OnOpcode:  n.CaptureState,
+		OnFault:   n.CaptureFault,
+	}
 }
-func (n *PrintingTracer) CaptureState(pc uint64, op vm.OpCode, gas uint64, cost uint64, scope *vm.ScopeContext, input []byte, depth int, err error) {
+
+func (n *PrintingTracer) CaptureStart(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
+	fmt.Printf("Start: from %x to %x, value: %#x\n", from, *tx.To(), tx.Value())
+}
+func (n *PrintingTracer) CaptureState(pc uint64, op byte, gas uint64, cost uint64, scope tracing.OpContext, input []byte, depth int, err error) {
 	var st []string
-	for _, elem := range scope.Stack.Data() {
+	for _, elem := range scope.StackData() {
 		st = append(st, elem.Hex())
 	}
 	var indent = " "
 	for i := 1; i < depth; i++ {
 		indent = indent + " "
 	}
-	fmt.Printf("%s pc %d, op %v, stack [%s]\n", indent, pc, op.String(), strings.Join(st, ","))
+	fmt.Printf("%s pc %d, op %v, stack [%s]\n", indent, pc, vm.OpCode(op).String(), strings.Join(st, ","))
 }
