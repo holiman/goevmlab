@@ -70,11 +70,20 @@ func fillBls(gst *GstMaker, fork string) {
 	})
 }
 
+// mutate does some bit-twiddling.
+func mutate(data []byte) {
+	for rand.Intn(2) == 0 {
+		bit := rand.Intn(len(data) * 8) // // 13
+		data[bit/8] = data[bit/8] ^ (1 << bit % 8)
+	}
+}
+
 func RandCallBLS() []byte {
 	p := program.NewProgram()
 	offset := 0
 	for _, precompile := range precompilesBLS {
 		data := precompile.newData()
+		mutate(data) // don't always use valid data
 		p.Mstore(data, 0)
 		memInFn := func() (offset, size interface{}) {
 			offset, size = 0, len(data)
