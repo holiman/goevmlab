@@ -51,8 +51,7 @@ func fillEcRecover(gst *GstMaker, fork string) {
 func randCallECRecover() []byte {
 	p := program.NewProgram()
 	offset := 0
-	rounds := rand.Int31n(10000)
-	for i := int32(0); i < rounds; i++ {
+	for i := int32(0); i < 100; i++ {
 		data := make([]byte, 128)
 		_, _ = crand.Read(data)
 		p.Mstore(data, 0)

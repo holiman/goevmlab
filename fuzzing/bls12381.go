@@ -72,6 +72,9 @@ func fillBls(gst *GstMaker, fork string) {
 
 // mutate does some bit-twiddling.
 func mutate(data []byte) {
+	if len(data) == 0 {
+		return
+	}
 	for rand.Intn(2) == 0 {
 		bit := rand.Intn(len(data) * 8) // // 13
 		data[bit/8] = data[bit/8] ^ (1 << bit % 8)
