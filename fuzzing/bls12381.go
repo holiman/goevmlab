@@ -70,11 +70,20 @@ func fillBls(gst *GstMaker, fork string) {
 	})
 }
 
+// mutate does some bit-twiddling.
+func mutate(data []byte) {
+	for rand.Intn(2) == 0 {
+		bit := rand.Intn(len(data) * 8) // // 13
+		data[bit/8] = data[bit/8] ^ (1 << bit % 8)
+	}
+}
+
 func RandCallBLS() []byte {
 	p := program.NewProgram()
 	offset := 0
 	for _, precompile := range precompilesBLS {
 		data := precompile.newData()
+		mutate(data) // don't always use valid data
 		p.Mstore(data, 0)
 		memInFn := func() (offset, size interface{}) {
 			offset, size = 0, len(data)
@@ -182,8 +191,8 @@ func newPairing() []byte {
 	target := new(big.Int)
 	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
 	for k := 0; k < int(pairs); k++ {
-		aMul := new(big.Int).SetBytes(newFieldElement())
-		bMul := new(big.Int).SetBytes(newFieldElement())
+		aMul := randScalar()
+		bMul := randScalar()
 		g1 := new(bls12381.G1Affine).ScalarMultiplicationBase(aMul)
 		g2 := new(bls12381.G2Affine).ScalarMultiplication(&genG2, bMul)
 		res = append(res, g1.Marshal()...)
@@ -199,36 +208,39 @@ func newPairing() []byte {
 	return res
 }
 
-func newFieldElement() []byte {
+func randScalar() *big.Int {
 	ret, err := crand.Int(crand.Reader, modulo)
 	if err != nil {
 		panic(err)
 	}
-	bytes := ret.Bytes()
+	return ret
+}
+
+func newFieldElement() []byte {
+	bytes := randScalar().Bytes()
 	buf := make([]byte, 48)
 	copy(buf[48-len(bytes):], bytes)
 	return buf
 }
 
+// newG1Point generates a random G1 and returns it as a 96-byte
+// byte slice (without point compression)
 func newG1Point() []byte {
-	a := newFieldElement()
-	g1 := new(bls12381.G1Affine)
-	_, err := g1.SetBytes(a)
-	if err != nil {
-		panic(err)
-	}
-	return g1.Marshal()
+	s := randScalar()
+	_, _, g1Gen, _ := bls12381.Generators()
+	cp := new(bls12381.G1Affine)
+	cp.ScalarMultiplication(&g1Gen, s)
+	marshalled := cp.Marshal()
+	return marshalled[:]
 }
 
+// newG2Point generates a random G2 and returns it as a 192-byte
+// byte slice (without point compression)
 func newG2Point() []byte {
-	a := newFieldElement()
-	b := newFieldElement()
-	x := append(a, b...)
-	// Compute mapping
-	g2 := new(bls12381.G2Affine)
-	_, err := g2.SetBytes(x)
-	if err != nil {
-		panic(err)
-	}
-	return g2.Marshal()
+	s := randScalar()
+	_, _, _, g2gen := bls12381.Generators()
+	cp := new(bls12381.G2Affine)
+	cp.ScalarMultiplication(&g2gen, s)
+	marshalled := cp.Marshal()
+	return marshalled[:]
 }
