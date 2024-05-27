@@ -105,10 +105,11 @@ func (evm *RethVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	err = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
 
-	// If revm exits with 1 on stateroot errors, uncomment to ignore:
-	//if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-	//	err = nil
-	//}
+	// revm exits with 1 on test-errors (expected stateroot != observed stateroot)
+	// so need to ignore it.
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		err = nil
+	}
 
 	return &tracingResult{
 		Slow:     slow,
