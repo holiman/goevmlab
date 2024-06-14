@@ -23,14 +23,34 @@ import (
 	"github.com/holiman/goevmlab/ops"
 )
 
-type codeMutator struct {
+type codeMutator interface {
+	reset([]byte)
+	proceed() bool
+	code() []byte
+	undo()
+}
+
+type balancedCodeMutator struct {
 	current  []byte
 	lastGood []byte
 }
 
+func newBalancedCodeMutator() codeMutator {
+	return &balancedCodeMutator{}
+}
+
+func (m *balancedCodeMutator) reset(code []byte) {
+	m.current = code
+	m.lastGood = code
+}
+
+func (m *balancedCodeMutator) code() []byte {
+	return m.current
+}
+
 // proceed tells the mutator to continue one mutation
 // returns 'true' is the mutator is exhausted
-func (m *codeMutator) proceed() bool {
+func (m *balancedCodeMutator) proceed() bool {
 	m.lastGood = m.current
 	// Now mutate current
 	var (
@@ -70,13 +90,29 @@ func (m *codeMutator) proceed() bool {
 }
 
 // undo tells the mutator to revert the last change
-func (m *codeMutator) undo() {
+func (m *balancedCodeMutator) undo() {
 	m.current = m.lastGood
 }
 
 type naiveCodeMutator struct {
 	current  []byte
 	lastGood []byte
+	stepSize float64
+}
+
+func newCodeShortener() codeMutator {
+	return &naiveCodeMutator{}
+}
+
+func (m *naiveCodeMutator) reset(code []byte) {
+	// Start by removing 50% of the code
+	m.current = code
+	m.lastGood = code
+	m.stepSize = 0.50
+}
+
+func (m *naiveCodeMutator) code() []byte {
+	return m.current
 }
 
 // proceed tells the mutator to continue one mutation
@@ -84,14 +120,88 @@ type naiveCodeMutator struct {
 func (m *naiveCodeMutator) proceed() bool {
 	m.lastGood = m.current
 	// Now mutate current
-	var next []byte = make([]byte, len(m.current)*2/3) // Remove one third
+	newSize := len(m.current) - int(float64(len(m.current))*m.stepSize)
+	next := make([]byte, newSize) // Remove a chunk
 	copy(next, m.lastGood)
 	log.Info("Mutating code #1", "length", len(next), "previous", len(m.lastGood))
 	m.current = next
+	// We're done when we're no longer shortening the code
 	return len(next) == len(m.lastGood)
 }
 
 // undo tells the mutator to revert the last change
 func (m *naiveCodeMutator) undo() {
+	m.stepSize = m.stepSize / 2
+	m.current = m.lastGood
+}
+
+type codeRandomMutator struct {
+	current  []byte
+	lastGood []byte
+}
+
+func newCodeRandomMutator() codeMutator {
+	return &codeRandomMutator{}
+}
+
+func (m *codeRandomMutator) reset(code []byte) {
+	m.current = code
+	m.lastGood = code
+}
+
+func (m *codeRandomMutator) code() []byte {
+	return m.current
+}
+
+// proceed tells the mutator to continue one mutation
+// returns 'true' is the mutator is exhausted
+func (m *codeRandomMutator) proceed() bool {
+	m.lastGood = m.current
+	// Now mutate current
+	var (
+		next     []byte
+		max      = ops.InstructionCount(m.lastGood)
+		modified = 0
+	)
+	// Replace 1 of all ops with STOP, or PUSH0 or POP
+	it := ops.NewInstructionIterator(m.lastGood)
+	cutPoint := rand.Intn(max)
+	next = make([]byte, 0)
+	for it.Next() {
+		if modified == 0 && it.PC() >= uint64(cutPoint) {
+			if it.Op() == ops.PUSH0 || it.Op() == ops.POP {
+				// just drop it this time
+				log.Info("Dropped op", "prev", it.Op().String(), "index", cutPoint)
+				modified++
+				continue
+			}
+			delta := it.Op().Stackdelta()
+			for i := 0; i < delta; i++ {
+				log.Info("Swapped op", "prev", it.Op().String(), "to", "PUSH0", "index", cutPoint)
+				next = append(next, byte(ops.PUSH0))
+			}
+			for i := 0; i > delta; i-- {
+				log.Info("Swapped op", "prev", it.Op().String(), "to", "POP", "index", cutPoint)
+				next = append(next, byte(ops.POP))
+			}
+			// else just drop it..
+			if delta == 0 {
+				log.Info("Dropped op", "prev", it.Op().String(), "index", cutPoint)
+			}
+			modified++
+			continue
+		}
+		next = append(next, byte(it.Op()))
+		if arg := it.Arg(); arg != nil {
+			next = append(next, arg...)
+		}
+	}
+	log.Info("Mutating code", "length", len(next), "previous", len(m.lastGood))
+	m.current = next
+	return modified == 0
+}
+
+// undo tells the mutator to revert the last change
+func (m *codeRandomMutator) undo() {
 	m.current = m.lastGood
 }
