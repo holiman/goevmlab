@@ -56,9 +56,9 @@ func (evm *RethVM) GetStateRoot(path string) (root, command string, err error) {
 	data, err := StdErrOutput(cmd)
 
 	// If revm exits with 1 on stateroot errors, uncomment to ignore:
-	//if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-	//	err = nil
-	//}
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		err = nil
+	}
 	if err != nil {
 		return "", cmd.String(), err
 	}
@@ -77,6 +77,7 @@ func (evm *RethVM) ParseStateRoot(data []byte) (root string, err error) {
 	start := idx + len(pattern)
 	end := start + 32*2 + 2
 	if idx == -1 || end >= len(data) {
+		fmt.Printf("no stateroot found. Data: \n%q\n", string(data))
 		return "", fmt.Errorf("%v: no stateroot found", evm.Name())
 	}
 	return string(data[start:end]), nil

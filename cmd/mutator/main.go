@@ -23,7 +23,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
@@ -31,46 +30,29 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var fullTraceFlag = &cli.BoolFlag{
-	Name: "fulltrace",
-	Usage: "If set to true, the minimizer examines the full trace, instead of just " +
-		"looking for a differing stateroot.",
-}
-
-var patienceFlag = &cli.UintFlag{
-	Name:  "patience",
-	Usage: "If set to a high value, the minmizer will spend more time retrying it's various minimization routines",
-	Value: 5,
-}
-
-var skipGasFlag = &cli.BoolFlag{
-	Name:  "skipgas",
-	Usage: "If true, gas minimization is skipped",
-	Value: false,
-}
-
 func initApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
-	app.Usage = "Test-case minimizer"
+	app.Usage = "Test-case mutator. This app tries to mutate a testcase in order to trigger a differing stateroot. You probably " +
+		"should run the `minimizer` first."
 	app.Flags = append(app.Flags, common.VmFlags...)
-	app.Flags = append(app.Flags, fullTraceFlag, patienceFlag, skipGasFlag)
 	app.Flags = append(app.Flags, common.VerbosityFlag)
-	app.Action = startFuzzer
+	app.Action = startMutator
 	return app
 }
 
 var app = initApp()
 
 func main() {
+
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func startFuzzer(c *cli.Context) error {
+func startMutator(c *cli.Context) error {
 	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr,
 		slog.Level(c.Int(common.VerbosityFlag.Name)), true)))
 
@@ -83,7 +65,6 @@ func startFuzzer(c *cli.Context) error {
 	var (
 		testPath  = c.Args().First()
 		compareFn func(path string, c *cli.Context) (bool, error)
-		patience  = c.Int(patienceFlag.Name)
 	)
 	compareFn = func(path string, c *cli.Context) (bool, error) {
 		agree, err := common.RootsEqual(path, c)
@@ -96,25 +77,12 @@ func startFuzzer(c *cli.Context) error {
 		}
 		return agree, nil
 	}
-	if c.Bool(fullTraceFlag.Name) {
-		compareFn = func(path string, c *cli.Context) (bool, error) {
-			agree, err := common.RunSingleTest(path, c)
-			if !agree {
-				return false, nil
-			}
-			return true, err
-		}
-	}
 	if consensus, err := compareFn(testPath, c); err != nil {
 		return err
-	} else if consensus {
-		msg := "No consensus failure -- the input statetest needs to be a test which produces a difference"
-		if !c.Bool(fullTraceFlag.Name) {
-			msg = "No consensus failure -- the input statetest needs to be a test which produces a difference.\n" +
-				"(Perhaps retry with --fulltrace enabled?)"
-		}
-		return errors.New(msg)
+	} else if !consensus {
+		return errors.New("Consensus failure -- the input statetest already produces a consensus error")
 	}
+
 	var (
 		gst      fuzzing.GeneralStateTest
 		testname string
@@ -130,6 +98,7 @@ func startFuzzer(c *cli.Context) error {
 			break
 		}
 	}
+
 	var inConsensus = func() bool {
 		data, _ := json.MarshalIndent(gst, "", "  ")
 		if err := os.WriteFile(out, data, 0777); err != nil {
@@ -139,82 +108,37 @@ func startFuzzer(c *cli.Context) error {
 		if err != nil {
 			panic(err)
 		}
-		if !allAgree {
-			log.Info("Change ok")
-			if err := os.WriteFile(good, data, 0777); err != nil {
-				panic(err)
-			}
-		} else {
-			log.Info("Bad change, clients in consensus - reverting")
+		if allAgree {
+			log.Info("Still in consensus")
+			return true
 		}
-		return allAgree
+		if err := os.WriteFile(good, data, 0777); err != nil {
+			panic(err)
+		}
+		log.Info("Good change, clients no longer in consensus")
+		return false
 	}
-
-	// Try decreasing gas
-	if !c.Bool(skipGasFlag.Name) {
-		gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
-			gst[testname].Tx.GasLimit[0] = uint64(i)
-			log.Info("Mutating gas", "value", i)
-			return !inConsensus()
-		})
-		// And restore the gas again
-		gst[testname].Tx.GasLimit[0] = uint64(gas)
-	}
-
-	// Try removing accounts
+	var m = newReplacingCodeMutator()
 	for target, acc := range gst[testname].Pre {
-		delete(gst[testname].Pre, target)
-		log.Info("Removing account", "target", target)
-		if !inConsensus() {
+		if len(acc.Code) == 0 {
 			continue
 		}
-		log.Info("Restoring", "target", target)
-		gst[testname].Pre[target] = acc
-	}
-	mutators := []codeMutator{
-		newCodeShortener(),
-		newBalancedCodeMutator(),
-		newCodeRandomMutator(),
-	}
-	for i, m := range mutators {
-		for target, acc := range gst[testname].Pre {
-			if len(acc.Code) == 0 {
-				continue
-			}
-			m.reset(acc.Code)
-			log.Info("Reducing code", "mutator", i, "target", target)
+		m.reset(acc.Code)
+		log.Info("Mutating code", "target", target)
 
-			for fails := 0; fails < patience; {
-				if exhausted := m.proceed(); exhausted {
-					break
-				}
-				acc := gst[testname].Pre[target]
-				acc.Code = m.code()
-				gst[testname].Pre[target] = acc
-				if !inConsensus() {
-					fails = 0
-					continue
-				}
-				log.Info("Restoring change")
-				fails++
-				m.undo()
-				acc.Code = m.code()
-				gst[testname].Pre[target] = acc
+		for {
+			if exhausted := m.proceed(); exhausted {
+				break
 			}
-		}
-	}
-
-	log.Info("Reducing slots")
-	// Try removing storage
-	for target, acc := range gst[testname].Pre {
-		for k, v := range acc.Storage {
-			delete(gst[testname].Pre[target].Storage, k)
-			log.Info("Reducing slot", "target", target, "slot", k)
+			acc := gst[testname].Pre[target]
+			acc.Code = m.code()
+			gst[testname].Pre[target] = acc
 			if !inConsensus() {
-				continue
+				break
 			}
-			log.Info("Restoring change")
-			gst[testname].Pre[target].Storage[k] = v
+			m.undo()
+			acc.Code = m.code()
+			gst[testname].Pre[target] = acc
 		}
 	}
 	log.Info("Done", "result", good)
