@@ -102,8 +102,8 @@ func (vm *GethBatchVM) Close() {
 
 func (evm *GethBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path)
-		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
+		evm.cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest")
+		if evm.stdout, err = evm.cmd.StderrPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
 		if evm.stdin, err = evm.cmd.StdinPipe(); err != nil {
