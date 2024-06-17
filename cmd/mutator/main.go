@@ -23,7 +23,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-
+	"bufio"
+	
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
@@ -55,13 +56,18 @@ func main() {
 func startMutator(c *cli.Context) error {
 	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr,
 		slog.Level(c.Int(common.VerbosityFlag.Name)), true)))
-
-	// TODO: Start a routine to listen for a keypress, to make it possible
-	// for the user to skip forward in the mutation process
-
 	if c.NArg() != 1 {
 		return fmt.Errorf("input state test file needed")
 	}
+	// skipCh is used to listen for a keypress, to make it possible
+	// for the user to skip forward in the mutation process
+	skipCh := make(chan bool)
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			skipCh <- true
+		}
+	}()
 	var (
 		testPath  = c.Args().First()
 		compareFn func(path string, c *cli.Context) (bool, error)
@@ -127,7 +133,16 @@ func startMutator(c *cli.Context) error {
 		log.Info("Mutating code", "target", target)
 
 		for {
-			if exhausted := m.proceed(); exhausted {
+			// break out if user signalled to skip ahead, or the mutator is
+			// exhausted
+			exhausted := m.proceed()
+			select {
+			case <-skipCh:
+				exhausted = true
+				fmt.Printf("Skipping ahead\n")
+			default:
+			}
+			if exhausted {
 				break
 			}
 			acc := gst[testname].Pre[target]
