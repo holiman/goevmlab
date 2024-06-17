@@ -46,3 +46,4 @@ Bugs found via the fuzzer or via tests generated using go-evmlab in general
 - Nethermind erroneous gas in BLS-multiexp: https://github.com/NethermindEth/nethermind/issues/2208
 - Geth error calculating BLS gas: https://github.com/ethereum/go-ethereum/pull/21253
 - Besu error on EIP-2929 [bug](https://github.com/holiman/goevmlab/issues/24) and [fix](https://github.com/hyperledger/besu/pull/1468)
+- See also the [tropies directory](./trophies) for more recent examples
