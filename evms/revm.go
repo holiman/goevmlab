@@ -103,6 +103,8 @@ func (evm *RethVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	}
 
 	evm.Copy(out, stderr)
+	// drain stderr
+	_, _ = io.ReadAll(stderr)
 	err = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
 

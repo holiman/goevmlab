@@ -104,6 +104,7 @@ func (evm *EelsEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
+	_, _ = io.ReadAll(stderr)
 	err = cmd.Wait()
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
