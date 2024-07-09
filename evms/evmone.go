@@ -100,6 +100,7 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 	}
 
 	evm.Copy(out, stderr)
+	_, _ = io.ReadAll(stderr)
 	err = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
 

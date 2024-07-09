@@ -102,6 +102,7 @@ func (evm *NimbusEVM) RunStateTest(path string, out io.Writer, speedTest bool) (
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
 	// Nimbus returns a non-zero exit code for tests that do not pass. We just ignore that.
+	_, _ = io.ReadAll(stderr)
 	_ = cmd.Wait()
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)

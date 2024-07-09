@@ -74,6 +74,7 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stdout)
+	_, _ = io.ReadAll(stdout)
 	err = cmd.Wait()
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)

@@ -109,6 +109,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	// copy everything to the given writer
 	evm.copyUntilEnd(out, procOut, speedTest)
 	// release resources, handle error but ignore non-zero exit codes
+	_, _ = io.ReadAll(procOut)
 	_ = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
 	return &tracingResult{
