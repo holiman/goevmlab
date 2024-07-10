@@ -137,16 +137,21 @@ RUN apt-get update -q
 # nethtest requires libssl-dev
 # besu requires openjdk-22-jre
 # evmone requires GLIBC_2.38 (libstdc++-13-dev) (https://github.com/holiman/goevmlab/issues/144)
-# EELS requires pipx, git
+# EELS requires (see https://github.com/ethereum/execution-specs/issues/976)
+#   - pipx, git, 
+#   - curl (for installing rust),  
+#   - gcc for building 'py-arkworks-bls12381', 
+#   - python3-dev for bulding 'lru-dict'
 RUN apt-get install -qy --no-install-recommends \
 	libssl-dev  \
 	openjdk-22-jre \ 
 	libstdc++-13-dev \
-	pipx git
+	pipx git curl gcc python3-dev
 
 # Install execution-specs (EELS)
-RUN git clone https://github.com/ethereum/execution-specs.git --depth 1 && \
-  PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
+RUN git clone https://github.com/ethereum/execution-specs.git --depth 1 
+RUN . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
 ENV EELS_BIN=/ethereum-spec-evm
 
 # Go-evmlab targets
