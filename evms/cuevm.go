@@ -50,8 +50,8 @@ type account struct {
 	Address  string
 	Balance  string
 	Nonce    string
-	CodeHash string `json:"codeHash"`
-	Storage  [][]string
+	CodeHash string            `json:"codeHash"`
+	Storage  map[string]string `json:"storage"`
 }
 
 func (Account account) String() string {
@@ -128,9 +128,7 @@ func (state *cuevmState) ComputeStateRoot() error {
 		}
 
 		storageTrie := trie.NewEmpty(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil))
-		for i := range account.Storage {
-			storageKey := account.Storage[i][0]
-			storageVal := account.Storage[i][1]
+		for storageKey, storageVal := range account.Storage {
 
 			if storageVal == "0x0" {
 				continue
