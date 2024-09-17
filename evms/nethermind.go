@@ -121,11 +121,10 @@ func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input)
 }
 
-func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) (endGas uint64, stateRoot stateRoot) {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
-	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(buf, 32*1024*1024)
 
@@ -138,6 +137,7 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 			fmt.Printf("nethermind err: %v, line\n\t%v\n", err, string(data))
 			continue
 		}
+		endGas = elem.Gas
 		// If the output cannot be marshalled, all fields will be blanks.
 		// We can detect that through 'depth', which should never be less than 1
 		// for any actual opcode
@@ -166,14 +166,14 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot 
 		outp := FastMarshal(&elem)
 		if _, err := out.Write(append(outp, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
-			return stateRoot
+			return endGas, stateRoot
 		}
 	}
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
-	return stateRoot
+	return endGas, stateRoot
 }
 
 func (evm *NethermindVM) Stats() []any {

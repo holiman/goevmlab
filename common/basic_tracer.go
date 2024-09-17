@@ -21,14 +21,14 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
 	"math/big"
 )
 
+/*
 var (
 	// compile time type check
 	_ tracers.Tracer = (*BasicTracer)(nil)
-)
+)*/
 
 type BasicTracer struct{}
 

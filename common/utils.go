@@ -36,6 +36,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -227,6 +228,33 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 	}
 	log.Info("Roots identical", "root", roots[0])
 	return true, nil
+}
+
+func BenchSingleTest(path string, c *cli.Context) (execTimes map[string]int64, gasUsed uint64) {
+	vms := initVMs(c)
+	res := make(map[string]int64)
+	for _, vm := range vms {
+		// run the benchmark with tracing first to get the gas used
+		traceResult, err := vm.RunStateTest(path, os.Stdout, false)
+		if err != nil {
+			panic(err)
+		}
+		// TODO: don't hardcode the initial alloc
+		gasUsed = 1_000_000_000 - traceResult.EndGas
+
+		// benchmark w/o tracing
+		benchRes := testing.Benchmark(func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, err := vm.RunStateTest(path, io.Discard, true)
+				if err != nil {
+					b.Fatalf("Error running test", "err", err)
+				}
+			}
+		})
+		res[vm.Name()] = benchRes.NsPerOp()
+		fmt.Printf("ns per op: %d\n", benchRes.NsPerOp())
+	}
+	return res, gasUsed
 }
 
 // RunTests runs a test on all clients.

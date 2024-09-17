@@ -108,6 +108,18 @@ func (p *Program) Hex() string {
 	return fmt.Sprintf("%02x", p.Bytecode())
 }
 
+func (p *Program) CalldataCopy(destOffset, offset, length interface{}) {
+	p.Push(length)
+	p.Push(offset)
+	p.Push(destOffset)
+	p.Op(ops.CALLDATACOPY)
+}
+
+func (p *Program) CalldataLoad(idx interface{}) {
+	p.Push(idx)
+	p.Op(ops.CALLDATALOAD)
+}
+
 func (p *Program) ExtcodeCopy(address, memOffset, codeOffset, length interface{}) {
 	p.Push(length)
 	p.Push(codeOffset)

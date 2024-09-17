@@ -81,13 +81,14 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
-	evm.copyUntilEnd(out, evm.stdout)
+	endGas, _ := evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
 	duration, slow := evm.stats.TraceDone(t0)
 	return &tracingResult{
 			Slow:     slow,
 			ExecTime: duration,
-			Cmd:      evm.cmd.String()},
+			Cmd:      evm.cmd.String(),
+			EndGas:   endGas},
 		nil
 }
 
@@ -101,21 +102,26 @@ func (vm *GethBatchVM) Close() {
 }
 
 func (evm *GethBatchVM) GetStateRoot(path string) (root, command string, err error) {
+	root, command, _, err = evm.GetStateRootAndGasUsed(path)
+	return root, command, err
+}
+
+func (evm *GethBatchVM) GetStateRootAndGasUsed(path string) (root, command string, gasUsed uint64, err error) {
 	if evm.cmd == nil {
 		evm.cmd = exec.Command(evm.path)
 		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
-			return "", evm.cmd.String(), err
+			return "", evm.cmd.String(), 0, err
 		}
 		if evm.stdin, err = evm.cmd.StdinPipe(); err != nil {
-			return "", evm.cmd.String(), err
+			return "", evm.cmd.String(), 0, err
 		}
 		if err = evm.cmd.Start(); err != nil {
-			return "", evm.cmd.String(), err
+			return "", evm.cmd.String(), 0, err
 		}
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
-	return sRoot.StateRoot, evm.cmd.String(), nil
+	gasUsed, sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
+	return sRoot.StateRoot, evm.cmd.String(), gasUsed, nil
 }

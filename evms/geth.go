@@ -127,13 +127,13 @@ func (evm *GethEVM) Copy(out io.Writer, input io.Reader) {
 
 // copyUntilEnd reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
-func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) (endGas uint64, stateRoot stateRoot) {
 	buf := bufferPool.Get().([]byte)
 	//lint:ignore SA6002: argument should be pointer-like to avoid allocations.
 	defer bufferPool.Put(buf)
-	var stateRoot stateRoot
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(buf, 32*1024*1024)
+
 	// When geth encounters an error, it may already have spat out the info, prematurely.
 	// We need to merge it back to one item
 	// https://github.com/ethereum/go-ethereum/pull/23970#issuecomment-979851712
@@ -155,6 +155,7 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			prev = nil
 		} else {
 			prev = current
+			endGas = current.Gas
 		}
 	}
 	for scanner.Scan() {
@@ -199,7 +200,7 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	if _, err := out.Write(append(root, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
-	return stateRoot
+	return endGas, stateRoot
 }
 
 func (evm *GethEVM) Stats() []any {

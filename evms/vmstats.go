@@ -42,4 +42,5 @@ type tracingResult struct {
 	Slow     bool
 	ExecTime time.Duration
 	Cmd      string
+	EndGas   uint64
 }
