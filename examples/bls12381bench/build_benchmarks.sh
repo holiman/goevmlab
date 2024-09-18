@@ -25,6 +25,7 @@ done
 ./bls12381bench --precompile g1msm --input-count 512 --iter-count 100 evaluate
 ./bls12381bench --precompile g1msm --input-count 2048 --iter-count 100 evaluate
 ./bls12381bench --precompile g1msm --input-count 4096 --iter-count 100 evaluate
+./bls12381bench --precompile g1msm --input-count 4787 --iter-count 100 evaluate
 
 for input_count in {1..32}
 do

@@ -239,6 +239,16 @@ func randomFr(r io.Reader) fr.Element {
 	return *scalar
 }
 
+// returns fr with all ones:
+func highArityFr() fr.Element {
+	scalar := new(fr.Element)
+	_, err := scalar.SetString("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	if err != nil {
+		panic(err)
+	}
+	return *scalar
+}
+
 func marshalFp(elem fp.Element) []byte {
 	res := make([]byte, 64)
 	copy(res[16:], elem.Marshal())
@@ -266,7 +276,7 @@ func marshalG2Point(pt *bls12381.G2Affine) []byte {
 func genG1MSMInputs(r io.Reader, inputCount int) (points []bls12381.G1Affine, scalars []fr.Element, encoded []byte) {
 	for i := 0; i < inputCount; i++ {
 		point := randomG1Point(r)
-		scalar := randomFr(r)
+		scalar := highArityFr()
 
 		points = append(points, *point)
 		scalars = append(scalars, scalar)
@@ -280,7 +290,7 @@ func genG1MSMInputs(r io.Reader, inputCount int) (points []bls12381.G1Affine, sc
 func genG2MSMInputs(r io.Reader, inputCount int) (points []bls12381.G2Affine, scalars []fr.Element, encoded []byte) {
 	for i := 0; i < inputCount; i++ {
 		point := randomG2Point(r)
-		scalar := randomFr(r)
+		scalar := highArityFr()
 
 		points = append(points, *point)
 		scalars = append(scalars, scalar)
