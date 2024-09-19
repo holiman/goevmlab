@@ -55,6 +55,12 @@ var (
 		Usage:       "evaluate the test using the built-in go-ethereum base",
 		Description: `Evaluate the test using the built-in go-ethereum library.`,
 	}
+	genGethBenchmarkCommand = &cli.Command{
+		Action:      genGethBenchmark,
+		Name:        "genbench",
+		Usage:       "...",
+		Description: "...",
+	}
 )
 
 func init() {
@@ -65,7 +71,16 @@ func init() {
 	}
 	app.Commands = []*cli.Command{
 		evaluateCommand,
+		genGethBenchmarkCommand,
 	}
+}
+
+type benchmarkEntry struct {
+	Input       string
+	Expected    string
+	Name        string
+	Gas         int
+	NoBenchmark bool
 }
 
 func main() {
@@ -98,6 +113,108 @@ func precompileNameToAddress(name string) common.Address {
 	default:
 		panic(fmt.Sprintf("invalid precompile selection", name))
 	}
+}
+
+func genG1MSMBenchmarks() {
+	var benchmarks []benchmarkEntry
+	precompileAddr := precompileNameToAddress("g1msm")
+	for i := 1; i < 32; i++ {
+		benchmarks = append(benchmarks, generateNativeBench(rand.Reader, precompileAddr, i))
+	}
+	largeSizes := []int{64, 128, 256, 512, 1024, 2048, 4877}
+	for _, size := range largeSizes {
+		benchmarks = append(benchmarks, generateNativeBench(rand.Reader, precompileAddr, size))
+	}
+
+	f, err := os.OpenFile("g1msm-benchmarks.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 777)
+	if err != nil {
+		panic(err)
+	}
+
+	enc, err := json.Marshal(benchmarks)
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write(enc)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func genG2MSMBenchmarks() {
+	var benchmarks []benchmarkEntry
+	precompileAddr := precompileNameToAddress("g2msm")
+	for i := 1; i < 32; i++ {
+		benchmarks = append(benchmarks, generateNativeBench(rand.Reader, precompileAddr, i))
+	}
+	largeSizes := []int{64, 128, 256, 512, 1024}
+	for _, size := range largeSizes {
+		benchmarks = append(benchmarks, generateNativeBench(rand.Reader, precompileAddr, size))
+	}
+
+	f, err := os.OpenFile("g2msm-benchmarks.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 777)
+	if err != nil {
+		panic(err)
+	}
+
+	enc, err := json.Marshal(benchmarks)
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write(enc)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func genPairingBenchmarks() {
+	var benchmarks []benchmarkEntry
+	precompileAddr := precompileNameToAddress("pairing")
+	for i := 1; i < 9; i++ {
+		benchmarks = append(benchmarks, generateNativeBench(rand.Reader, precompileAddr, i))
+	}
+
+	f, err := os.OpenFile("pairing-benchmarks.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 777)
+	if err != nil {
+		panic(err)
+	}
+
+	enc, err := json.Marshal(benchmarks)
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write(enc)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func genMapFp2Benchmarks() {
+	var benchmarks []benchmarkEntry
+	precompileAddr := precompileNameToAddress("mapfp2")
+	benchmarks = append(benchmarks, generateNativeBench(rand.Reader, precompileAddr, 1))
+
+	f, err := os.OpenFile("mapfp2-benchmarks.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 777)
+	if err != nil {
+		panic(err)
+	}
+
+	enc, err := json.Marshal(benchmarks)
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write(enc)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func genGethBenchmark(ctx *cli.Context) error {
+	genG1MSMBenchmarks()
+	genG2MSMBenchmarks()
+	genPairingBenchmarks()
+	genMapFp2Benchmarks()
+	return nil
 }
 
 func evaluate(ctx *cli.Context) error {
@@ -276,7 +393,7 @@ func marshalG2Point(pt *bls12381.G2Affine) []byte {
 func genG1MSMInputs(r io.Reader, inputCount int) (points []bls12381.G1Affine, scalars []fr.Element, encoded []byte) {
 	for i := 0; i < inputCount; i++ {
 		point := randomG1Point(r)
-		scalar := highArityFr()
+		scalar := randomFr(r) //highArityFr()
 
 		points = append(points, *point)
 		scalars = append(scalars, scalar)
@@ -317,6 +434,100 @@ func encodeU128(val uint64) []byte {
 	res := make([]byte, 16)
 	binary.BigEndian.PutUint64(res[8:16], val)
 	return res
+}
+
+func generateNativeBench(r io.Reader, precompile common.Address, inputCount int) benchmarkEntry {
+	var input []byte
+	var output []byte
+	var precompileName string
+
+	switch precompile {
+	case common.BytesToAddress([]byte{0x0b}):
+		precompileName = "g1add"
+		_, _, g1Gen, _ := bls12381.Generators()
+		pt1 := new(bls12381.G1Affine).ScalarMultiplication(&g1Gen, big.NewInt(2))
+		pt2 := g1Gen
+		input = append(input, marshalG1Point(pt1)...)
+		input = append(input, marshalG1Point(&pt2)...)
+		output = marshalG1Point(new(bls12381.G1Affine).Add(pt1, &pt2))
+	case common.BytesToAddress([]byte{0x0c}): // g1 mul
+		precompileName = "g1mul"
+		_, _, g1Gen, _ := bls12381.Generators()
+		highArityScalar := new(big.Int)
+		highArityScalar.SetString("50597600879605352240557443896859274688352069811191692694697732254669473040618", 10)
+		input = append(input, marshalG1Point(&g1Gen)...)
+		input = append(input, marshalScalar(highArityScalar)...)
+
+		output = marshalG1Point(g1Gen.ScalarMultiplication(&g1Gen, highArityScalar))
+	case common.BytesToAddress([]byte{0x0d}): // g1 msm
+		precompileName = "g1msm"
+		points, scalars, encInput := genG1MSMInputs(r, inputCount)
+		outputPt, err := new(bls12381.G1Affine).MultiExp(points, scalars, ecc.MultiExpConfig{})
+		if err != nil {
+			panic(err)
+		}
+		output = marshalG1Point(outputPt)
+		input = append(input, encInput...)
+	case common.BytesToAddress([]byte{0x0e}): // g2 add
+		precompileName = "g2add"
+		_, _, _, g2Gen := bls12381.Generators()
+		pt1 := new(bls12381.G2Affine).ScalarMultiplication(&g2Gen, big.NewInt(2))
+		pt2 := g2Gen
+		input = append(input, marshalG2Point(pt1)...)
+		input = append(input, marshalG2Point(&pt2)...)
+		output = marshalG2Point(new(bls12381.G2Affine).Add(pt1, &pt2))
+	case common.BytesToAddress([]byte{0x0f}): // g2 mul
+		precompileName = "g2mul"
+		_, _, _, g2Gen := bls12381.Generators()
+		highArityScalar := new(big.Int)
+		highArityScalar.SetString("50597600879605352240557443896859274688352069811191692694697732254669473040618", 10)
+		input = append(input, marshalG2Point(&g2Gen)...)
+		input = append(input, marshalScalar(highArityScalar)...)
+		output = marshalG2Point(new(bls12381.G2Affine).ScalarMultiplication(&g2Gen, highArityScalar))
+	case common.BytesToAddress([]byte{0x10}): // g2 msm
+		precompileName = "g2msm"
+		points, scalars, encodedInput := genG2MSMInputs(r, inputCount)
+		outputPt, err := new(bls12381.G2Affine).MultiExp(points, scalars, ecc.MultiExpConfig{})
+		if err != nil {
+			panic(err)
+		}
+		output = marshalG2Point(outputPt)
+		input = append(input, encodedInput...)
+	case common.BytesToAddress([]byte{0x11}): // pairing check
+		precompileName = "pairing"
+		g1Points, g2Points, encInput := genPairingInputs(r, inputCount)
+		ok, err := bls12381.PairingCheck(g1Points, g2Points)
+		if err != nil {
+			panic(err)
+		}
+		output = make([]byte, 32)
+		if ok {
+			output[31] = 1
+		}
+		input = append(input, encInput...)
+	case common.BytesToAddress([]byte{0x12}): // MapFp
+		precompileName = "mapfp"
+		elem := randomFp(r)
+		outputPt := bls12381.MapToG1(elem)
+		output = marshalG1Point(&outputPt)
+		input = append(input, marshalFp(elem)...)
+	case common.BytesToAddress([]byte{0x13}): // MapFp2
+		precompileName = "mapfp2"
+		elem := bls12381.E2{A0: randomFp(r), A1: randomFp(r)}
+		outputPt := bls12381.MapToG2(elem)
+		output = marshalG2Point(&outputPt)
+
+		input = append(input, marshalFp(elem.A0)...)
+		input = append(input, marshalFp(elem.A1)...)
+	}
+
+	return benchmarkEntry{
+		Input:       fmt.Sprintf("%x", input),
+		Expected:    fmt.Sprintf("%x", output),
+		Name:        fmt.Sprintf("%s-%d-jwasinger", precompileName, inputCount),
+		NoBenchmark: false,
+		Gas:         0, // placeholder to be manually filled in later
+	}
 }
 
 func generateBenchInputs(r io.Reader, precompile common.Address, inputCount int) []byte {
