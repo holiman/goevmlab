@@ -81,7 +81,8 @@ RUN git clone https://github.com/ethereum/evmone.git --depth 1 --recurse-submodu
 RUN cd evmone && cmake -S . -B build -DEVMONE_TESTING=ON -DEVMONE_PRECOMPILES_SILKPRE=1
 RUN cd evmone && cmake --build build --parallel
 RUN cp /evmone/build/bin/evmone-statetest /evmone-statetest
-RUN cp /evmone/build/lib/libevmone.so.0.12 /libevmone.so.0.12
+RUN ls -la /evmone/build/lib/libevmone.so.* 
+RUN cp /evmone/build/lib/libevmone.so.* /
 #---------------------------------------------------------------
 # rust-builder
 #---------------------------------------------------------------
@@ -174,7 +175,7 @@ COPY --from=golang-builder /evmstate /nimbvm
 ENV NIMB_BIN=/nimbvm
 
 COPY --from=debian-builder /evmone-statetest /evmone
-COPY --from=debian-builder /libevmone.so.0.12 /lib/libevmone.so.0.12
+COPY --from=debian-builder /libevmone.so.* /lib/
 ENV EVMO_BIN=/evmone
 
 COPY --from=rust-builder /revm/target/release/revme /revme
@@ -185,8 +186,8 @@ RUN ln -s /neth/nethtest /nethtest
 ENV NETH_BIN=/neth/nethtest
 
 COPY --from=java-builder /out/evmtool /evmtool
-RUN ln -s /evmtool/bin/evm besu-vm
-ENV BESU_BIN=/evmtool/bin/evm
+RUN ln -s /evmtool/bin/evmtool besu-vm
+ENV BESU_BIN=/evmtool/bin/evmtool
 
 COPY readme_docker.md  /README.md
 

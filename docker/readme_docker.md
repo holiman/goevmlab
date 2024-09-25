@@ -7,7 +7,7 @@ The evm binaries are available as ENV vars:
 - `$EVMO_BIN`=/evmone
 - `$RETH_BIN`=/revme
 - `$NETH_BIN`=/neth/nethtest
-- `$BESU_BIN`=/evmtool/bin/evm
+- `$BESU_BIN`=/evmtool/bin/evmtool
 - `$EELS_BIN`=/ethereum-spec-evm
 
 There's also an env var $FUZZ_CLIENTS which provides the arguments if you want to do fuzzing with all clients.
