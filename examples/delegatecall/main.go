@@ -80,18 +80,9 @@ func runit() error {
 	fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb = common2.NewEmptyStateDB()
+		statedb = common2.StateDBWithAlloc(alloc)
 		sender  = common.BytesToAddress([]byte("sender"))
 	)
-	for addr, acc := range alloc {
-		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
-		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
-		}
-
-	}
 	statedb.CreateAccount(sender)
 	statedb.SetBalance(sender, uint256.NewInt(0xfffffffffffffff), tracing.BalanceChangeUnspecified)
 

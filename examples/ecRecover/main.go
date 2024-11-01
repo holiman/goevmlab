@@ -24,7 +24,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
@@ -32,7 +31,6 @@ import (
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -81,17 +79,9 @@ func runit() error {
 		Balance: big.NewInt(0xffffffff),
 	}
 	var (
-		statedb = common2.NewEmptyStateDB()
+		statedb = common2.StateDBWithAlloc(alloc)
 		sender  = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
 	)
-	for addr, acc := range alloc {
-		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
-		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
-		}
-	}
 	statedb.CreateAccount(sender)
 	var (
 		gas  = uint64(10_000_000)

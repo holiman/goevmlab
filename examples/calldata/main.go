@@ -32,7 +32,6 @@ import (
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -76,17 +75,9 @@ func runit() error {
 
 	//----------
 	var (
-		statedb = common2.NewEmptyStateDB()
+		statedb = common2.StateDBWithAlloc(alloc)
 		sender  = common.BytesToAddress([]byte("sender"))
 	)
-	for addr, acc := range alloc {
-		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
-		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
-		}
-	}
 	statedb.CreateAccount(sender)
 
 	runtimeConfig := runtime.Config{
