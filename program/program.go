@@ -19,10 +19,7 @@ package program
 import (
 	"fmt"
 	"math/big"
-	"reflect"
-	"unsafe"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/uint256"
 )
@@ -69,12 +66,6 @@ func (p *Program) Op(op ops.OpCode) {
 	p.add(byte(op))
 }
 
-type xx [20]byte
-
-func isByte(typ reflect.Type) bool {
-	return typ.Kind() == reflect.Uint8
-}
-
 // Push creates a PUSHX instruction with the data provided
 func (p *Program) Push(val interface{}) *Program {
 	switch v := val.(type) {
@@ -90,46 +81,21 @@ func (p *Program) Push(val interface{}) *Program {
 		p.pushBig(v.ToBig())
 	case uint256.Int:
 		p.pushBig(v.ToBig())
-	case *common.Address: // TODO! Get rid of this dependency
-		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
 	case []byte:
 		p.pushBig(new(big.Int).SetBytes(v))
 	case byte:
 		p.pushBig(new(big.Int).SetUint64(uint64(v)))
+	case interface{ Bytes() []byte }:
+		// Here, we jump through some hoops in order to avoid depending on
+		// go-ethereum types.Address and common.Hash, and instead use the
+		// interface. This works on both values and pointers!
+		p.pushBig(new(big.Int).SetBytes(v.Bytes()))
 	case nil:
 		p.pushBig(nil)
 	default:
-		// Here, we jump through some hoops in order to avoid depending on
-		// go-ethereum types.Address, which is an alias for [20]byte
-		p.pushByteArray(val)
-	}
-
-	return p
-}
-
-// pushByteArray is a helper function which handles the go-ethereum
-// types Hash and Address, using reflection instead of direct dependence.
-func (p *Program) pushByteArray(v interface{}) {
-
-	var (
-		val  = reflect.ValueOf(v)
-		typ  = reflect.TypeOf(v)
-		kind = typ.Kind()
-	)
-	if kind != reflect.Array || !isByte(typ.Elem()) {
 		panic(fmt.Sprintf("unsupported type %v", v))
 	}
-	length := typ.Len()
-	// It's a byte array (likely Address or Hash).
-	if !val.CanAddr() {
-		// Getting the byte slice of val requires it to be addressable. Make it
-		// addressable by copying.
-		copy := reflect.New(val.Type()).Elem()
-		copy.Set(val)
-		val = copy
-	}
-	slice := unsafe.Slice((*byte)(unsafe.Pointer(val.UnsafeAddr())), length)
-	p.pushBig(new(big.Int).SetBytes(slice))
+	return p
 }
 
 // Push0 implements PUSH0 (0x5f)
