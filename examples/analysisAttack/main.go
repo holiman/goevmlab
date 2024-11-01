@@ -27,8 +27,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -183,8 +181,8 @@ Fork: %v
 		Balance: big.NewInt(0xffffffff),
 	}
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-		sender     = common.BytesToAddress([]byte("sender"))
+		statedb = common2.NewEmptyStateDB()
+		sender  = common.BytesToAddress([]byte("sender"))
 	)
 	for addr, acc := range alloc {
 		statedb.CreateAccount(addr)

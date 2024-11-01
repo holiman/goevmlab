@@ -24,8 +24,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -83,8 +81,8 @@ func runit() error {
 		Balance: big.NewInt(0xffffffff),
 	}
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-		sender     = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+		statedb = common2.NewEmptyStateDB()
+		sender  = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
 	)
 	for addr, acc := range alloc {
 		statedb.CreateAccount(addr)
@@ -94,7 +92,6 @@ func runit() error {
 			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
 		}
 	}
-
 	statedb.CreateAccount(sender)
 	var (
 		gas  = uint64(10_000_000)
