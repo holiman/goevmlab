@@ -20,20 +20,19 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 )
 
 type Fork struct {
-	Name              string
-	ValidOpcodes      []OpCode
-	ActivePrecompiles []common.Address
+	Name         string
+	ValidOpcodes []OpCode
+	//ActivePrecompiles []common.Address
 }
 
 var (
 	istanbul = Fork{
-		Name:              "Istanbul",
-		ActivePrecompiles: nil,
+		Name: "Istanbul",
+		//ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
@@ -53,8 +52,8 @@ var (
 	}
 
 	berlin = Fork{
-		Name:              "Berlin",
-		ActivePrecompiles: nil,
+		Name: "Berlin",
+		//ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
@@ -71,8 +70,8 @@ var (
 			SELFDESTRUCT},
 	}
 	london = Fork{
-		Name:              "London",
-		ActivePrecompiles: nil,
+		Name: "London",
+		//ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
@@ -90,8 +89,8 @@ var (
 			SELFDESTRUCT},
 	}
 	merged = Fork{
-		Name:              "Merge",
-		ActivePrecompiles: nil,
+		Name: "Merge",
+		//ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
@@ -111,8 +110,8 @@ var (
 	}
 
 	shanghai = Fork{
-		Name:              "Shanghai",
-		ActivePrecompiles: nil,
+		Name: "Shanghai",
+		//ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
@@ -130,8 +129,8 @@ var (
 			SELFDESTRUCT},
 	}
 	cancun = Fork{
-		Name:              "Cancun",
-		ActivePrecompiles: nil,
+		Name: "Cancun",
+		//ActivePrecompiles: nil,
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,

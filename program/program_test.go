@@ -20,9 +20,40 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"encoding/hex"
 	"github.com/holiman/goevmlab/ops"
 )
+
+// has0xPrefix validates str begins with '0x' or '0X'.
+func has0xPrefix(str string) bool {
+	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
+}
+
+// fromHex returns the bytes represented by the hexadecimal string s.
+// s may be prefixed with "0x".
+func fromHex(s string) []byte {
+	if has0xPrefix(s) {
+		s = s[2:]
+	}
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	h, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
+type addr [20]byte
+
+func (a addr) Bytes() []byte { return a[:] }
+func hexToAddr(s string) addr {
+	var a addr
+	raw := fromHex(s)
+	copy(a[:], raw)
+	return a
+}
 
 func TestPush(t *testing.T) {
 	tests := []struct {
@@ -38,8 +69,8 @@ func TestPush(t *testing.T) {
 		{big.NewInt(1), "6001"},
 		{big.NewInt(0xfff), "610fff"},
 		// Addresses
-		{common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"), "73deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"},
-		{&common.Address{}, "6000"},
+		{fromHex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"), "73deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"},
+		{&addr{}, "6000"},
 	}
 	for i, tc := range tests {
 		p := NewProgram()
@@ -52,7 +83,7 @@ func TestPush(t *testing.T) {
 func TestCall(t *testing.T) {
 	{ // Nil gas
 		p := NewProgram()
-		p.Call(nil, common.HexToAddress("0x1337"), big.NewInt(1), 1, 2, 3, 4)
+		p.Call(nil, fromHex("0x1337"), big.NewInt(1), 1, 2, 3, 4)
 		exp := "600460036002600160016113375af1"
 		if got := p.Hex(); got != exp {
 			t.Errorf("got %v expected %v", got, exp)
@@ -60,7 +91,7 @@ func TestCall(t *testing.T) {
 	}
 	{ // Non nil gas
 		p := NewProgram()
-		p.Call(big.NewInt(0xffff), common.HexToAddress("0x1337"), big.NewInt(1), 1, 2, 3, 4)
+		p.Call(big.NewInt(0xffff), fromHex("0x1337"), big.NewInt(1), 1, 2, 3, 4)
 		exp := "6004600360026001600161133761fffff1"
 		if got := p.Hex(); got != exp {
 			t.Errorf("got %v expected %v", got, exp)
@@ -72,7 +103,7 @@ func TestMstore(t *testing.T) {
 
 	{
 		p := NewProgram()
-		p.Mstore(common.FromHex("0xaabb"), 0)
+		p.Mstore(fromHex("0xaabb"), 0)
 		if exp, got := "60aa60005360bb600153", p.Hex(); got != exp {
 			t.Errorf("got %v expected %v", got, exp)
 		}
@@ -80,7 +111,7 @@ func TestMstore(t *testing.T) {
 
 	{
 		p := NewProgram()
-		p.Mstore(common.FromHex("0xaabb"), 3)
+		p.Mstore(fromHex("0xaabb"), 3)
 		if exp, got := "60aa60035360bb600453", p.Hex(); got != exp {
 			t.Errorf("got %v expected %v", got, exp)
 		}
@@ -88,7 +119,7 @@ func TestMstore(t *testing.T) {
 
 	{
 		// 34 bytes
-		data := common.FromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
+		data := fromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
 			"FFFF")
 
@@ -131,7 +162,7 @@ func TestReturnData(t *testing.T) {
 	{
 		p := NewProgram()
 		// 32 bytes
-		data := common.FromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
+		data := fromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 		p.ReturnData(data)
 		if exp, got := "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff60005260206000f3", p.Hex(); got != exp {
@@ -190,5 +221,4 @@ func TestCreateAndCall(t *testing.T) {
 			t.Fatalf("2: got %v expected %v", got, exp)
 		}
 	}
-
 }
