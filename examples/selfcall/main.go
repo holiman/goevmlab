@@ -24,9 +24,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
@@ -34,7 +31,6 @@ import (
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -96,18 +92,9 @@ func runit() error {
 	fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-		sender     = common.BytesToAddress([]byte("sender"))
+		statedb = common2.StateDBWithAlloc(alloc)
+		sender  = common.BytesToAddress([]byte("sender"))
 	)
-	for addr, acc := range alloc {
-		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
-		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
-		}
-
-	}
 	statedb.CreateAccount(sender)
 
 	runtimeConfig := runtime.Config{

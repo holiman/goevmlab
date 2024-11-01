@@ -24,20 +24,17 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
+	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/holiman/uint256"
 )
 
 func main() {
-
 	if err := program.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -75,19 +72,12 @@ func runit() error {
 		os.Exit(1)
 	}
 	fmt.Printf("output \n%v\n", string(outp))
+
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-		sender     = common.BytesToAddress([]byte("sender"))
+		statedb = common2.StateDBWithAlloc(alloc)
+		sender  = common.BytesToAddress([]byte("sender"))
 	)
-	for addr, acc := range alloc {
-		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
-		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
-		}
-	}
 	statedb.CreateAccount(sender)
 
 	runtimeConfig := runtime.Config{
@@ -113,6 +103,8 @@ func runit() error {
 	}
 	// Run with tracing
 	_, _, _ = runtime.Call(aAddr, nil, &runtimeConfig)
+	// Work-around missing tx-end, todo remove later
+	runtimeConfig.EVMConfig.Tracer.OnTxEnd(nil, nil)
 	// Diagnose it
 	runtimeConfig.EVMConfig = vm.Config{}
 	t0 := time.Now()
@@ -128,33 +120,28 @@ type dumbTracer struct {
 
 func (d *dumbTracer) Hooks() *tracing.Hooks {
 	return &tracing.Hooks{
-		OnTxStart: d.CaptureStart,
-		OnOpcode:  d.CaptureState,
-		OnFault:   d.CaptureFault,
-		OnTxEnd:   d.CaptureEnd,
+		OnTxStart: func(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
+			fmt.Printf("captureStart\n")
+			fmt.Printf("	from: %v\n", from.Hex())
+			fmt.Printf("	to: %v\n", tx.To().Hex())
+		},
+		OnOpcode: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, rData []byte, depth int, err error) {
+			if op == byte(vm.STATICCALL) {
+				d.counter++
+			}
+			if op == byte(vm.EXTCODESIZE) {
+				d.counter++
+			}
+		},
+		OnTxEnd: func(receipt *types.Receipt, err error) {
+			fmt.Printf("\nCaptureEnd\n")
+			fmt.Printf("Counter: %d\n", d.counter)
+		},
+		OnFault: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
+			fmt.Printf("OnFault %v\n", err)
+		},
+		OnClose: func() {
+			fmt.Printf("OnClose")
+		},
 	}
-}
-
-func (d *dumbTracer) CaptureState(pc uint64, op byte, gas uint64, cost uint64, scope tracing.OpContext, input []byte, depth int, err error) {
-	if op == byte(vm.STATICCALL) {
-		d.counter++
-	}
-	if op == byte(vm.EXTCODESIZE) {
-		d.counter++
-	}
-}
-
-func (n *dumbTracer) CaptureFault(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
-	fmt.Printf("CaptureFault %v\n", err)
-}
-
-func (n *dumbTracer) CaptureStart(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
-	fmt.Printf("captureStart\n")
-	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", tx.To().Hex())
-}
-
-func (d *dumbTracer) CaptureEnd(receipt *types.Receipt, err error) {
-	fmt.Printf("\nCaptureEnd\n")
-	fmt.Printf("Counter: %d\n", d.counter)
 }

@@ -23,8 +23,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -33,7 +31,6 @@ import (
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/program"
-	"github.com/holiman/uint256"
 )
 
 func main() {
@@ -111,18 +108,9 @@ func runit() error {
 	//fmt.Printf("output \n%v\n", string(outp))
 	//----------
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-		sender     = common.BytesToAddress([]byte("sender"))
+		statedb = common2.StateDBWithAlloc(alloc)
+		sender  = common.BytesToAddress([]byte("sender"))
 	)
-	for addr, acc := range alloc {
-		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
-		if acc.Balance != nil {
-			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
-		}
-
-	}
 	statedb.CreateAccount(sender)
 
 	runtimeConfig := runtime.Config{
@@ -165,26 +153,30 @@ func runit() error {
 }
 
 type dumbTracer struct {
-	common2.BasicTracer
 	counter uint64
 }
 
-func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	if op == vm.STATICCALL {
-		d.counter++
+func (d *dumbTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnTxStart: func(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
+			fmt.Printf("OnTxStart\n")
+			fmt.Printf("	from: %v\n", from.Hex())
+			fmt.Printf("	to: %v\n", tx.To().Hex())
+		},
+		OnOpcode: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, rData []byte, depth int, err error) {
+			if op == byte(vm.STATICCALL) {
+				d.counter++
+			}
+			if op == byte(vm.EXTCODESIZE) {
+				d.counter++
+			}
+		},
+		OnTxEnd: func(receipt *types.Receipt, err error) {
+			fmt.Printf("\nOnTxEnd\n")
+			fmt.Printf("Counter: %d\n", d.counter)
+		},
+		OnFault: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
+			fmt.Printf("OnFault %v\n", err)
+		},
 	}
-	if op == vm.EXTCODESIZE {
-		d.counter++
-	}
-}
-
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	fmt.Printf("captureStart\n")
-	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", to.Hex())
-}
-
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
-	fmt.Printf("\nCaptureEnd\n")
-	fmt.Printf("Counter: %d\n", d.counter)
 }

@@ -192,3 +192,16 @@ func TestCreateAndCall(t *testing.T) {
 	}
 
 }
+
+func TestPushByteArrays(t *testing.T) {
+	have := NewProgram().
+		Push(common.Address{0x1, 0x2}).
+		Push(common.Address{}).
+		Push(&common.Address{0x1, 0x2}).
+		Hex()
+
+	want := "7301020000000000000000000000000000000000006000730102000000000000000000000000000000000000"
+	if have != want {
+		t.Fatalf("have:\n%v\nwant:\n%v\n", have, want)
+	}
+}
