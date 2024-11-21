@@ -106,7 +106,7 @@ RUN cd revm && cargo build --release --package revme
 # NETHERMIND
 #
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS dotnet-builder
+FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS dotnet-builder
 RUN git clone https://github.com/NethermindEth/nethermind --depth 1 --recurse-submodules
 
 RUN cd nethermind/src/Nethermind/Nethermind.Test.Runner && dotnet publish --self-contained true -r linux-x64 -c Release
@@ -120,10 +120,10 @@ RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Run
 # BESU 
 #
 
-FROM ubuntu:23.10 as java-builder
+FROM ubuntu:24.04 as java-builder
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates \
-  openjdk-22-jre-headless=22* libjemalloc-dev=5.* 
+  openjdk-21-jre-headless=21* libjemalloc-dev=5.* 
 RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
 RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
 RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
@@ -136,7 +136,7 @@ FROM debian:testing
 
 RUN apt-get update -q
 # nethtest requires libssl-dev
-# besu requires openjdk-22-jre
+# besu requires openjdk-21-jre
 # evmone requires GLIBC_2.38 (libstdc++-13-dev) (https://github.com/holiman/goevmlab/issues/144)
 # EELS requires (see https://github.com/ethereum/execution-specs/issues/976)
 #   - pipx, git, 
@@ -145,7 +145,7 @@ RUN apt-get update -q
 #   - python3-dev for bulding 'lru-dict'
 RUN apt-get install -qy --no-install-recommends \
 	libssl-dev  \
-	openjdk-22-jre \ 
+	openjdk-21-jre \ 
 	libstdc++-13-dev \
 	pipx git curl gcc python3-dev
 
