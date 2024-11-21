@@ -26,22 +26,24 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 func main() {
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 }
 
 func runit() error {
-	a := program.NewProgram()
+	a := program.New()
 	// "input" is (hash, v, r, s), each 32 bytes
 	hash := make([]byte, 32)
 	v := make([]byte, 32)
@@ -57,25 +59,25 @@ func runit() error {
 	a.Mstore(r, 64)
 	a.Mstore(s, 96)
 
-	a.Call(big.NewInt(1_000_000),
+	a.Call(uint256.NewInt(1_000_000),
 		1,
-		big.NewInt(0),   // value
-		big.NewInt(0),   // inoffset
-		big.NewInt(128), // insize
-		big.NewInt(0),   // outoffset
-		big.NewInt(32),  // outsize
+		uint256.NewInt(0),   // value
+		uint256.NewInt(0),   // inoffset
+		uint256.NewInt(128), // insize
+		uint256.NewInt(0),   // outoffset
+		uint256.NewInt(32),  // outsize
 	)
-	a.Op(ops.POP)
+	a.Op(vm.POP)
 	// Move the output (mem 0:32) into the stack
 	a.Push(0)
-	a.Op(ops.MLOAD)
+	a.Op(vm.MLOAD)
 	a.Push(0)
-	a.Op(ops.SSTORE)
+	a.Op(vm.SSTORE)
 	aAddr := common.HexToAddress("0xff0a")
 	alloc := make(types.GenesisAlloc)
 	alloc[aAddr] = types.Account{
 		Nonce:   0,
-		Code:    a.Bytecode(),
+		Code:    a.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	var (
