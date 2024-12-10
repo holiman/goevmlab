@@ -32,11 +32,11 @@
 {"pc":11,"op":80,"gas":"0x12ed","gasCost":"0x2","memSize":0,"stack":["0x0","0x0","0x1"],"depth":4,"refund":-4800,"opName":"POP"}
 {"pc":12,"op":80,"gas":"0x1339","gasCost":"0x2","memSize":0,"stack":["0x1"],"depth":3,"refund":-4800,"opName":"POP"}
 {"pc":13,"op":96,"gas":"0x1337","gasCost":"0x3","memSize":0,"stack":[],"depth":3,"refund":-4800,"opName":"PUSH1"}
-{"pc":15,"op":253,"gas":"0x1334","gasCost":"0x1334","memSize":0,"stack":["0x0"],"depth":3,"refund":-4800,"opName":"REVERT","error":"Opcode Dispatch Error: Stack underflow, expect 2, got 1, depth=3"}
+{"pc":15,"op":253,"gas":"0x1334","gasCost":"0x1334","memSize":0,"stack":["0x0"],"depth":3,"refund":-4800,"opName":"REVERT","error":"Opcode Dispatch Error: StackInsufficient, depth=3"}
 {"pc":19,"op":96,"gas":"0x79","gasCost":"0x3","memSize":0,"stack":["0x0"],"depth":2,"refund":4800,"opName":"PUSH1"}
-{"pc":21,"op":84,"gas":"0x76","gasCost":"0x834","memSize":0,"stack":["0x0","0x3"],"depth":2,"refund":4800,"opName":"SLOAD","error":"Opcode Dispatch Error: Out of gas: Needed 2100 - Remaining 118 - Reason: sloadEIP2929, depth=2"}
+{"pc":21,"op":84,"gas":"0x76","gasCost":"0x834","memSize":0,"stack":["0x0","0x3"],"depth":2,"refund":4800,"opName":"SLOAD","error":"Opcode Dispatch Error: OutOfGas, depth=2"}
 {"pc":12,"op":80,"gas":"0xf4","gasCost":"0x2","memSize":0,"stack":["0x0"],"depth":1,"refund":0,"opName":"POP"}
 {"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH1"}
-{"pc":15,"op":84,"gas":"0xef","gasCost":"0x834","memSize":0,"stack":["0x3"],"depth":1,"refund":0,"opName":"SLOAD","error":"Opcode Dispatch Error: Out of gas: Needed 2100 - Remaining 239 - Reason: sloadEIP2929, depth=1"}
-{"output":"","gasUsed":"0x4757","error":"Opcode Dispatch Error: Out of gas: Needed 2100 - Remaining 239 - Reason: sloadEIP2929, depth=1"}
+{"pc":15,"op":84,"gas":"0xef","gasCost":"0x834","memSize":0,"stack":["0x3"],"depth":1,"refund":0,"opName":"SLOAD","error":"Opcode Dispatch Error: OutOfGas, depth=1"}
+{"output":"","gasUsed":"0x4757","error":"Opcode Dispatch Error: OutOfGas, depth=1"}
 {"stateRoot":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b"}
