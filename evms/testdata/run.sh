@@ -15,7 +15,8 @@ if [[ -n "$evm" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
-        $evm --json --nomemory --noreturndata statetest $i \
+      #	$evm statetest --trace --trace.format=json --trace.nomemory  $i \
+        $evm statetest --trace --trace.format=json --trace.nomemory=true --trace.noreturndata=true $i  \
          2>../traces/$i.geth.stderr.txt \
          1>../traces/$i.geth.stdout.txt
     done
