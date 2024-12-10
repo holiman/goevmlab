@@ -3,6 +3,6 @@
 {"pc":2,"op":48,"gas":"0x2d1cc1","gasCost":"0x2","memSize":0,"stack":["0x0"],"depth":1,"refund":0,"opname":"ADDRESS","error":""}
 {"pc":3,"op":121,"gas":"0x2d1cbf","gasCost":"0x3","memSize":0,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b"],"depth":1,"refund":0,"opname":"PUSH26","error":""}
 {"pc":30,"op":104,"gas":"0x2d1cbc","gasCost":"0x3","memSize":0,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b","0xc940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32"],"depth":1,"refund":0,"opname":"PUSH9","error":""}
-{"pc":40,"op":83,"gas":"0x2d1cb9","gasCost":"0x2d1cb9","memSize":0,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b","0xc940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32","0xb7f7c4147541c695f3"],"depth":1,"refund":0,"opname":"MSTORE8","error":"OutOfGas"}
-{"output":"0x","gasUsed":"0x2d1cc4","time":213.5651,"error":"OutOfGas"}
+{"pc":40,"op":83,"gas":"0x2d1cb9","gasCost":"0x3","memSize":0,"stack":["0x0","0xc94f5374fce5edbc8e2a8697c15331677e6ebf0b","0xc940b5f2046740058558468f238b85db7f6bbe3f3d51e92a3e32","0xb7f7c4147541c695f3"],"depth":1,"refund":0,"opname":"MSTORE8","error":"OutOfGas"}
+{"output":"0x","gasUsed":"0x2d1cc4","time":79.6262,"error":"OutOfGas"}
 {"stateRoot":"0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134"}
