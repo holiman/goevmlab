@@ -1,11 +1,9 @@
-Loading 00000936-mixed-1
- System.Collections.Generic.Dictionary`2[System.String,Ethereum.Test.Base.PostStateJson[]]
 [
   {
     "name": "00000936-mixed-1_d0g0v0_",
     "pass": false,
     "fork": "Shanghai",
-    "timeInMs": 78.8732,
+    "timeInMs": 91.9921,
     "stateRoot": "0xd14c10ed22a1cfb642e374be985ac581c39f3969bd59249e0405aca3beb47a47"
   }
 ]

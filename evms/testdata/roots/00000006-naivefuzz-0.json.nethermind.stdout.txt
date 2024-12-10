@@ -1,11 +1,9 @@
-Loading 00000006-naivefuzz-0
- System.Collections.Generic.Dictionary`2[System.String,Ethereum.Test.Base.PostStateJson[]]
 [
   {
     "name": "00000006-naivefuzz-0_d0g0v0_",
     "pass": false,
     "fork": "London",
-    "timeInMs": 0.6632,
+    "timeInMs": 0.5145,
     "stateRoot": "0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458"
   }
 ]

@@ -38,5 +38,5 @@
 {"pc":12,"op":80,"gas":"0xf4","gasCost":"0x2","memSize":0,"stack":["0x0"],"depth":1,"refund":0,"opname":"POP","error":""}
 {"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opname":"PUSH1","error":""}
 {"pc":15,"op":84,"gas":"0xef","gasCost":"0x0","memSize":0,"stack":["0x3"],"depth":1,"refund":0,"opname":"SLOAD","error":"OutOfGas"}
-{"output":"0x","gasUsed":"0x4757","time":188.7528,"error":"OutOfGas"}
+{"output":"0x","gasUsed":"0x4757","time":92.6282,"error":"OutOfGas"}
 {"stateRoot":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b"}
