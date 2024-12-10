@@ -60,9 +60,13 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	)
 	if evm.cmd == nil {
 		if speedTest {
-			cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest")
+			//cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest")
+			cmd = exec.Command(evm.path, "statetest")
 		} else {
-			cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest")
+			//cmd = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest")
+			cmd = exec.Command(evm.path, "statetest", "--trace", "--trace.format=json",
+				"--trace.nomemory=true", "--trace.noreturndata=true")
+
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
 			return &tracingResult{Cmd: cmd.String()}, err
@@ -102,7 +106,8 @@ func (vm *GethBatchVM) Close() {
 
 func (evm *GethBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest")
+		//evm.cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest")
+		evm.cmd = exec.Command(evm.path, "statetest")
 		if evm.stdout, err = evm.cmd.StderrPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
