@@ -144,7 +144,9 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 		if current == nil { // final flush
 			return
 		}
-		if prev.Pc == current.Pc && prev.Depth == current.Depth {
+		// Depends on Geth EOF support, replaces next line
+		// if prev.Pc == current.Pc && prev.Depth == current.Depth && prev.FunctionDepth == current.FunctionDepth {
+		if prev.Pc == current.Pc && prev.Depth == current.Depth && prev.FunctionDepth == current.FunctionDepth {
 			// Yup, that happened here. Set the error and continue
 			prev = nil
 		} else {

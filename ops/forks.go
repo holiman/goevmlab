@@ -151,8 +151,48 @@ var (
 			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
 			SELFDESTRUCT},
 	}
+	prague = Fork{
+		Name: "Prague",
+		//ActivePrecompiles: nil,
+		ValidOpcodes: []OpCode{
+			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
+			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
+			KECCAK256,
+			ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CALLDATACOPY, CODESIZE, CODECOPY, GASPRICE, EXTCODESIZE, EXTCODECOPY, RETURNDATASIZE, RETURNDATACOPY, EXTCODEHASH, BLOCKHASH,
+			COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE, BLOBHASH, BLOBBASEFEE,
+			POP, MLOAD, MSTORE, MSTORE8, SLOAD, SSTORE, JUMP, JUMPI, PC, MSIZE, GAS, JUMPDEST, TLOAD, TSTORE, MCOPY,
+			PUSH0, PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16,
+			PUSH17, PUSH18, PUSH19, PUSH20, PUSH21, PUSH22, PUSH23, PUSH24, PUSH25, PUSH26, PUSH27, PUSH28, PUSH29, PUSH30, PUSH31, PUSH32,
+			DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16,
+			SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16,
+			LOG0, LOG1, LOG2, LOG3, LOG4,
+			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
+			RETURNDATACOPY,
+			SELFDESTRUCT},
+	}
+	osaka = Fork{
+		Name: "Osaka",
+		//ActivePrecompiles: nil,
+		ValidOpcodes: []OpCode{
+			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
+			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
+			KECCAK256,
+			ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CALLDATACOPY, CODESIZE, CODECOPY, GASPRICE, EXTCODESIZE, EXTCODECOPY, RETURNDATASIZE, RETURNDATACOPY, EXTCODEHASH, BLOCKHASH,
+			COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE, BLOBHASH, BLOBBASEFEE,
+			POP, MLOAD, MSTORE, MSTORE8, SLOAD, SSTORE, JUMP, JUMPI, PC, MSIZE, GAS, JUMPDEST, TLOAD, TSTORE, MCOPY,
+			PUSH0, PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16,
+			PUSH17, PUSH18, PUSH19, PUSH20, PUSH21, PUSH22, PUSH23, PUSH24, PUSH25, PUSH26, PUSH27, PUSH28, PUSH29, PUSH30, PUSH31, PUSH32,
+			DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16,
+			SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16,
+			LOG0, LOG1, LOG2, LOG3, LOG4,
+			DATALOAD, DATALOADN, DATASIZE, DATACOPY, // New for Osaka
+			RJUMP, RJUMPI, RJUMPV, CALLF, RETF, JUMPF, DUPN, SWAPN, EXCHANGE, EOFCREATE, RETURNCONTRACT, // New for Osaka
+			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
+			RETURNDATACOPY, EXTCALL, EXTDELEGATECALL, EXTSTATICCALL, // New for Osaka
+			SELFDESTRUCT},
+	}
 	forks = []Fork{
-		istanbul, berlin, london, merged, shanghai, cancun,
+		istanbul, berlin, london, merged, shanghai, cancun, prague, osaka,
 	}
 )
 
@@ -266,6 +306,42 @@ func LookupRules(fork string) params.Rules {
 			IsShanghai:       true,
 			IsCancun:         true,
 		}
+	case "Prague":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+			IsMerge:          true,
+			IsShanghai:       true,
+			IsCancun:         true,
+			IsPrague:         true,
+		}
+	case "Osaka":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+			IsMerge:          true,
+			IsShanghai:       true,
+			IsCancun:         true,
+			IsPrague:         true,
+			// Depends on Geth EOF support
+			// IsOsaka:          true,
+		}
 	default:
 		panic(fmt.Sprintf("Unsupported: %v", fork))
 
@@ -295,6 +371,9 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 	var merge = cpy(london, func(p *params.ChainConfig) { p.MergeNetsplitBlock = big.NewInt(0) })
 	var shanghai = cpy(merge, func(p *params.ChainConfig) { p.ShanghaiTime = new(uint64) })
 	var cancun = cpy(shanghai, func(p *params.ChainConfig) { p.CancunTime = new(uint64) })
+	var prague = cpy(cancun, func(p *params.ChainConfig) { p.PragueTime = new(uint64) })
+	// Depends on Geth EOF support
+	//var osaka = cpy(prague, func(p *params.ChainConfig) { p.OsakaTime = new(uint64) })
 
 	switch fork {
 	case "Frontier":
@@ -321,8 +400,11 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 		return merge, nil
 	case "Shanghai":
 		return shanghai, nil
-	case "Cancun":
-		return cancun, nil
+	case "Prague":
+		return prague, nil
+		// Depends on Geth EOF support
+		//case "Osaka":
+		//	return osaka, nil
 	}
 	return nil, fmt.Errorf("unknown fork %v", fork)
 }
