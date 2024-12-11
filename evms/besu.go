@@ -112,7 +112,13 @@ func (vm *BesuVM) ParseStateRoot(data []byte) (string, error) {
 		root := string(data[start : start+2+64])
 		return root, nil
 	}
-	return "", errors.New("besu: no stateroot found")
+	start = strings.Index(string(data), `"stateRoot":"`)
+	if start > 0 {
+		start = start + len(`"stateRoot":"`)
+		root := string(data[start : start+2+64])
+		return root, nil
+	}
+	return "", errors.New("besu: no stateroot/posthash found")
 }
 
 // feed reads from the reader, does some geth-specific filtering and
@@ -128,6 +134,10 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 	var elem opLog
 	for scanner.Next(&elem) == nil {
 		// If we have a stateroot, we're done
+		if len(elem.StateRoot1) != 0 {
+			stateRoot.StateRoot = elem.StateRoot1
+			break
+		}
 		if len(elem.StateRoot2) != 0 {
 			stateRoot.StateRoot = elem.StateRoot2
 			break
@@ -142,6 +152,8 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 			return stateRoot
 		}
+		elem.FunctionDepth = 0 // function depth is optional and "gets dirty" if not set
+		elem.Section = 0
 	}
 	root, _ := json.Marshal(stateRoot)
 	if _, err := out.Write(append(root, '\n')); err != nil {

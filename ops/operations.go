@@ -30,28 +30,22 @@ func (op OpCode) IsPush() bool {
 
 // HasImmediate returns true if the op has immediate after the op.
 func (op OpCode) HasImmediate() bool {
-	switch {
-	case op >= PUSH1 && op <= PUSH32:
-		return true
-		//case op == RJUMP || op == RJUMPI || op == RJUMPV:
-		//	return true
-	}
-	return false
+	return opCodeInfo[op].immediates > 0
 }
 
 func (op OpCode) IsCall() bool {
 	return op == CALL ||
 		op == DELEGATECALL ||
 		op == CALLCODE ||
-		op == STATICCALL
+		op == STATICCALL ||
+		op == EXTCALL ||
+		op == EXTSTATICCALL ||
+		op == EXTDELEGATECALL
 
 }
 
-func (op OpCode) PushSize() int {
-	if op.IsPush() {
-		return (int(op) - int(PUSH1) + 1)
-	}
-	return 0
+func (op OpCode) ImmediateSize() int {
+	return opCodeInfo[op].immediates // FIXME for RJUMPV it is variable based on byte 1
 }
 
 // 0x0 range - arithmetic ops.
@@ -139,10 +133,6 @@ const (
 	MSIZE    = OpCode(0x59)
 	GAS      = OpCode(0x5A)
 	JUMPDEST = OpCode(0x5B)
-
-	//RJUMP  = OpCode(0x5c) // Cancun
-	//RJUMPI = OpCode(0x5d) // Cancun
-	//RJUMPV = OpCode(0x5e) // Cancun
 
 	TLOAD  = OpCode(0x5c) // Cancun
 	TSTORE = OpCode(0x5d) // Cancun
@@ -236,33 +226,27 @@ const (
 	LOG4 = OpCode(0xa4)
 )
 
-// 0xb0 range
+// 0xd0 range - EOF data operations
 const (
-// CALLF  = OpCode(0xb0)
-// RETF   = OpCode(0xb1)
+	DATALOAD  = OpCode(0xd0) // osaka
+	DATALOADN = OpCode(0xd1) // osaka
+	DATASIZE  = OpCode(0xd2) // osaka
+	DATACOPY  = OpCode(0xd3) // osaka
 )
 
-// 0xd0 range - eof operations.
+// 0xe0 range - EOF opcodes with immediates
 const (
-	DATALOAD  OpCode = 0xd0
-	DATALOADN OpCode = 0xd1
-	DATASIZE  OpCode = 0xd2
-	DATACOPY  OpCode = 0xd3
-)
-
-// 0xe0 range - eof operations.
-const (
-	RJUMP          OpCode = 0xe0
-	RJUMPI         OpCode = 0xe1
-	RJUMPV         OpCode = 0xe2
-	CALLF          OpCode = 0xe3
-	RETF           OpCode = 0xe4
-	JUMPF          OpCode = 0xe5
-	DUPN           OpCode = 0xe6
-	SWAPN          OpCode = 0xe7
-	EXCHANGE       OpCode = 0xe8
-	EOFCREATE      OpCode = 0xec
-	RETURNCONTRACT OpCode = 0xee
+	RJUMP          = OpCode(0xe0) // osaka
+	RJUMPI         = OpCode(0xe1) // osaka
+	RJUMPV         = OpCode(0xe2) // osaka
+	CALLF          = OpCode(0xe3) // osaka
+	RETF           = OpCode(0xe4) // osaka
+	JUMPF          = OpCode(0xe5) // osaka
+	DUPN           = OpCode(0xe6) // osaka
+	SWAPN          = OpCode(0xe7) // osaka
+	EXCHANGE       = OpCode(0xe8) // osaka
+	EOFCREATE      = OpCode(0xec) // osaka
+	RETURNCONTRACT = OpCode(0xee) // osaka
 )
 
 // 0xf0 range - closures.
@@ -274,15 +258,15 @@ const (
 	DELEGATECALL = OpCode(0xf4)
 	CREATE2      = OpCode(0xf5)
 
-	RETURNDATALOAD  = OpCode(0xf7) // EOA
-	EXTCALL         = OpCode(0xf8) // EOA
-	EXTDELEGATECALL = OpCode(0xf9) // EOA
+	RETURNDATALOAD  = OpCode(0xf7) // osaka
+	EXTCALL         = OpCode(0xf8) // osaka
+	EXTDELEGATECALL = OpCode(0xf9) // osaka
+	STATICCALL      = OpCode(0xfa)
+	EXTSTATICCALL   = OpCode(0xfb) // osaka
 
-	STATICCALL    = OpCode(0xfa)
-	EXTSTATICCALL = OpCode(0xfb) // EOA
-	INVALID       = OpCode(0xfe)
-	REVERT        = OpCode(0xfd)
-	SELFDESTRUCT  = OpCode(0xff)
+	REVERT       = OpCode(0xfd)
+	INVALID      = OpCode(0xfe)
+	SELFDESTRUCT = OpCode(0xff)
 )
 
 func (op OpCode) String() string {
@@ -293,14 +277,6 @@ func (op OpCode) String() string {
 }
 
 func IsDefined(op OpCode) bool {
-	_, ok := opCodeInfo[op]
-	return ok
-}
-
-func IsValid(op OpCode) bool {
-	//if op == RJUMP || op == RJUMPV || op == RJUMPI {
-	//	return false
-	//}
 	_, ok := opCodeInfo[op]
 	return ok
 }
@@ -324,187 +300,200 @@ func StringToOp(str string) OpCode {
 }
 
 type opInfo struct {
-	name   string
-	pops   []string
-	pushes []string
+	name       string
+	immediates int
+	pops       []string
+	pushes     []string
 }
 
 var opCodeInfo = map[OpCode]opInfo{
 
-	STOP:       {"STOP", nil, nil},
-	ADD:        {"ADD", []string{"a", "b"}, []string{"a + b"}},
-	MUL:        {"MUL", []string{"a", "b"}, []string{"a * b"}},
-	SUB:        {"SUB", []string{"a", "b"}, []string{"a - b"}},
-	DIV:        {"DIV", []string{"a", "b"}, []string{"a / b"}},
-	SDIV:       {"SDIV", []string{"a", "b"}, []string{"a / b (signed)"}},
-	MOD:        {"MOD", []string{"a", "b"}, []string{"a % b"}},
-	SMOD:       {"SMOD", []string{"a", "b"}, []string{"a mod b (signed)"}},
-	EXP:        {"EXP", []string{"base", "exp"}, []string{"base^exp"}},
-	NOT:        {"NOT", []string{"a"}, []string{"not(a)"}},
-	LT:         {"LT", []string{"a", "b"}, []string{"a < b"}},
-	GT:         {"GT", []string{"a", "b"}, []string{"a > b"}},
-	SLT:        {"SLT", []string{"a", "b"}, []string{"a < b (signed)"}},
-	SGT:        {"SGT", []string{"a", "b"}, []string{"a > b (signed)"}},
-	EQ:         {"EQ", []string{"a", "b"}, []string{"a == b"}},
-	ISZERO:     {"ISZERO", []string{"a"}, []string{"a == 0"}},
-	SIGNEXTEND: {"SIGNEXTEND", []string{"bitlen", "a"}, []string{"signextend(a, bitlen)"}},
+	STOP:       {"STOP", 0, nil, nil},
+	ADD:        {"ADD", 0, []string{"a", "b"}, []string{"a + b"}},
+	MUL:        {"MUL", 0, []string{"a", "b"}, []string{"a * b"}},
+	SUB:        {"SUB", 0, []string{"a", "b"}, []string{"a - b"}},
+	DIV:        {"DIV", 0, []string{"a", "b"}, []string{"a / b"}},
+	SDIV:       {"SDIV", 0, []string{"a", "b"}, []string{"a / b (signed)"}},
+	MOD:        {"MOD", 0, []string{"a", "b"}, []string{"a % b"}},
+	SMOD:       {"SMOD", 0, []string{"a", "b"}, []string{"a mod b (signed)"}},
+	EXP:        {"EXP", 0, []string{"base", "exp"}, []string{"base^exp"}},
+	NOT:        {"NOT", 0, []string{"a"}, []string{"not(a)"}},
+	LT:         {"LT", 0, []string{"a", "b"}, []string{"a < b"}},
+	GT:         {"GT", 0, []string{"a", "b"}, []string{"a > b"}},
+	SLT:        {"SLT", 0, []string{"a", "b"}, []string{"a < b (signed)"}},
+	SGT:        {"SGT", 0, []string{"a", "b"}, []string{"a > b (signed)"}},
+	EQ:         {"EQ", 0, []string{"a", "b"}, []string{"a == b"}},
+	ISZERO:     {"ISZERO", 0, []string{"a"}, []string{"a == 0"}},
+	SIGNEXTEND: {"SIGNEXTEND", 0, []string{"bitlen", "a"}, []string{"signextend(a, bitlen)"}},
 
-	AND:    {"AND", []string{"a", "b"}, []string{"a && b"}},
-	OR:     {"OR", []string{"a", "b"}, []string{"a || b"}},
-	XOR:    {"XOR", []string{"a", "b"}, []string{"a xor b"}},
-	BYTE:   {"BYTE", []string{"index", "val"}, []string{"byte at val[index]"}},
-	SHL:    {"SHL", []string{"shift", "x"}, []string{"x << shift"}},
-	SHR:    {"SHR", []string{"shift", "x"}, []string{"x >> shift"}},
-	SAR:    {"SAR", []string{"shift", "x"}, []string{"x >>> shift"}},
-	ADDMOD: {"ADDMOD", []string{"a", "b", "x"}, []string{"(a + b) mod x"}},
-	MULMOD: {"MULMOD", []string{"a", "b", "x"}, []string{"(a * b) mod x"}},
+	AND:    {"AND", 0, []string{"a", "b"}, []string{"a && b"}},
+	OR:     {"OR", 0, []string{"a", "b"}, []string{"a || b"}},
+	XOR:    {"XOR", 0, []string{"a", "b"}, []string{"a xor b"}},
+	BYTE:   {"BYTE", 0, []string{"index", "val"}, []string{"byte at val[index]"}},
+	SHL:    {"SHL", 0, []string{"shift", "x"}, []string{"x << shift"}},
+	SHR:    {"SHR", 0, []string{"shift", "x"}, []string{"x >> shift"}},
+	SAR:    {"SAR", 0, []string{"shift", "x"}, []string{"x >>> shift"}},
+	ADDMOD: {"ADDMOD", 0, []string{"a", "b", "x"}, []string{"(a + b) mod x"}},
+	MULMOD: {"MULMOD", 0, []string{"a", "b", "x"}, []string{"(a * b) mod x"}},
 
 	// 0x20 range - crypto.
-	KECCAK256: {"KECCAK256", []string{"offset", "size"}, []string{"keccak256(mem[offset:offset+size])"}},
+	KECCAK256: {"KECCAK256", 0, []string{"offset", "size"}, []string{"keccak256(mem[offset:offset+size])"}},
 	// 0x30 range - closure state.
-	ADDRESS:      {"ADDRESS", nil, []string{"address of current context"}},
-	BALANCE:      {"BALANCE", []string{"address"}, []string{"balance of address"}},
-	ORIGIN:       {"ORIGIN", nil, []string{"transaction origin"}},
-	CALLER:       {"CALLER", nil, []string{"sender"}},
-	CALLVALUE:    {"CALLVALUE", nil, []string{"call value"}},
-	CALLDATALOAD: {"CALLDATALOAD", []string{"offset"}, []string{"calldata[offset:offset+32]"}},
-	CALLDATASIZE: {"CALLDATASIZE", nil, []string{"size of calldata"}},
-	CALLDATACOPY: {"CALLDATACOPY", []string{"memOffset", "dataOffset", "length"}, nil},
-	CODESIZE:     {"CODESIZE", nil, []string{"size of code in this context"}},
-	CODECOPY:     {"CODECOPY", []string{"memOffset", "codeOffset", "length"}, nil},
-	GASPRICE:     {"GASPRICE", nil, []string{"transaction gasprice"}},
+	ADDRESS:      {"ADDRESS", 0, nil, []string{"address of current context"}},
+	BALANCE:      {"BALANCE", 0, []string{"address"}, []string{"balance of address"}},
+	ORIGIN:       {"ORIGIN", 0, nil, []string{"transaction origin"}},
+	CALLER:       {"CALLER", 0, nil, []string{"sender"}},
+	CALLVALUE:    {"CALLVALUE", 0, nil, []string{"call value"}},
+	CALLDATALOAD: {"CALLDATALOAD", 0, []string{"offset"}, []string{"calldata[offset:offset+32]"}},
+	CALLDATASIZE: {"CALLDATASIZE", 0, nil, []string{"size of calldata"}},
+	CALLDATACOPY: {"CALLDATACOPY", 0, []string{"memOffset", "dataOffset", "length"}, nil},
+	CODESIZE:     {"CODESIZE", 0, nil, []string{"size of code in this context"}},
+	CODECOPY:     {"CODECOPY", 0, []string{"memOffset", "codeOffset", "length"}, nil},
+	GASPRICE:     {"GASPRICE", 0, nil, []string{"transaction gasprice"}},
 
-	EXTCODESIZE: {"EXTCODESIZE", []string{"address"}, []string{"code size at 'address'"}},
-	EXTCODECOPY: {"EXTCODECOPY", []string{"address", "memOffset", "codeOffset", "length"}, nil},
+	EXTCODESIZE: {"EXTCODESIZE", 0, []string{"address"}, []string{"code size at 'address'"}},
+	EXTCODECOPY: {"EXTCODECOPY", 0, []string{"address", "memOffset", "codeOffset", "length"}, nil},
 
-	RETURNDATASIZE: {"RETURNDATASIZE", nil, []string{"size of returndata"}},
-	RETURNDATACOPY: {"RETURNDATACOPY", []string{"memOffset", "dataOffset", "length"}, nil},
-	EXTCODEHASH:    {"EXTCODEHASH", []string{"address"}, []string{"codehash at 'address'"}},
+	RETURNDATASIZE: {"RETURNDATASIZE", 0, nil, []string{"size of returndata"}},
+	RETURNDATACOPY: {"RETURNDATACOPY", 0, []string{"memOffset", "dataOffset", "length"}, nil},
+	EXTCODEHASH:    {"EXTCODEHASH", 0, []string{"address"}, []string{"codehash at 'address'"}},
 
 	// 0x40 range - block operations.
-	BLOCKHASH:   {"BLOCKHASH", []string{"blocknum"}, []string{"hash of block at blocknum"}},
-	COINBASE:    {"COINBASE", nil, []string{"block miner address"}},
-	TIMESTAMP:   {"TIMESTAMP", nil, []string{"unix time of current block"}},
-	NUMBER:      {"NUMBER", nil, []string{"current block number"}},
-	DIFFICULTY:  {"DIFFICULTY", nil, []string{"current block difficulty"}},
-	GASLIMIT:    {"GASLIMIT", nil, []string{"block gas limit"}},
-	CHAINID:     {"CHAINID", nil, []string{"chain id"}},
-	SELFBALANCE: {"SELFBALANCE", nil, []string{"balance at current context"}},
-	BASEFEE:     {"BASEFEE", nil, []string{"basefee in current block"}},
-	BLOBHASH:    {"BLOBHASH", []string{"index"}, []string{"blobhash at index"}},
-	BLOBBASEFEE: {"BLOBBASEFEE", nil, []string{"blob basefee in current block"}},
+	BLOCKHASH:   {"BLOCKHASH", 0, []string{"blocknum"}, []string{"hash of block at blocknum"}},
+	COINBASE:    {"COINBASE", 0, nil, []string{"block miner address"}},
+	TIMESTAMP:   {"TIMESTAMP", 0, nil, []string{"unix time of current block"}},
+	NUMBER:      {"NUMBER", 0, nil, []string{"current block number"}},
+	DIFFICULTY:  {"DIFFICULTY", 0, nil, []string{"current block difficulty"}},
+	GASLIMIT:    {"GASLIMIT", 0, nil, []string{"block gas limit"}},
+	CHAINID:     {"CHAINID", 0, nil, []string{"chain id"}},
+	SELFBALANCE: {"SELFBALANCE", 0, nil, []string{"balance at current context"}},
+	BASEFEE:     {"BASEFEE", 0, nil, []string{"basefee in current block"}},
+	BLOBHASH:    {"BLOBHASH", 0, []string{"index"}, []string{"blobhash at index"}},
+	BLOBBASEFEE: {"BLOBBASEFEE", 0, nil, []string{"blob basefee in current block"}},
 
-	POP:      {"POP", []string{"value to pop"}, nil},
-	MLOAD:    {"MLOAD", []string{"offset"}, []string{"value"}},
-	MSTORE:   {"MSTORE", []string{"offset", "value"}, nil},
-	MSTORE8:  {"MSTORE8", []string{"offset", "value"}, nil},
-	SLOAD:    {"SLOAD", []string{"slot"}, []string{"value"}},
-	SSTORE:   {"SSTORE", []string{"slot", "value"}, nil},
-	JUMP:     {"JUMP", []string{"loc"}, nil},
-	JUMPI:    {"JUMPI", []string{"loc", "cond"}, nil},
-	PC:       {"PC", nil, []string{"current PC"}},
-	MSIZE:    {"MSIZE", nil, []string{"size of memory"}},
-	GAS:      {"GAS", nil, []string{"current gas remaining"}},
-	JUMPDEST: {"JUMPDEST", nil, nil},
-	MCOPY:    {"MCOPY", []string{"dest", "source", "length"}, nil},
-	TLOAD:    {"TLOAD", []string{"t-slot"}, []string{"value"}},
-	TSTORE:   {"TSTORE", []string{"t-slot", "value"}, nil},
-	PUSH0:    {"PUSH0", nil, []string{"zero"}},
-
-	//RJUMP:  {"RJUMP", nil, nil},
-	//RJUMPI: {"RJUMPI", []string{"cond"}, nil},
-	//RJUMPV: {"RJUMPV", []string{"case"}, nil},
+	POP:      {"POP", 0, []string{"value to pop"}, nil},
+	MLOAD:    {"MLOAD", 0, []string{"offset"}, []string{"value"}},
+	MSTORE:   {"MSTORE", 0, []string{"offset", "value"}, nil},
+	MSTORE8:  {"MSTORE8", 0, []string{"offset", "value"}, nil},
+	SLOAD:    {"SLOAD", 0, []string{"slot"}, []string{"value"}},
+	SSTORE:   {"SSTORE", 0, []string{"slot", "value"}, nil},
+	JUMP:     {"JUMP", 0, []string{"loc"}, nil},
+	JUMPI:    {"JUMPI", 0, []string{"loc", "cond"}, nil},
+	PC:       {"PC", 0, nil, []string{"current PC"}},
+	MSIZE:    {"MSIZE", 0, nil, []string{"size of memory"}},
+	GAS:      {"GAS", 0, nil, []string{"current gas remaining"}},
+	JUMPDEST: {"JUMPDEST", 0, nil, nil},
+	MCOPY:    {"MCOPY", 0, []string{"dest", "source", "length"}, nil},
+	TLOAD:    {"TLOAD", 0, []string{"t-slot"}, []string{"value"}},
+	TSTORE:   {"TSTORE", 0, []string{"t-slot", "value"}, nil},
+	PUSH0:    {"PUSH0", 0, nil, []string{"zero"}},
 
 	// 0x60 through 0x7F range - push.
-	PUSH1:  {"PUSH1", nil, []string{"1 byte pushed value"}},
-	PUSH2:  {"PUSH2", nil, []string{"2 bytes pushed value"}},
-	PUSH3:  {"PUSH3", nil, []string{"3 bytes pushed value"}},
-	PUSH4:  {"PUSH4", nil, []string{"4 bytes pushed value"}},
-	PUSH5:  {"PUSH5", nil, []string{"5 bytes pushed value"}},
-	PUSH6:  {"PUSH6", nil, []string{"6 bytes pushed value"}},
-	PUSH7:  {"PUSH7", nil, []string{"7 bytes pushed value"}},
-	PUSH8:  {"PUSH8", nil, []string{"8 bytes pushed value"}},
-	PUSH9:  {"PUSH9", nil, []string{"9 bytes pushed value"}},
-	PUSH10: {"PUSH10", nil, []string{"10 bytes pushed value"}},
-	PUSH11: {"PUSH11", nil, []string{"11 bytes pushed value"}},
-	PUSH12: {"PUSH12", nil, []string{"12 bytes pushed value"}},
-	PUSH13: {"PUSH13", nil, []string{"13 bytes pushed value"}},
-	PUSH14: {"PUSH14", nil, []string{"14 bytes pushed value"}},
-	PUSH15: {"PUSH15", nil, []string{"15 bytes pushed value"}},
-	PUSH16: {"PUSH16", nil, []string{"16 bytes pushed value"}},
-	PUSH17: {"PUSH17", nil, []string{"17 bytes pushed value"}},
-	PUSH18: {"PUSH18", nil, []string{"18 bytes pushed value"}},
-	PUSH19: {"PUSH19", nil, []string{"19 bytes pushed value"}},
-	PUSH20: {"PUSH20", nil, []string{"19 bytes pushed value"}},
-	PUSH21: {"PUSH21", nil, []string{"21 bytes pushed value"}},
-	PUSH22: {"PUSH22", nil, []string{"22 bytes pushed value"}},
-	PUSH23: {"PUSH23", nil, []string{"23 bytes pushed value"}},
-	PUSH24: {"PUSH24", nil, []string{"24 bytes pushed value"}},
-	PUSH25: {"PUSH25", nil, []string{"25 bytes pushed value"}},
-	PUSH26: {"PUSH26", nil, []string{"26 bytes pushed value"}},
-	PUSH27: {"PUSH27", nil, []string{"27 bytes pushed value"}},
-	PUSH28: {"PUSH28", nil, []string{"28 bytes pushed value"}},
-	PUSH29: {"PUSH29", nil, []string{"29 bytes pushed value"}},
-	PUSH30: {"PUSH30", nil, []string{"30 bytes pushed value"}},
-	PUSH31: {"PUSH31", nil, []string{"31 bytes pushed value"}},
-	PUSH32: {"PUSH32", nil, []string{"32 bytes pushed value"}},
+	PUSH1:  {"PUSH1", 1, nil, []string{"1 byte pushed value"}},
+	PUSH2:  {"PUSH2", 2, nil, []string{"2 bytes pushed value"}},
+	PUSH3:  {"PUSH3", 3, nil, []string{"3 bytes pushed value"}},
+	PUSH4:  {"PUSH4", 4, nil, []string{"4 bytes pushed value"}},
+	PUSH5:  {"PUSH5", 5, nil, []string{"5 bytes pushed value"}},
+	PUSH6:  {"PUSH6", 6, nil, []string{"6 bytes pushed value"}},
+	PUSH7:  {"PUSH7", 7, nil, []string{"7 bytes pushed value"}},
+	PUSH8:  {"PUSH8", 8, nil, []string{"8 bytes pushed value"}},
+	PUSH9:  {"PUSH9", 9, nil, []string{"9 bytes pushed value"}},
+	PUSH10: {"PUSH10", 10, nil, []string{"10 bytes pushed value"}},
+	PUSH11: {"PUSH11", 11, nil, []string{"11 bytes pushed value"}},
+	PUSH12: {"PUSH12", 12, nil, []string{"12 bytes pushed value"}},
+	PUSH13: {"PUSH13", 13, nil, []string{"13 bytes pushed value"}},
+	PUSH14: {"PUSH14", 14, nil, []string{"14 bytes pushed value"}},
+	PUSH15: {"PUSH15", 15, nil, []string{"15 bytes pushed value"}},
+	PUSH16: {"PUSH16", 16, nil, []string{"16 bytes pushed value"}},
+	PUSH17: {"PUSH17", 17, nil, []string{"17 bytes pushed value"}},
+	PUSH18: {"PUSH18", 18, nil, []string{"18 bytes pushed value"}},
+	PUSH19: {"PUSH19", 19, nil, []string{"19 bytes pushed value"}},
+	PUSH20: {"PUSH20", 20, nil, []string{"19 bytes pushed value"}},
+	PUSH21: {"PUSH21", 21, nil, []string{"21 bytes pushed value"}},
+	PUSH22: {"PUSH22", 22, nil, []string{"22 bytes pushed value"}},
+	PUSH23: {"PUSH23", 23, nil, []string{"23 bytes pushed value"}},
+	PUSH24: {"PUSH24", 24, nil, []string{"24 bytes pushed value"}},
+	PUSH25: {"PUSH25", 25, nil, []string{"25 bytes pushed value"}},
+	PUSH26: {"PUSH26", 26, nil, []string{"26 bytes pushed value"}},
+	PUSH27: {"PUSH27", 27, nil, []string{"27 bytes pushed value"}},
+	PUSH28: {"PUSH28", 28, nil, []string{"28 bytes pushed value"}},
+	PUSH29: {"PUSH29", 29, nil, []string{"29 bytes pushed value"}},
+	PUSH30: {"PUSH30", 30, nil, []string{"30 bytes pushed value"}},
+	PUSH31: {"PUSH31", 31, nil, []string{"31 bytes pushed value"}},
+	PUSH32: {"PUSH32", 32, nil, []string{"32 bytes pushed value"}},
 
 	// cover your eyes, here comes ugly
-	DUP1:  {"DUP1", []string{"x"}, []string{"x", "x"}},
-	DUP2:  {"DUP2", []string{"-", "x"}, []string{"x", "-", "x"}},
-	DUP3:  {"DUP3", []string{"-", "-", "x"}, []string{"x", "-", "-", "x"}},
-	DUP4:  {"DUP4", []string{"-", "-", "-", "x"}, []string{"x", "-", "-", "-", "x"}},
-	DUP5:  {"DUP5", []string{"-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "x"}},
-	DUP6:  {"DUP6", []string{"-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "x"}},
-	DUP7:  {"DUP7", []string{"-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP8:  {"DUP8", []string{"-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP9:  {"DUP9", []string{"-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP10: {"DUP10", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP11: {"DUP11", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP12: {"DUP12", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP13: {"DUP13", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP14: {"DUP14", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP15: {"DUP15", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
-	DUP16: {"DUP16", []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP1:  {"DUP1", 0, []string{"x"}, []string{"x", "x"}},
+	DUP2:  {"DUP2", 0, []string{"-", "x"}, []string{"x", "-", "x"}},
+	DUP3:  {"DUP3", 0, []string{"-", "-", "x"}, []string{"x", "-", "-", "x"}},
+	DUP4:  {"DUP4", 0, []string{"-", "-", "-", "x"}, []string{"x", "-", "-", "-", "x"}},
+	DUP5:  {"DUP5", 0, []string{"-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "x"}},
+	DUP6:  {"DUP6", 0, []string{"-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "x"}},
+	DUP7:  {"DUP7", 0, []string{"-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP8:  {"DUP8", 0, []string{"-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP9:  {"DUP9", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP10: {"DUP10", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP11: {"DUP11", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP12: {"DUP12", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP13: {"DUP13", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP14: {"DUP14", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP15: {"DUP15", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
+	DUP16: {"DUP16", 0, []string{"-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}, []string{"x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x"}},
 
-	SWAP1:  {"SWAP1", []string{"a", "b"}, []string{"b", "a"}},
-	SWAP2:  {"SWAP2", []string{"a", "", "b"}, []string{"b", "", "a"}},
-	SWAP3:  {"SWAP3", []string{"a", "", "", "b"}, []string{"b", "", "", "a"}},
-	SWAP4:  {"SWAP4", []string{"a", "", "", "", "b"}, []string{"b", "", "", "", "a"}},
-	SWAP5:  {"SWAP5", []string{"a", "", "", "", "", "b"}, []string{"b", "", "", "", "", "a"}},
-	SWAP6:  {"SWAP6", []string{"a", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "a"}},
-	SWAP7:  {"SWAP7", []string{"a", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "a"}},
-	SWAP8:  {"SWAP8", []string{"a", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "a"}},
-	SWAP9:  {"SWAP9", []string{"a", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "a"}},
-	SWAP10: {"SWAP10", []string{"a", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "a"}},
-	SWAP11: {"SWAP11", []string{"a", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "a"}},
-	SWAP12: {"SWAP12", []string{"a", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "a"}},
-	SWAP13: {"SWAP13", []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
-	SWAP14: {"SWAP14", []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
-	SWAP15: {"SWAP15", []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
-	SWAP16: {"SWAP16", []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP1:  {"SWAP1", 0, []string{"a", "b"}, []string{"b", "a"}},
+	SWAP2:  {"SWAP2", 0, []string{"a", "", "b"}, []string{"b", "", "a"}},
+	SWAP3:  {"SWAP3", 0, []string{"a", "", "", "b"}, []string{"b", "", "", "a"}},
+	SWAP4:  {"SWAP4", 0, []string{"a", "", "", "", "b"}, []string{"b", "", "", "", "a"}},
+	SWAP5:  {"SWAP5", 0, []string{"a", "", "", "", "", "b"}, []string{"b", "", "", "", "", "a"}},
+	SWAP6:  {"SWAP6", 0, []string{"a", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "a"}},
+	SWAP7:  {"SWAP7", 0, []string{"a", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "a"}},
+	SWAP8:  {"SWAP8", 0, []string{"a", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "a"}},
+	SWAP9:  {"SWAP9", 0, []string{"a", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "a"}},
+	SWAP10: {"SWAP10", 0, []string{"a", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP11: {"SWAP11", 0, []string{"a", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP12: {"SWAP12", 0, []string{"a", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP13: {"SWAP13", 0, []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP14: {"SWAP14", 0, []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP15: {"SWAP15", 0, []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
+	SWAP16: {"SWAP16", 0, []string{"a", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "b"}, []string{"b", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "a"}},
 
-	LOG0: {"LOG0", []string{"mStart", "mSize"}, nil},
-	LOG1: {"LOG1", []string{"mStart", "mSize", "topic"}, nil},
-	LOG2: {"LOG2", []string{"mStart", "mSize", "topic", "topic"}, nil},
-	LOG3: {"LOG3", []string{"mStart", "mSize", "topic", "topic", "topic"}, nil},
-	LOG4: {"LOG4", []string{"mStart", "mSize", "topic", "topic", "topic", "topic"}, nil},
+	LOG0: {"LOG0", 0, []string{"mStart", "mSize"}, nil},
+	LOG1: {"LOG1", 0, []string{"mStart", "mSize", "topic"}, nil},
+	LOG2: {"LOG2", 0, []string{"mStart", "mSize", "topic", "topic"}, nil},
+	LOG3: {"LOG3", 0, []string{"mStart", "mSize", "topic", "topic", "topic"}, nil},
+	LOG4: {"LOG4", 0, []string{"mStart", "mSize", "topic", "topic", "topic", "topic"}, nil},
 
-	// 0xb0 range.
-	//CALLF:  {"CALLF", nil, nil},
-	//RETF:   {"RETF", nil, nil},
+	DATALOAD:       {"DATALOAD", 0, []string{"offset"}, []string{"data"}},
+	DATALOADN:      {"DATALOADN", 1, nil, []string{"data"}},
+	DATASIZE:       {"DATASIZE", 0, nil, []string{"data"}},
+	DATACOPY:       {"DATACOPY", 0, []string{"mem_offset", "offset", "size"}, nil},
+	RJUMP:          {"RJUMP", 2, nil, nil},
+	RJUMPI:         {"RJUMPI", 2, []string{"condition"}, nil},
+	RJUMPV:         {"RJUMPV", 3, []string{"case"}, nil},
+	CALLF:          {"CALLF", 2, nil, []string{"0 or more items, depends on type headers"}},
+	RETF:           {"RETF", 0, nil, nil},
+	JUMPF:          {"JUMPF", 2, nil, nil},
+	DUPN:           {"DUPN", 1, nil, nil},
+	SWAPN:          {"SWAPN", 1, nil, nil},
+	EXCHANGE:       {"EXCHANGE", 1, nil, nil},
+	EOFCREATE:      {"EOFCREATE", 2, []string{"value", "salt", "input_offset", "input_size"}, []string{"address"}},
+	RETURNCONTRACT: {"RETURNCONTRACT", 2, []string{"aux_data_offset", "aux_data_size"}, nil},
 
 	// 0xf0 range.
-	CREATE:       {"CREATE", []string{"value", "mem offset", "mem size"}, []string{"address or zero"}},
-	CALL:         {"CALL", []string{"gas", "address", "value", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
-	RETURN:       {"RETURN", []string{"offset", "size"}, nil},
-	CALLCODE:     {"CALLCODE", []string{"gas", "address", "value", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
-	DELEGATECALL: {"DELEGATECALL", []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
-	CREATE2:      {"CREATE2", []string{"value", "mem offset", "mem size", "salt"}, []string{"address or zero"}},
-	STATICCALL:   {"STATICCALL", []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
-	REVERT:       {"REVERT", []string{"offset", "size"}, nil},
-	INVALID:      {"INVALID", nil, nil},
-	SELFDESTRUCT: {"SELFDESTRUCT", []string{"beneficiary address"}, nil},
+	CREATE:          {"CREATE", 0, []string{"value", "mem offset", "mem size"}, []string{"address or zero"}},
+	CALL:            {"CALL", 0, []string{"gas", "address", "value", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
+	RETURN:          {"RETURN", 0, []string{"offset", "size"}, nil},
+	CALLCODE:        {"CALLCODE", 0, []string{"gas", "address", "value", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
+	DELEGATECALL:    {"DELEGATECALL", 0, []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
+	CREATE2:         {"CREATE2", 0, []string{"value", "mem offset", "mem size", "salt"}, []string{"address or zero"}},
+	RETURNDATALOAD:  {"RETURNDATALOAD", 0, []string{"offset"}, []string{"data"}},
+	EXTCALL:         {"EXTCALL", 0, []string{"target_address", "input_offset", "input_size", "value"}, []string{"status"}},
+	EXTDELEGATECALL: {"EXTDELEGATECALL", 0, []string{"target_address", "input_offset", "input_size"}, []string{"status"}},
+	STATICCALL:      {"STATICCALL", 0, []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
+	EXTSTATICCALL:   {"EXTSTATICCALL", 0, []string{"target_address", "input_offset", "input_size"}, []string{"status"}},
+	REVERT:          {"REVERT", 0, []string{"offset", "size"}, nil},
+	INVALID:         {"INVALID", 0, nil, nil},
+	SELFDESTRUCT:    {"SELFDESTRUCT", 0, []string{"beneficiary address"}, nil},
 }
 
 func (op OpCode) Pops() []string {

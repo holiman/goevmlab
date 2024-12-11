@@ -25,6 +25,20 @@ func CustomMarshal(log *opLog) []byte {
 	b = append(b, []byte(`,"pc":`)...)
 	b = strconv.AppendUint(b, uint64(log.Pc), 10)
 
+	// Depends on Geth EOF support
+	// Even then, not essential to diffing
+	//// code section, if not zero
+	//if log.Section != 0 {
+	//	b = append(b, []byte(`,"section":`)...)
+	//	b = strconv.AppendUint(b, uint64(log.Section), 10)
+	//}
+	//
+	//// function call depth, if not zero
+	//if log.FunctionDepth != 0 {
+	//	b = append(b, []byte(`,"functionDepth":`)...)
+	//	b = strconv.AppendUint(b, uint64(log.FunctionDepth), 10)
+	//}
+
 	// Gas remaining
 	b = append(b, []byte(`,"gas":`)...)
 	b = strconv.AppendUint(b, uint64(log.Gas), 10)

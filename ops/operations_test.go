@@ -29,15 +29,12 @@ func TestSanity(t *testing.T) {
 
 	for i := 0; i < 256; i++ {
 
-		// Skip over EOA
-		if i >= int(DATALOAD) && i <= int(RETURNCONTRACT) ||
-			i == int(RETURNDATALOAD) ||
-			i == int(EXTCALL) ||
-			i == int(EXTDELEGATECALL) ||
-			i == int(EXTSTATICCALL) {
+		// We have the EOF opcodes defined, geth doesn't yet.
+		switch i {
+		case 0x5c, 0x5d, 0x5e, 0xb0, 0xb1, 0xb3, 0xb4:
 			continue
-		}
 
+		}
 		// Lookup the name via opcode
 		gethOp := vm.OpCode(byte(i))
 		ourOp := OpCode(byte(i))
