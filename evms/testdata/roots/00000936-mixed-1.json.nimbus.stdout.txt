@@ -1,5 +1,3 @@
-[96mINF[0m 2024-12-10 09:52:50.540+00:00 [1mWriting genesis to DB                     [0m [96mtid[0m=[94m1599[0m [96mblockHash[0m=[94m0xc3bd2d00745c03048a5616146a96f5ff78e54efb9e5b04af208cdaff6f3830ee[0m [96mstateRoot[0m=[94m0x0000000000000000000000000000000000000000000000000000000000000000[0m [96mdifficulty[0m=[94m0[0m [96mgasLimit[0m=[94m0[0m [96mtimestamp[0m=[94m0[0m [96mnonce[0m=[94m0x0000000000000000[0m
-[96mINF[0m 2024-12-10 09:52:50.541+00:00 [1mDatabase initialized                      [0m [96mtid[0m=[94m1599[0m [96mbase[0m=[94m"(0xc3bd2d00745c03048a5616146a96f5ff78e54efb9e5b04af208cdaff6f3830ee, 0)"[0m [96mfinalized[0m=[94m"(0xc3bd2d00745c03048a5616146a96f5ff78e54efb9e5b04af208cdaff6f3830ee, 0)"[0m [96mhead[0m=[94m"(0xc3bd2d00745c03048a5616146a96f5ff78e54efb9e5b04af208cdaff6f3830ee, 0)"[0m
 [
   {
     "name": "00000936-mixed-1",
