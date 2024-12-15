@@ -18,6 +18,7 @@ package ui
 
 import (
 	"fmt"
+	"github.com/holiman/goevmlab/evms"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -204,7 +205,13 @@ func (mgr *viewManager) onStepSelected(line *traces.TraceLine) {
 			mgr.opView.AddFormItem(field)
 		}
 
-		for _, l := range []string{"pc", "section", "opcode", "opName", "gasCost", "gas", "memSize", "addr", "functionDepth"} {
+		var headers []string
+		if evms.IgnoreEOF {
+			headers = []string{"pc", "section", "opcode", "opName", "gasCost", "gas", "memSize", "addr", "functionDepth"}
+		} else {
+			headers = []string{"pc", "opcode", "opName", "gasCost", "gas", "memSize", "addr"}
+		}
+		for _, l := range headers {
 			add(l, line.Get(l))
 		}
 		// Add the call stack info

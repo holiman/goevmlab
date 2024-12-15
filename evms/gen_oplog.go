@@ -34,8 +34,9 @@ func (o opLog) MarshalJSON() ([]byte, error) {
 	}
 	var enc opLog
 	enc.Pc = o.Pc
-	// Depends on Geth EOF support
-	//enc.Section = o.Section
+	if !IgnoreEOF {
+		enc.Section = o.Section
+	}
 	enc.Op = math.HexOrDecimal64(o.Op)
 	enc.Gas = math.HexOrDecimal64(o.Gas)
 	enc.GasCost = math.HexOrDecimal64(o.GasCost)
@@ -49,8 +50,9 @@ func (o opLog) MarshalJSON() ([]byte, error) {
 	}
 	enc.ReturnData = o.ReturnData
 	enc.Depth = o.Depth
-	// Depends on Geth EOF support
-	//enc.FunctionDepth = o.FunctionDepth
+	if !IgnoreEOF {
+		enc.FunctionDepth = o.FunctionDepth
+	}
 	enc.Err = o.Err
 	enc.StateRoot1 = o.StateRoot1
 	enc.StateRoot2 = o.StateRoot2
@@ -83,12 +85,13 @@ func (o *opLog) UnmarshalJSON(input []byte) error {
 	if dec.Pc != nil {
 		o.Pc = *dec.Pc
 	}
-	// Depends on Geth EOF support
-	//if dec.Section != nil {
-	//	o.Section = *dec.Section
-	//} else {
-	//	o.Section = 0
-	//}
+	if !IgnoreEOF {
+		if dec.Section != nil {
+			o.Section = *dec.Section
+		} else {
+			o.Section = 0
+		}
+	}
 	if dec.Op != nil {
 		o.Op = vm.OpCode(uint64(*dec.Op))
 	}
@@ -116,12 +119,13 @@ func (o *opLog) UnmarshalJSON(input []byte) error {
 	if dec.Depth != nil {
 		o.Depth = *dec.Depth
 	}
-	// Depends on Geth EOF support
-	//if dec.FunctionDepth != nil {
-	//	o.FunctionDepth = *dec.FunctionDepth
-	//} else {
-	//	o.FunctionDepth = 0
-	//}
+	if !IgnoreEOF {
+		if dec.FunctionDepth != nil {
+			o.FunctionDepth = *dec.FunctionDepth
+		} else {
+			o.FunctionDepth = 0
+		}
+	}
 	if dec.Err != nil {
 		o.Err = dec.Err
 	}
