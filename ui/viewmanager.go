@@ -18,10 +18,10 @@ package ui
 
 import (
 	"fmt"
-	"github.com/holiman/goevmlab/evms"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/traces"
 	"github.com/rivo/tview"
