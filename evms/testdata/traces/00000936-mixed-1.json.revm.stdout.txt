@@ -1,4 +1,0 @@
-
-Running tests in 00000936-mixed-1.json...
-Finished execution. Total CPU time: 0.003801s
-Encountered 1 errors out of 1 total tests

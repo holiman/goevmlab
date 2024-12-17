@@ -1,4 +1,0 @@
-
-Running tests in 00000006-naivefuzz-0.json...
-Finished execution. Total CPU time: 0.043782s
-Encountered 1 errors out of 1 total tests

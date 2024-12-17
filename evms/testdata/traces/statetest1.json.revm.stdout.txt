@@ -1,4 +1,0 @@
-
-Running tests in statetest1.json...
-Finished execution. Total CPU time: 0.000347s
-Encountered 1 errors out of 1 total tests

@@ -1,4 +1,0 @@
-
-Running tests in eofcode.json...
-Finished execution. Total CPU time: 0.000006s
-Encountered 1 errors out of 1 total tests
