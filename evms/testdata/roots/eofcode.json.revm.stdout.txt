@@ -1,0 +1,129 @@
+
+Running tests in eofcode.json...
+
+Traces:
+
+Execution result: Err(
+    Transaction(
+        CallGasCostMoreThanGasLimit,
+    ),
+)
+
+Expected exception: None
+
+State before: CacheState {
+    accounts: {
+        0x00000000000000000000000000000000000000f4: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0,
+                        nonce: 0,
+                        code_hash: 0x9dbf3648db8210552e9c4f75c6a1c3057c0ca432043bd648be15fe7be05646f5,
+                        code: Some(
+                            LegacyAnalyzed(
+                                LegacyAnalyzedBytecode {
+                                    bytecode: 0xef00000000000000000000000000000000000000000000000000000000000000000000,
+                                    original_len: 2,
+                                    jump_table: JumpTable {
+                                        map: "00",
+                                    },
+                                },
+                            ),
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+    },
+    contracts: {},
+    has_state_clear: false,
+}
+
+State after: CacheState {
+    accounts: {
+        0x00000000000000000000000000000000000000f4: CacheAccount {
+            account: Some(
+                PlainAccount {
+                    info: AccountInfo {
+                        balance: 0,
+                        nonce: 0,
+                        code_hash: 0x9dbf3648db8210552e9c4f75c6a1c3057c0ca432043bd648be15fe7be05646f5,
+                        code: Some(
+                            LegacyAnalyzed(
+                                LegacyAnalyzedBytecode {
+                                    bytecode: 0xef00000000000000000000000000000000000000000000000000000000000000000000,
+                                    original_len: 2,
+                                    jump_table: JumpTable {
+                                        map: "00",
+                                    },
+                                },
+                            ),
+                        ),
+                    },
+                    storage: {},
+                },
+            ),
+            status: Loaded,
+        },
+    },
+    contracts: {},
+    has_state_clear: true,
+}
+
+Specification: CANCUN
+
+Tx: TxEnv {
+    tx_type: Legacy,
+    caller: 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b,
+    gas_limit: 0,
+    gas_price: 16,
+    transact_to: Call(
+        0x00000000000000000000000000000000000000f1,
+    ),
+    value: 0,
+    data: 0x38,
+    nonce: 0,
+    chain_id: Some(
+        1,
+    ),
+    access_list: AccessList(
+        [],
+    ),
+    gas_priority_fee: None,
+    blob_hashes: [],
+    max_fee_per_blob_gas: None,
+    authorization_list: Signed(
+        [],
+    ),
+}
+Block: BlockEnv {
+    number: 1,
+    beneficiary: 0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b,
+    timestamp: 1000,
+    gas_limit: 10944489199640098,
+    basefee: 16,
+    difficulty: 2097152,
+    prevrandao: Some(
+        0x0000000000000000000000000000000000000000000000000000000000020000,
+    ),
+    blob_excess_gas_and_price: Some(
+        BlobExcessGasAndPrice {
+            excess_blob_gas: 0,
+            blob_gasprice: 1,
+        },
+    ),
+}
+Cfg: CfgEnv {
+    chain_id: 1,
+    spec: CANCUN,
+    limit_contract_code_size: None,
+    disable_nonce_check: false,
+}
+
+Test name: "00161676-mixed-1" (index: 0, path: "eofcode.json") failed:
+unexpected exception: got Some("transaction validation error: call gas cost exceeds the gas limit"), expected None
+Finished execution. Total CPU time: 0.000001s
+Encountered 1 errors out of 1 total tests
