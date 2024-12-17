@@ -21,8 +21,10 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/program"
 )
 
 // RandStorage sets some slots
@@ -37,7 +39,7 @@ func RandStorage(maxSlots, maxVal int) map[common.Hash]common.Hash {
 }
 
 func RandStorageOps() *program.Program {
-	p := program.NewProgram()
+	p := program.New()
 	for {
 		r := rand.Intn(100)
 		switch {
@@ -47,8 +49,8 @@ func RandStorageOps() *program.Program {
 		case r < 80:
 			slot := rand.Intn(10)
 			p.Push(slot)
-			p.Op(ops.SLOAD)
-			p.Op(ops.POP)
+			p.Op(vm.SLOAD)
+			p.Op(vm.POP)
 		default:
 			return p
 		}
@@ -71,7 +73,7 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 	// 25% call of some type
 	// 5% create, 5% create2,
 	// 5% return, 5% revert
-	p := program.NewProgram()
+	p := program.New()
 	for {
 		r := rand.Intn(101)
 		switch {
@@ -80,44 +82,44 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 		case r < 20:
 			slot := rand.Intn(5)
 			p.Push(slot)
-			p.Op(ops.SLOAD)
-			p.Op(ops.POP)
+			p.Op(vm.SLOAD)
+			p.Op(vm.POP)
 		case r < 50: // 30% chance of well-formed opcode
 			b := make([]byte, 10)
 			_, _ = crand.Read(b)
 			for i := 0; i < len(b); i++ {
 				if op := ops.OpCode(b[i]); ops.IsDefined(op) {
-					p.Op(op)
+					p.Op(vm.OpCode(op))
 				}
 			}
 		case r < 60: // 10% chance of some random opcode
-			p.Op(ops.OpCode(rand.Uint32()))
+			p.Op(vm.OpCode(rand.Uint32()))
 		case r < 80:
 			// zero value call with no data
 			p2 := RandCall(nil, addrGen, nil, nil, nil)
-			p.AddAll(p2)
+			p.Append(p2)
 			// pop the ret value
-			p.Op(ops.POP)
+			p.Op(vm.POP)
 		case r < 90:
 			ctor := RandStorageOps()
 			runtimeCode := randCall2200(addresses, depth+1)
 			ctor.ReturnData(runtimeCode)
-			p.CreateAndCall(ctor.Bytecode(), r%2 == 0, randCallType())
+			program2.CreateAndCall(p, ctor.Bytes(), r%2 == 0, randCallType())
 		case r < 95:
 			p.Push(addrGen())
-			p.Op(ops.SELFDESTRUCT)
+			p.Op(vm.SELFDESTRUCT)
 		default:
 			p.Push(32) //len
 			p.Push(0)  //offset
 			if r%2 == 0 {
-				p.Op(ops.RETURN)
+				p.Op(vm.RETURN)
 			} else {
-				p.Op(ops.REVERT)
+				p.Op(vm.REVERT)
 			}
-			return p.Bytecode()
+			return p.Bytes()
 		}
 		if p.Size() > 500 {
-			return p.Bytecode()
+			return p.Bytes()
 		}
 	}
 }

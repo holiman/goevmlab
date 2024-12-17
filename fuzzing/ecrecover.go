@@ -22,8 +22,8 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 )
 
 func fillEcRecover(gst *GstMaker, fork string) {
@@ -49,7 +49,7 @@ func fillEcRecover(gst *GstMaker, fork string) {
 }
 
 func randCallECRecover() []byte {
-	p := program.NewProgram()
+	p := program.New()
 	offset := 0
 	for i := int32(0); i < 100; i++ {
 		data := make([]byte, 128)
@@ -71,12 +71,12 @@ func randCallECRecover() []byte {
 			return big.NewInt(rand.Int63n(100000))
 		}
 		p2 := RandCall(gasRand, addrGen, ValueRandomizer(), memInFn, memOutFn)
-		p.AddAll(p2)
+		p.Append(p2)
 		// pop the ret value
-		p.Op(ops.POP)
+		p.Op(vm.POP)
 		// Store the output in some slot, to make sure the stateroot changes
 		p.MemToStorage(0, 32, offset)
 		offset += 32
 	}
-	return p.Bytecode()
+	return p.Bytes()
 }

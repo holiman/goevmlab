@@ -25,8 +25,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 )
 
 type memFunc func() (offset, size interface{})
@@ -90,15 +90,14 @@ func GasRandomizer() valFunc {
 
 }
 
-// staticcall disabled due to parity implementation of cheap staticcall-to-precompile
-var callTypes = []ops.OpCode{ops.CALL, ops.CALLCODE, ops.DELEGATECALL} //, ops.STATICCALL}
+var callTypes = []vm.OpCode{vm.CALL, vm.CALLCODE, vm.DELEGATECALL, vm.STATICCALL}
 
-func randCallType() ops.OpCode {
+func randCallType() vm.OpCode {
 	return callTypes[rand.Intn(len(callTypes))]
 }
 
 func RandCall(gas, addr, val valFunc, memIn, memOut memFunc) []byte {
-	p := program.NewProgram()
+	p := program.New()
 	if memOut != nil {
 		memOutOffset, memOutSize := memOut()
 		p.Push(memOutSize)   //mem out size
@@ -116,7 +115,7 @@ func RandCall(gas, addr, val valFunc, memIn, memOut memFunc) []byte {
 		p.Push(0)
 	}
 	op := randCallType()
-	if op == ops.CALL || op == ops.CALLCODE {
+	if op == vm.CALL || op == vm.CALLCODE {
 		if val != nil {
 			p.Push(val()) //value
 		} else {
@@ -127,10 +126,10 @@ func RandCall(gas, addr, val valFunc, memIn, memOut memFunc) []byte {
 	if gas != nil {
 		p.Push(gas())
 	} else {
-		p.Op(ops.GAS)
+		p.Op(vm.GAS)
 	}
 	p.Op(op)
-	return p.Bytecode()
+	return p.Bytes()
 }
 
 func randomBlakeArgs() []byte {
@@ -158,7 +157,7 @@ func randomBlakeArgs() []byte {
 
 func RandCallBlake() []byte {
 	// fill the memory
-	p := program.NewProgram()
+	p := program.New()
 	data := randomBlakeArgs()
 	p.Mstore(data, 0)
 	memInFn := func() (offset, size interface{}) {
@@ -175,10 +174,10 @@ func RandCallBlake() []byte {
 		return 9
 	}
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
-	p.AddAll(p2)
+	p.Append(p2)
 	// pop the ret value
-	p.Op(ops.POP)
+	p.Op(vm.POP)
 	// Store the output in some slot, to make sure the stateroot changes
 	p.MemToStorage(0, 64, 0)
-	return p.Bytecode()
+	return p.Bytes()
 }

@@ -23,18 +23,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/holiman/goevmlab/fuzzing"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	"github.com/holiman/goevmlab/fuzzing"
+	program2 "github.com/holiman/goevmlab/program"
+	"github.com/holiman/uint256"
 )
 
 // This program creates a testcase surrounding selfdestruct in the context of
@@ -46,7 +46,7 @@ import (
 // and add the ETH recipient to the set.
 func main() {
 
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -92,17 +92,17 @@ func runit() error {
 	}
 
 	// The destructor contract selfdestructs to the beneficiary given in the input data
-	destructor := program.NewProgram()
+	destructor := program.New()
 	destructor.InputAddressToStack(0)
-	destructor.Op(ops.SELFDESTRUCT)
+	destructor.Op(vm.SELFDESTRUCT)
 
 	// The caller contract calls the destructor repeatedly
-	caller := program.NewProgram()
+	caller := program.New()
 
 	// First of all, 'touch' the hot ones
 	for _, addr := range warmAddresses {
-		caller.Call(big.NewInt(0), addr, 0, 0, 0, 0, 0) // Touch it
-		caller.Op(ops.POP)                              // Ignore returnvalue
+		caller.Call(uint256.NewInt(0), addr, 0, 0, 0, 0, 0) // Touch it
+		caller.Op(vm.POP)                                   // Ignore returnvalue
 	}
 
 	for _, addr := range addresses {
@@ -110,7 +110,7 @@ func runit() error {
 		copy(paddedAddr[12:], addr.Bytes())
 		caller.Mstore(paddedAddr, 0)               // Load address to memory
 		caller.Call(nil, destAddr, 0, 0, 32, 0, 0) // Call destructor
-		caller.Op(ops.POP)                         // Ignore returnvalue
+		caller.Op(vm.POP)                          // Ignore returnvalue
 	}
 	// Set up a genesis
 	alloc := make(types.GenesisAlloc)
@@ -124,12 +124,12 @@ func runit() error {
 
 	alloc[destAddr] = types.Account{
 		Nonce:   1,
-		Code:    destructor.Bytecode(),
+		Code:    destructor.Bytes(),
 		Balance: big.NewInt(0x1),
 	}
 	alloc[callerAddr] = types.Account{
 		Nonce:   1,
-		Code:    caller.Bytecode(),
+		Code:    caller.Bytes(),
 		Balance: big.NewInt(0x1),
 	}
 	alloc[sender] = types.Account{

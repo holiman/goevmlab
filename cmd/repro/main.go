@@ -22,10 +22,10 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 	"github.com/holiman/goevmlab/traces"
 	"github.com/urfave/cli/v2"
 )
@@ -71,17 +71,17 @@ func startAnalysis(c *cli.Context) error {
 	// We have a target to hone in on.
 	traceLine := traces.Ops[step]
 	fmt.Printf("Target line:\n\n\t%v\n\n", traceLine.Source())
-	p := program.NewProgram()
 	fmt.Printf("Reproing stack, at step %d: \n", traceLine.Step())
 	stack := traceLine.Stack()
+	p := program.New()
 	for i := len(stack) - 1; i >= 0; i-- {
 		v := stack[i]
 		fmt.Printf("\t push %v\n", v.Hex())
 		p.Push(v)
 	}
-	operation := ops.OpCode(traceLine.Op())
+	operation := vm.OpCode(traceLine.Op())
 	fmt.Printf("Adding op\n\t%v\n", operation)
 	p.Op(operation)
-	fmt.Printf("Code: %#x\n", p.Bytecode())
+	fmt.Printf("Code: %#x\n", p.Bytes())
 	return nil
 }

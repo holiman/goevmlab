@@ -27,45 +27,37 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/program"
 	"github.com/holiman/uint256"
 )
 
 func main() {
 
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func runit() error {
-	a := program.NewProgram()
 
 	aAddr := common.HexToAddress("0xff0a")
 	bAddr := common.HexToAddress("0xff0b")
 
 	// Callling contract : call contract B, modify storage, revert
-	a.DelegateCall(nil, 0xff0b, 0, 0, 0, 0)
-	aBytes := a.Bytecode()
-	fmt.Printf("A: %x\n", aBytes)
-	b := program.NewProgram()
-	b.Op(ops.CALLVALUE)
-	b.Op(ops.ISZERO)
-	bBytes := b.Bytecode()
+	aBytes := program.New().DelegateCall(nil, 0xff0b, 0, 0, 0, 0).Bytes()
+	bBytes := program.New().Op(vm.CALLVALUE, vm.ISZERO).Bytes()
 
 	alloc := make(types.GenesisAlloc)
 	alloc[aAddr] = types.Account{
-		Nonce:   0,
-		Code:    a.Bytecode(),
+		Code:    aBytes,
 		Balance: big.NewInt(0xffffffff),
 	}
 	alloc[bAddr] = types.Account{
-		Nonce:   0,
 		Code:    bBytes,
 		Balance: big.NewInt(0),
 	}

@@ -27,41 +27,41 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/program"
 )
 
 func main() {
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func runit() error {
-	a := program.NewProgram()
+	a := program.New()
 
 	aAddr := common.HexToAddress("0xff0a")
 
 	// Calling contract: Call contract B in a loop
-	a.Op(ops.PC)         // Push 0
-	a.Op(ops.DUP1)       // outsize = 0, on next iteration we use the return value of CALL
-	dest := a.Jumpdest() // Loop Head
-	a.Op(ops.DUP2)       // outoffset = 0
-	a.Push(1305700)      // insize = 1305700
-	a.Op(ops.DUP2)       // inoffset = 0
-	a.Push(0xdeadbeef)   // Push target address, alternatively we could call an empty contract here
-	a.Op(ops.GAS)        // Pass along all gas
-	a.Op(ops.STATICCALL)
+	a.Op(vm.PC)             // Push 0
+	a.Op(vm.DUP1)           // outsize = 0, on next iteration we use the return value of CALL
+	_, dest := a.Jumpdest() // Loop Head
+	a.Op(vm.DUP2)           // outoffset = 0
+	a.Push(1305700)         // insize = 1305700
+	a.Op(vm.DUP2)           // inoffset = 0
+	a.Push(0xdeadbeef)      // Push target address, alternatively we could call an empty contract here
+	a.Op(vm.GAS)            // Pass along all gas
+	a.Op(vm.STATICCALL)
 	a.Jump(dest) // Jump back
 
 	alloc := make(types.GenesisAlloc)
 	alloc[aAddr] = types.Account{
 		Nonce:   0,
-		Code:    a.Bytecode(),
+		Code:    a.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	//-------------

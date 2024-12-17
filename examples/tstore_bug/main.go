@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/holiman/goevmlab/fuzzing"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
-	"os"
 )
 
 func main() {
@@ -42,17 +42,17 @@ func makeTest() error {
 
 	// 0xaa calls 0xbb, then checks TLOAD(4) and puts it into state
 	{
-		aa := program.NewProgram()
+		aa := program.New()
 		aa.CallCode(nil, b, nil, 0, 0, 0, 0)
 
 		aa.Push(4)
-		aa.Op(ops.TLOAD)
+		aa.Op(vm.TLOAD)
 
 		aa.Push(1)
-		aa.Op(ops.SSTORE)
+		aa.Op(vm.SSTORE)
 
 		gst.AddAccount(a, fuzzing.GenesisAccount{
-			Code:    aa.Bytecode(),
+			Code:    aa.Bytes(),
 			Balance: big.NewInt(0),
 			Storage: make(map[common.Hash]common.Hash),
 		})
@@ -61,7 +61,7 @@ func makeTest() error {
 	// 0xbb does a TSTORE, then exits on revert
 	{
 
-		bb := program.NewProgram()
+		bb := program.New()
 		bb.Tstore(4, 1)
 
 		// Now call a precompile
@@ -70,9 +70,9 @@ func makeTest() error {
 
 		bb.Push0()
 		bb.Push0()
-		bb.Op(ops.REVERT) // Now exit with error
+		bb.Op(vm.REVERT) // Now exit with error
 		gst.AddAccount(b, fuzzing.GenesisAccount{
-			Code:    bb.Bytecode(),
+			Code:    bb.Bytes(),
 			Balance: big.NewInt(0),
 			Storage: make(map[common.Hash]common.Hash),
 		})

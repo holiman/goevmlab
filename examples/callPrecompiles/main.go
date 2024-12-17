@@ -26,23 +26,23 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/program"
 )
 
 func main() {
 
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 }
 
 func runit() error {
-	a := program.NewProgram()
+	a := program.New()
 
 	aAddr := common.HexToAddress("0xff0a")
 
@@ -60,21 +60,14 @@ func runit() error {
 
 	*/
 
-	a.Op(ops.PC)
-	a.Op(ops.JUMPDEST)
-	a.Op(ops.MSIZE)
-	a.Op(ops.MSIZE)
-	a.Op(ops.MSIZE)
-	a.Op(ops.MSIZE)
+	a.Op(vm.PC, vm.JUMPDEST, vm.MSIZE, vm.MSIZE, vm.MSIZE, vm.MSIZE)
 	a.Push(4)
-	a.Op(ops.GAS)
-	a.Op(ops.STATICCALL)
-	a.Op(ops.JUMP)
+	a.Op(vm.GAS, vm.STATICCALL, vm.JUMP)
 
 	alloc := make(types.GenesisAlloc)
 	alloc[aAddr] = types.Account{
 		Nonce:   0,
-		Code:    a.Bytecode(),
+		Code:    a.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	//-------------

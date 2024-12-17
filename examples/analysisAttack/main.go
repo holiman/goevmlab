@@ -29,11 +29,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 	"github.com/urfave/cli/v2"
 )
 
@@ -148,7 +148,7 @@ func evaluate(ctx *cli.Context) error {
 		Code:  payloadCode,
 	}
 	// The main show.
-	a := program.NewProgram()
+	a := program.New()
 	fmt.Printf(`
 Payload: %v
 Init code size: %d (multiplier %d)
@@ -163,19 +163,19 @@ Fork: %v
 	// Memory filled with payload. We insert actual runnable code at the beginning
 	a.Mstore(initcode[:], 0)
 	// Memory is now filled. Phase two, creation mode.
-	loc := a.Jumpdest()
-	a.Push(initCodeSize).Push(0 /* offset */).Op(ops.DUP1 /*0 value*/)
-	a.Op(ops.CREATE)
-	a.Op(ops.POP)
+	_, loc := a.Jumpdest()
+	a.Push(initCodeSize).Push(0 /* offset */).Op(vm.DUP1 /*0 value*/)
+	a.Op(vm.CREATE)
+	a.Op(vm.POP)
 	// flip a bit
-	a.Push(0).Op(ops.MLOAD)
-	a.Push(1).Op(ops.ADD)    //
-	a.Push(0).Op(ops.MSTORE) // mem location
+	a.Push(0).Op(vm.MLOAD)
+	a.Push(1).Op(vm.ADD)    //
+	a.Push(0).Op(vm.MSTORE) // mem location
 	a.Jump(loc)
 
 	alloc[attackerAddr] = types.Account{
 		Nonce:   1,
-		Code:    a.Bytecode(),
+		Code:    a.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	var (
