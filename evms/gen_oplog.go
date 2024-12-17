@@ -16,23 +16,28 @@ var _ = (*opLogMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (o opLog) MarshalJSON() ([]byte, error) {
 	type opLog struct {
-		Pc         uint64              `json:"pc"`
-		Op         vm.OpCode           `json:"op"`
-		Gas        math.HexOrDecimal64 `json:"gas"`
-		GasCost    math.HexOrDecimal64 `json:"gasCost"`
-		Memory     hexutil.Bytes       `json:"memory,omitempty"`
-		MemorySize math.HexOrDecimal64 `json:"memSize"`
-		Stack      []hexutil.U256      `json:"stack"`
-		ReturnData hexutil.Bytes       `json:"returnData,omitempty"`
-		Depth      int                 `json:"depth"`
-		Err        error               `json:"-"`
-		StateRoot1 string              `json:"stateRoot"`
-		StateRoot2 string              `json:"postHash"`
-		OpName     string              `json:"opName"`
+		Pc            uint64              `json:"pc"`
+		Section       uint64              `json:"section,omitempty"`
+		Op            math.HexOrDecimal64 `json:"op"`
+		Gas           math.HexOrDecimal64 `json:"gas"`
+		GasCost       math.HexOrDecimal64 `json:"gasCost"`
+		Memory        hexutil.Bytes       `json:"memory,omitempty"`
+		MemorySize    math.HexOrDecimal64 `json:"memSize"`
+		Stack         []hexutil.U256      `json:"stack"`
+		ReturnData    hexutil.Bytes       `json:"returnData,omitempty"`
+		Depth         int                 `json:"depth"`
+		FunctionDepth int                 `json:"functionDepth,omitempty"`
+		Err           error               `json:"-"`
+		StateRoot1    string              `json:"stateRoot"`
+		StateRoot2    string              `json:"postHash"`
+		OpName        string              `json:"opName"`
 	}
 	var enc opLog
 	enc.Pc = o.Pc
-	enc.Op = o.Op
+	if !IgnoreEOF {
+		enc.Section = o.Section
+	}
+	enc.Op = math.HexOrDecimal64(o.Op)
 	enc.Gas = math.HexOrDecimal64(o.Gas)
 	enc.GasCost = math.HexOrDecimal64(o.GasCost)
 	enc.Memory = o.Memory
@@ -45,6 +50,9 @@ func (o opLog) MarshalJSON() ([]byte, error) {
 	}
 	enc.ReturnData = o.ReturnData
 	enc.Depth = o.Depth
+	if !IgnoreEOF {
+		enc.FunctionDepth = o.FunctionDepth
+	}
 	enc.Err = o.Err
 	enc.StateRoot1 = o.StateRoot1
 	enc.StateRoot2 = o.StateRoot2
@@ -55,18 +63,20 @@ func (o opLog) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (o *opLog) UnmarshalJSON(input []byte) error {
 	type opLog struct {
-		Pc         *uint64              `json:"pc"`
-		Op         *vm.OpCode           `json:"op"`
-		Gas        *math.HexOrDecimal64 `json:"gas"`
-		GasCost    *math.HexOrDecimal64 `json:"gasCost"`
-		Memory     *hexutil.Bytes       `json:"memory,omitempty"`
-		MemorySize *math.HexOrDecimal64 `json:"memSize"`
-		Stack      []hexutil.U256       `json:"stack"`
-		ReturnData *hexutil.Bytes       `json:"returnData,omitempty"`
-		Depth      *int                 `json:"depth"`
-		Err        error                `json:"-"`
-		StateRoot1 *string              `json:"stateRoot"`
-		StateRoot2 *string              `json:"postHash"`
+		Pc            *uint64              `json:"pc"`
+		Section       *uint64              `json:"section,omitempty"`
+		Op            *math.HexOrDecimal64 `json:"op"`
+		Gas           *math.HexOrDecimal64 `json:"gas"`
+		GasCost       *math.HexOrDecimal64 `json:"gasCost"`
+		Memory        *hexutil.Bytes       `json:"memory,omitempty"`
+		MemorySize    *math.HexOrDecimal64 `json:"memSize"`
+		Stack         []hexutil.U256       `json:"stack"`
+		ReturnData    *hexutil.Bytes       `json:"returnData,omitempty"`
+		Depth         *int                 `json:"depth"`
+		FunctionDepth *int                 `json:"functionDepth,omitempty"`
+		Err           error                `json:"-"`
+		StateRoot1    *string              `json:"stateRoot"`
+		StateRoot2    *string              `json:"postHash"`
 	}
 	var dec opLog
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -75,8 +85,15 @@ func (o *opLog) UnmarshalJSON(input []byte) error {
 	if dec.Pc != nil {
 		o.Pc = *dec.Pc
 	}
+	if !IgnoreEOF {
+		if dec.Section != nil {
+			o.Section = *dec.Section
+		} else {
+			o.Section = 0
+		}
+	}
 	if dec.Op != nil {
-		o.Op = *dec.Op
+		o.Op = vm.OpCode(uint64(*dec.Op))
 	}
 	if dec.Gas != nil {
 		o.Gas = uint64(*dec.Gas)
@@ -101,6 +118,13 @@ func (o *opLog) UnmarshalJSON(input []byte) error {
 	}
 	if dec.Depth != nil {
 		o.Depth = *dec.Depth
+	}
+	if !IgnoreEOF {
+		if dec.FunctionDepth != nil {
+			o.FunctionDepth = *dec.FunctionDepth
+		} else {
+			o.FunctionDepth = 0
+		}
 	}
 	if dec.Err != nil {
 		o.Err = dec.Err

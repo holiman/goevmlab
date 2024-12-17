@@ -25,14 +25,32 @@ func CustomMarshal(log *opLog) []byte {
 	b = append(b, []byte(`,"pc":`)...)
 	b = strconv.AppendUint(b, uint64(log.Pc), 10)
 
+	if !IgnoreEOF {
+		// code section, if not zero
+		if log.Section != 0 {
+			b = append(b, []byte(`,"section":`)...)
+			b = strconv.AppendUint(b, uint64(log.Section), 10)
+		}
+
+		// function call depth, if not zero
+		if log.FunctionDepth != 0 {
+			b = append(b, []byte(`,"functionDepth":`)...)
+			b = strconv.AppendUint(b, uint64(log.FunctionDepth), 10)
+		}
+	}
+
 	// Gas remaining
 	b = append(b, []byte(`,"gas":`)...)
 	b = strconv.AppendUint(b, uint64(log.Gas), 10)
 
 	// Op
-	b = append(b, []byte(`,"op":`)...)
-	b = strconv.AppendUint(b, uint64(log.Op), 10)
-	b = append(b, []byte(`,"opName":"`)...)
+	b = append(b, []byte(`,"op":"0x`)...)
+	opcode := uint64(log.Op)
+	if opcode < 0x10 {
+		b = append(b, []byte(`0`)...)
+	}
+	b = strconv.AppendUint(b, opcode, 16)
+	b = append(b, []byte(`","opName":"`)...)
 	b = append(b, []byte(log.Op.String())...)
 	b = append(b, '"')
 
