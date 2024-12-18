@@ -31,7 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/ops"
-	program2 "github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/utils"
 	"github.com/holiman/uint256"
 )
 

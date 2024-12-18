@@ -33,7 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
-	program2 "github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/utils"
 	"github.com/holiman/uint256"
 )
 

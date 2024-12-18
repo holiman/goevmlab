@@ -30,7 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	program2 "github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/utils"
 )
 
 type dumbTracer struct {
