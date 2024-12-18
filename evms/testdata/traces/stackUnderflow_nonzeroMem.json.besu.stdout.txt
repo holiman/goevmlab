@@ -9,4 +9,4 @@
 {"pc":17,"op":54,"gas":"0x79b4a4","gasCost":"0x2","memSize":32,"stack":["0x0","0x1"],"depth":1,"refund":0,"opName":"CALLDATASIZE"}
 {"pc":18,"op":145,"gas":"0x79b4a2","gasCost":"0x3","memSize":32,"stack":["0x0","0x1","0x12"],"depth":1,"refund":0,"opName":"SWAP2"}
 {"pc":19,"op":142,"gas":"0x79b49f","gasCost":"0x0","memSize":32,"stack":["0x12","0x1","0x0"],"depth":1,"refund":0,"opName":"DUP15","error":"Stack underflow"}
-{"output":"","gasUsed":"0x7a1200","test":"00000000-mixed-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
+{"output":"","gasUsed":"0x7a1200","test":"00000000-mixed-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false,"error":"INSUFFICIENT_STACK_ITEMS"}
