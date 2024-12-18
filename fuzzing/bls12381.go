@@ -23,8 +23,8 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 )
 
 var modulo, _ = big.NewInt(0).SetString("0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 0)
@@ -82,7 +82,7 @@ func mutate(data []byte) {
 }
 
 func RandCallBLS() []byte {
-	p := program.NewProgram()
+	p := program.New()
 	offset := 0
 	for _, precompile := range precompilesBLS {
 		data := precompile.newData()
@@ -101,14 +101,14 @@ func RandCallBLS() []byte {
 			return precompile.addr
 		}
 		p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
-		p.AddAll(p2)
+		p.Append(p2)
 		// pop the ret value
-		p.Op(ops.POP)
+		p.Op(vm.POP)
 		// Store the output in some slot, to make sure the stateroot changes
 		p.MemToStorage(0, sizeOut, offset)
 		offset += sizeOut
 	}
-	return p.Bytecode()
+	return p.Bytes()
 }
 
 func newG1Add() []byte {

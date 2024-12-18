@@ -6,8 +6,8 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 )
 
 func fillPrecompileTest(gst *GstMaker, fork string) {
@@ -50,7 +50,7 @@ func randSize() int64 {
 
 func randCallPrecompile() []byte {
 	// fill the memory
-	p := program.NewProgram()
+	p := program.New()
 	size := randSize()
 	data := make([]byte, size)
 	_, _ = crand.Read(data)
@@ -66,11 +66,11 @@ func randCallPrecompile() []byte {
 		return rand.Uint32() % 18
 	}
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
-	p.AddAll(p2)
+	p.Append(p2)
 	// store the returnvalue ot slot 1337
 	p.Push(0x1337)
-	p.Op(ops.SSTORE)
+	p.Op(vm.SSTORE)
 	// Store the output in some slot, to make sure the stateroot changes
 	p.MemToStorage(0, 64, 0)
-	return p.Bytecode()
+	return p.Bytes()
 }

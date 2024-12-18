@@ -26,16 +26,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/utils"
 )
 
 func main() {
 
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -45,37 +45,26 @@ func staticCallAttack() []byte {
 	// Causes 13928 staticcalls
 	//30          39521949 ns/op // 39 ms
 	//  9            112185165 ns/op // 112 ms
-	a := program.NewProgram()
-	dest := a.Jumpdest()
+	a, dest := program.New().Jumpdest()
 	reps := 800
 	for i := 0; i < reps; i++ {
 		a.Push(0)
-		a.Op(ops.DUP1)
-		a.Op(ops.DUP1)
-		a.Op(ops.DUP1)
-		a.Op(ops.GAS)
-		a.Op(ops.GAS)
-		a.Op(ops.STATICCALL)
-		a.Op(ops.POP)
+		a.Op(vm.DUP1, vm.DUP1, vm.DUP1, vm.GAS, vm.GAS, vm.STATICCALL, vm.POP)
 	}
-	a.Jump(dest)
-	return a.Bytecode()
+	return a.Jump(dest).Bytes()
 }
 
 func extCodeSizeAttack() []byte {
 	// Causes 14205 EXTCODESIZEs
 	//       63          17686763 ns/op
 
-	a := program.NewProgram()
-	dest := a.Jumpdest()
+	a, dest := program.New().Jumpdest()
 	reps := 800
 	for i := 0; i < reps; i++ {
-		a.Op(ops.GAS)
-		a.Op(ops.EXTCODESIZE)
-		a.Op(ops.POP)
+		a.Op(vm.GAS, vm.EXTCODESIZE, vm.POP)
 	}
-	a.Jump(dest)
-	return a.Bytecode()
+	return a.Jump(dest).Bytes()
+
 }
 
 func runit() error {

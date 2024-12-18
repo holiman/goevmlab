@@ -5,8 +5,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 )
 
 func fillNaive(gst *GstMaker, fork string) {
@@ -54,7 +55,7 @@ func randomBytecode(f *ops.Fork) []byte {
 		}
 		return x
 	}
-	p := program.NewProgram()
+	p := program.New()
 	p.Push(next())
 	p.Push(next())
 	p.Push(next())
@@ -63,7 +64,7 @@ func randomBytecode(f *ops.Fork) []byte {
 	p.Push(next())
 	p.Push(next())
 	for p.Size() < 1024 {
-		p.Op(f.RandomOp(next()))
+		p.Op(vm.OpCode(f.RandomOp(next())))
 	}
-	return p.Bytecode()
+	return p.Bytes()
 }

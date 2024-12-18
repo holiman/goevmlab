@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/holiman/goevmlab/fuzzing"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
-	"os"
 )
 
 func main() {
@@ -45,18 +45,15 @@ func makeTest() error {
 	//
 	// The consensus-correct way to fail is 1).
 	{
-		aa := program.NewProgram()
-		aa.Push0()          // gas
-		aa.Push0()          // input
-		aa.Push0()          //salt
-		aa.Push(0x20000)    // size
-		aa.Push0()          // offset
-		aa.Push(1123123123) // endowment
-		aa.Op(ops.CREATE2)
+		aa := program.New()
+		aa.Push0().Push0().Push0() // gas, input, salt
+		aa.Push(0x20000).Push0()   // size,offset
+		aa.Push(1123123123)        // endowment
+		aa.Op(vm.CREATE2)
 		// Make a mark on the state
 		aa.Sstore(1, 1)
 		gst.AddAccount(a, fuzzing.GenesisAccount{
-			Code:    aa.Bytecode(),
+			Code:    aa.Bytes(),
 			Balance: big.NewInt(0),
 			Storage: make(map[common.Hash]common.Hash),
 		})

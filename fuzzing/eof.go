@@ -21,8 +21,9 @@ import (
 	"math/big"
 	"math/rand"
 
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
+	program2 "github.com/holiman/goevmlab/program"
 )
 
 func oneOf(cases ...any) any {
@@ -52,34 +53,34 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 	//  	and output bytes are reserved for future use. max_stack_height is further defined in EIP-5450.
 	// The first code section MUST have 0 inputs and 0 outputs.
 
-	var p = program.NewProgram()
+	var p = program.New()
 	maxStack := 0
 	curStack := 0
 	//for {
 	switch oneOf(1, 2, 3, 4, 5, 6, 7) {
 	case 1:
-		p.CallF(uint16(rand.Intn(maxSections)))
-		p.Op(ops.STOP)
+		program2.CallF(p, uint16(rand.Intn(maxSections)))
+		p.Op(vm.STOP)
 	case 2:
-		p.RetF()
+		program2.RetF(p)
 	case 3:
 		// jump to minus three
-		p.RJump(uint16(0xffff - 2))
+		program2.RJump(p, uint16(0xffff-2))
 	case 4:
 		// jump to plus one
-		p.RJump(uint16(0))
-		p.Op(ops.STOP) // jump location
+		program2.RJump(p, uint16(0))
+		p.Op(vm.STOP) // jump location
 	case 5:
 		// jump to plus one
-		p.RJump(uint16(0))
-		p.Op(ops.STOP) // jump location
+		program2.RJump(p, uint16(0))
+		p.Op(vm.STOP) // jump location
 	case 6:
 		// we push one and pop one
-		p.RJumpI(0, 0)
+		program2.RJumpI(p, 0, 0)
 		if maxStack < curStack+1 {
 			maxStack = curStack + 1
 		}
-		p.Op(ops.STOP)
+		p.Op(vm.STOP)
 	default:
 		//p.Push0()
 
@@ -95,14 +96,14 @@ func GenerateCallFProgram(maxSections int) ([]byte, int) {
 		if len > 0 && rand.Intn(4) != 0 {
 			dests[len-1] = uint16(0x10000 - 2*len - 2)
 		}
-		p.RJumpV(dests)
+		program2.RJumpV(p, dests)
 		// we push one and pop one
 		if maxStack < curStack+1 {
 			maxStack = curStack + 1
 		}
-		p.Op(ops.STOP)
+		p.Op(vm.STOP)
 	}
 	//break
 	//}
-	return p.Bytecode(), maxStack
+	return p.Bytes(), maxStack
 }

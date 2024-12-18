@@ -20,13 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/holiman/goevmlab/fuzzing"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 )
 
 func main() {
@@ -42,20 +41,20 @@ func makeTest() error {
 	var bbCode []byte
 	// bb is the initcode of the contract to be created
 	{
-		bb := program.NewProgram()
+		bb := program.New()
 
 		// Use the value of TLOAD(1) as the size of the returned data.
 		// As long as TLOAD(1) is zero, we error out by returning too large initcode
 		bb.Push(1)
-		bb.Op(ops.TLOAD)
+		bb.Op(vm.TLOAD)
 		bb.Push(0x600a)
-		bb.Op(ops.SUB) // stack: [ 0x600a - tload(1) ]
+		bb.Op(vm.SUB) // stack: [ 0x600a - tload(1) ]
 
 		bb.Tstore(1, 0x6000) // do the TSTORE(1), which _should_ be rolled back and thus a no-op.
 
 		bb.Push(0)
-		bb.Op(ops.RETURN)
-		bbUnaligned := bb.Bytecode()
+		bb.Op(vm.RETURN)
+		bbUnaligned := bb.Bytes()
 		// Make it align to 32 byte, then the trace is simpler using MSTORE
 		// instead of MSTORE8. We just zfill with STOP
 		bbCode = make([]byte, 32*((len(bbUnaligned)+31)/32))
@@ -64,15 +63,15 @@ func makeTest() error {
 
 	// aa is the code which invokes CREATE2 twice, with bbCode as initcode
 	{
-		aa := program.NewProgram()
+		aa := program.New()
 		aa.Mstore(bbCode, 0)
 
 		// Call the initcode twice using the CREATE2 opcode
-		aa.Push0().Push(len(bbCode)).Push0().Push0().Op(ops.CREATE2)
-		aa.Push0().Push(len(bbCode)).Push0().Push0().Op(ops.CREATE2)
+		aa.Push0().Push(len(bbCode)).Push0().Push0().Op(vm.CREATE2)
+		aa.Push0().Push(len(bbCode)).Push0().Push0().Op(vm.CREATE2)
 
 		gst.AddAccount(a, fuzzing.GenesisAccount{
-			Code:    aa.Bytecode(),
+			Code:    aa.Bytes(),
 			Balance: big.NewInt(0),
 			Storage: make(map[common.Hash]common.Hash),
 		})

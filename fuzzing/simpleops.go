@@ -22,8 +22,9 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 )
 
 func fillSimple(gst *GstMaker, fork string) {
@@ -104,7 +105,7 @@ var operations = []ops.OpCode{
 // of interestingness on inputs for various arithmetic ops.
 func generateSimpleOpsProgram(forkDef *ops.Fork) []byte {
 
-	var p = program.NewProgram()
+	var p = program.New()
 	var stackdepth = 0
 
 	for nCases := 0; nCases < 10000; nCases++ {
@@ -120,13 +121,13 @@ func generateSimpleOpsProgram(forkDef *ops.Fork) []byte {
 		}
 		// stack depth is sufficient now
 		if stackdepth > 1 && rand.Uint32()%2 == 0 {
-			p.Op(ops.SWAP1)
+			p.Op(vm.SWAP1)
 		}
-		p.Op(op)
+		p.Op(vm.OpCode(op))
 		stackdepth -= len(op.Pops())
 		stackdepth += len(op.Pushes())
 	}
-	return p.Bytecode()
+	return p.Bytes()
 }
 
 var memOps = []ops.OpCode{
@@ -149,7 +150,7 @@ var memOps = []ops.OpCode{
 // memory access ops, which may be OOG.
 func generateMemoryInteractingOpsProgram(fork string) []byte {
 
-	var p = program.NewProgram()
+	var p = program.New()
 	var stackdepth = 0
 
 	// We may have to filter out ops that aren't active yet, e.g. MCOPY before cancun
@@ -183,16 +184,16 @@ func generateMemoryInteractingOpsProgram(fork string) []byte {
 		}
 		// stack depth is sufficient now
 		if stackdepth > 1 && rand.Uint32()%2 == 0 {
-			p.Op(ops.SWAP1)
+			p.Op(vm.SWAP1)
 		}
-		p.Op(op)
+		p.Op(vm.OpCode(op))
 		stackdepth -= len(op.Pops())
 		stackdepth += len(op.Pushes())
 		if op == ops.RETURN || op == ops.REVERT {
 			break
 		}
 	}
-	return p.Bytecode()
+	return p.Bytes()
 }
 
 var integers = []string{

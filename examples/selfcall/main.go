@@ -26,63 +26,51 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/utils"
 )
 
 func main() {
 
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func runit() error {
-	a := program.NewProgram()
-
 	aAddr := common.HexToAddress("0xff0a")
 	bAddr := common.HexToAddress("0xff0b")
 
 	// Callling contract : call contract B, modify storage, revert
-	a.Call(nil, 0xff0b, 1, 0, 0, 0, 0)
 	// Call it again, send 1 wei to signal no revert
-	a.Call(nil, 0xff0b, 0, 0, 0, 0, 0)
-	aBytes := a.Bytecode()
+	aBytes := program.New().
+		Call(nil, 0xff0b, 1, 0, 0, 0, 0).
+		Call(nil, 0xff0b, 0, 0, 0, 0, 0).
+		Bytes()
 	fmt.Printf("A: %x\n", aBytes)
-	b := program.NewProgram()
-
-	b.Op(ops.CALLVALUE)
-	b.Op(ops.ISZERO)
-	b.Push(1) // placeholder
-	b.Op(ops.JUMPI)
-	// Path A
-	b.Sstore(0, 2)
-	b.Op(0xFE)
+	b := program.New().
+		Op(vm.CALLVALUE, vm.ISZERO).
+		Push(1). // placeholder
+		Op(vm.JUMPI).
+		Sstore(0, 2). // Path A
+		Op(0xFE)
 	// Path B
-	label := b.Jumpdest()
-	fmt.Printf("label: %d\n", label)
-	b.Sstore(0, 1)
-
-	bBytes := b.Bytecode()
+	_, label := b.Jumpdest()
+	bBytes := b.Sstore(0, 1).Bytes()
 	bBytes[3] = byte(label)
-
 	alloc := make(types.GenesisAlloc)
 	alloc[aAddr] = types.Account{
-		Nonce:   0,
-		Code:    a.Bytecode(),
+		Code:    aBytes,
 		Balance: big.NewInt(0xffffffff),
 	}
 	alloc[bAddr] = types.Account{
-		Nonce:   0,
 		Code:    bBytes,
 		Balance: big.NewInt(0),
 	}
-
-	//-------------
 
 	outp, err := json.MarshalIndent(alloc, "", " ")
 	if err != nil {

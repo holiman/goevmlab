@@ -26,11 +26,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
 	common2 "github.com/holiman/goevmlab/common"
-	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
+	program2 "github.com/holiman/goevmlab/utils"
 )
 
 type dumbTracer struct {
@@ -64,43 +64,40 @@ func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 
 func main() {
 
-	if err := program.RunProgram(runit); err != nil {
+	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 }
 
 func runit() error {
-	a := program.NewProgram()
-	b := program.NewProgram()
+	a := program.New()
+	b := program.New()
 
 	aAddr := common.HexToAddress("0xff0a")
 	bAddr := common.HexToAddress("0xff0b")
 
-	dest := a.Jumpdest()
+	_, dest := a.Jumpdest()
 	a.Call(nil, bAddr, nil, 0, 0, 0, 0)
 	a.Jump(dest)
 
 	// The self-call can be done a bit more clever, gas-wise
 
-	b.Op(ops.PC)      // get zero on stack (out size)
-	b.Op(ops.DUP1)    // out offset
-	b.Op(ops.DUP1)    // insize
-	b.Op(ops.DUP1)    // inoffset
-	b.Op(ops.DUP1)    // value
-	b.Op(ops.ADDRESS) // address
-	b.Op(ops.GAS)     // Gas
-	b.Op(ops.CALL)
+	b.Op(vm.PC)              // get zero on stack (out size)
+	b.Op(vm.DUP1, vm.DUP1)   // out offset, insize
+	b.Op(vm.DUP1, vm.DUP1)   // inoffset, value
+	b.Op(vm.ADDRESS, vm.GAS) // address, gas
+	b.Op(vm.CALL)
 
 	alloc := make(types.GenesisAlloc)
 	alloc[aAddr] = types.Account{
 		Nonce:   0,
-		Code:    a.Bytecode(),
+		Code:    a.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	alloc[bAddr] = types.Account{
 		Nonce:   0,
-		Code:    b.Bytecode(),
+		Code:    b.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	//-------------

@@ -28,11 +28,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/vm/program"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	common2 "github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/ops"
-	"github.com/holiman/goevmlab/program"
 	"github.com/urfave/cli/v2"
 )
 
@@ -128,30 +128,31 @@ func evaluate(ctx *cli.Context) error {
 		return fmt.Errorf("operations %v (stackdelta %d) and %v (stackdelta %d) do not balance push/pop.",
 			a, a.Stackdelta(), b, b.Stackdelta())
 	}
-	pushpop := program.NewProgram()
+	pushpop := program.New()
 	if a == ops.STOP {
 		// No filling used
 	} else if a.Stackdelta() > 0 {
 		stack := 0
 		for stack < 1023 {
-			pushpop.Op(a)
+			pushpop.Op(vm.OpCode(a))
 			stack += a.Stackdelta()
 		}
 		for stack > 0 {
-			pushpop.Op(b)
+			pushpop.Op(vm.OpCode(b))
 			stack += b.Stackdelta()
 		}
 	} else {
 		for i := 0; i < 1024; i++ {
-			pushpop.Op(a)
+			pushpop.Op(vm.OpCode(a))
+
 		}
 		for i := 0; i < 1024; i++ {
-			pushpop.Op(b)
+			pushpop.Op(vm.OpCode(b))
 		}
 	}
-	payload := program.NewProgram()
-	start := payload.Jumpdest()
-	payload.AddAll(pushpop.Bytecode())
+	payload := program.New()
+	_, start := payload.Jumpdest()
+	payload.Append(pushpop.Bytes())
 	payload.Jump(start)
 
 	// And dump it into state
@@ -165,7 +166,7 @@ Fork: %v
 	fmt.Println(desc)
 	alloc[attackerAddr] = types.Account{
 		Nonce:   1,
-		Code:    payload.Bytecode(),
+		Code:    payload.Bytes(),
 		Balance: big.NewInt(0xffffffff),
 	}
 	var (

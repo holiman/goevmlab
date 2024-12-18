@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
-package program
+package utils
 
 import (
 	"flag"
@@ -25,7 +25,7 @@ import (
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
 
-// RunProgram parses flags (for profiling), and executes teh testFn
+// RunProgram parses flags (for profiling), and executes the testFn
 func RunProgram(testFn func() error) error {
 	flag.Parse()
 	if *cpuprofile != "" {
