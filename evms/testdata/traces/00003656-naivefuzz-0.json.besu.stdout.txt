@@ -38,4 +38,4 @@
 {"pc":12,"op":80,"gas":"0xf4","gasCost":"0x2","memSize":0,"stack":["0x0"],"depth":1,"refund":0,"opName":"POP"}
 {"pc":13,"op":96,"gas":"0xf2","gasCost":"0x3","memSize":0,"stack":[],"depth":1,"refund":0,"opName":"PUSH1"}
 {"pc":15,"op":84,"gas":"0xef","gasCost":"0x834","memSize":0,"stack":["0x3"],"depth":1,"refund":0,"opName":"SLOAD","error":"Out of gas"}
-{"output":"","gasUsed":"0x99df","test":"00003656-naivefuzz-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false}
+{"output":"","gasUsed":"0x99df","test":"00003656-naivefuzz-0","fork":"London","d":0,"g":0,"v":0,"postHash":"0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","pass":false,"error":"INSUFFICIENT_GAS"}

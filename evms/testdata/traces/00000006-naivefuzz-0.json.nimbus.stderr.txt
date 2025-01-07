@@ -900,7 +900,7 @@
 {"pc":18,"op":96,"gas":"0x88d","gasCost":"0x3","memSize":0,"stack":["0x0","0x0","0x0","0x0"],"depth":3,"refund":19900,"opName":"PUSH1"}
 {"pc":20,"op":96,"gas":"0x88a","gasCost":"0x3","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0"],"depth":3,"refund":19900,"opName":"PUSH1"}
 {"pc":22,"op":90,"gas":"0x887","gasCost":"0x2","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0xf9"],"depth":3,"refund":19900,"opName":"GAS"}
-{"pc":23,"op":242,"gas":"0x885","gasCost":"0x885","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0xf9","0x885"],"depth":3,"refund":19900,"opName":"CALLCODE","error":"Opcode Dispatch Error: GasInt overflow, gasCost=100, gasRefund=-412, depth=3"}
+{"pc":23,"op":242,"gas":"0x885","gasCost":"0x885","memSize":0,"stack":["0x0","0x0","0x0","0x0","0x0","0xf9","0x885"],"depth":3,"refund":19900,"opName":"CALLCODE","error":"Opcode Dispatch Error: OutOfGas, depth=3"}
 {"pc":1786,"op":80,"gas":"0x162","gasCost":"0x2","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26","0x0"],"depth":2,"refund":0,"opName":"POP"}
 {"pc":1787,"op":80,"gas":"0x160","gasCost":"0x2","memSize":1472,"stack":["0x94a843a7335fc63be036fbdecc40b1365f3c5f26"],"depth":2,"refund":0,"opName":"POP"}
 {"pc":2618,"op":80,"gas":"0x13aa","gasCost":"0x2","memSize":2240,"stack":["0x7dce2faf43218578e3fcf2ad22df9918a89e2fba","0x1"],"depth":1,"refund":0,"opName":"POP"}
