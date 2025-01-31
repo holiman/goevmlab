@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/program"
@@ -174,7 +175,7 @@ Fork: %v
 		sender  = common.BytesToAddress([]byte("sender"))
 	)
 	statedb.CreateAccount(sender)
-	tracer := &dumbTracer{}
+	tracer := &customTracer{}
 	runtimeConfig := runtime.Config{
 		Origin:      sender,
 		State:       statedb,
@@ -263,25 +264,26 @@ func convertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit ui
 	return nil
 }
 
-type dumbTracer struct {
-	common2.BasicTracer
+type customTracer struct {
 	jumpCount uint64
 	opCount   uint64
 }
 
-func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	d.opCount++
-	if op == vm.JUMP {
-		d.jumpCount++
-	}
-}
+func (d *customTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnOpcode: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, rData []byte, depth int, err error) {
+			d.opCount++
+			if vm.OpCode(op) == vm.JUMP {
+				d.jumpCount++
+			}
 
-func (d *dumbTracer) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
-	fmt.Printf("CaptureFault %v\n", err)
-}
-
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
-	fmt.Printf(`
+		},
+		OnFault: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
+			fmt.Printf("CaptureFault %v\n", err)
+		},
+		OnTxEnd: func(receipt *types.Receipt, err error) {
+			gasUsed := receipt.GasUsed
+			fmt.Printf(`
 # Stats
 
 Total steps: %d
@@ -289,5 +291,7 @@ Avg gas/op : %.02f
 Gas used   : %d
 Jumps made : %d
 `, d.opCount, float64(gasUsed)/float64(d.opCount), gasUsed,
-		d.jumpCount)
+				d.jumpCount)
+		},
+	}
 }

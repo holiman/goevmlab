@@ -27,6 +27,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/program"
@@ -183,7 +184,7 @@ Fork: %v
 		sender  = common.BytesToAddress([]byte("sender"))
 	)
 	statedb.CreateAccount(sender)
-	tracer := &dumbTracer{startGas: gas}
+	tracer := &customTracer{startGas: gas}
 	runtimeConfig := runtime.Config{
 		Origin:      sender,
 		State:       statedb,
@@ -275,8 +276,7 @@ func convertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit ui
 	return nil
 }
 
-type dumbTracer struct {
-	common2.BasicTracer
+type customTracer struct {
 	createCount uint64
 	copyCount   uint64
 	memSize     uint64
@@ -287,25 +287,29 @@ type dumbTracer struct {
 	phase2Gas uint64
 }
 
-func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	d.opCount++
-	if op == vm.EXTCODECOPY {
-		d.copyCount++
-		if d.phase1Gas == 0 {
-			d.memSize = uint64(scope.Memory.Len())
-			d.phase1Gas = gas
-		}
-	}
-	if op == vm.CREATE {
-		d.createCount++
-		if d.phase2Gas == 0 {
-			d.phase2Gas = gas
-		}
-	}
-}
-
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
-	fmt.Printf(`
+func (d *customTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnOpcode: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, rData []byte, depth int, err error) {
+			d.opCount++
+			if vm.OpCode(op) == vm.EXTCODECOPY {
+				d.copyCount++
+				if d.phase1Gas == 0 {
+					d.memSize = uint64(len(scope.MemoryData()))
+					d.phase1Gas = gas
+				}
+			}
+			if vm.OpCode(op) == vm.CREATE {
+				d.createCount++
+				if d.phase2Gas == 0 {
+					d.phase2Gas = gas
+				}
+			}
+		},
+		OnFault: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
+			fmt.Printf("CaptureFault %v\n", err)
+		},
+		OnTxEnd: func(receipt *types.Receipt, err error) {
+			fmt.Printf(`
 # Stats
 
 Phase 1 - Mem expansion cost: %d (%d bytes expansion) 
@@ -315,8 +319,10 @@ Phase 3 - initcode-exec cost: %d (%d CREATE calls)
 Total steps: %d
 Total gas spent: %d
 `, d.startGas-d.phase1Gas, d.memSize,
-		d.phase1Gas-d.phase2Gas, d.copyCount,
-		d.phase2Gas, d.createCount,
-		d.opCount,
-		d.startGas)
+				d.phase1Gas-d.phase2Gas, d.copyCount,
+				d.phase2Gas, d.createCount,
+				d.opCount,
+				d.startGas)
+		},
+	}
 }

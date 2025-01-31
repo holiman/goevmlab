@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/program"
@@ -34,7 +35,6 @@ import (
 )
 
 func main() {
-
 	if err := program2.RunProgram(runit); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -103,7 +103,7 @@ func runit() error {
 			IstanbulBlock:       new(big.Int),
 		},
 		EVMConfig: vm.Config{
-			Tracer: new(dumbTracer).Hooks(),
+			Tracer: new(customTracer).Hooks(),
 		},
 	}
 	// Run with tracing
@@ -117,27 +117,24 @@ func runit() error {
 	return err
 }
 
-type dumbTracer struct {
-	common2.BasicTracer
-	counter uint64
-}
+type customTracer struct{}
 
-func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	if op == vm.STATICCALL {
-		d.counter++
+func (d *customTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnOpcode: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, rData []byte, depth int, err error) {
+			fmt.Printf("Op: %v\n", vm.OpCode(op))
+		},
+		OnFault: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
+			fmt.Printf("CaptureFault %v\n", err)
+		},
+		OnTxStart: func(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
+			fmt.Printf("captureStart\n")
+			fmt.Printf("	from: %v\n", from.Hex())
+			fmt.Printf("	to: %v\n", tx.To())
+
+		},
+		OnTxEnd: func(receipt *types.Receipt, err error) {
+			fmt.Printf("\nCaptureEnd\n")
+		},
 	}
-	if op == vm.EXTCODESIZE {
-		d.counter++
-	}
-}
-
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	fmt.Printf("captureStart\n")
-	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", to.Hex())
-}
-
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
-	fmt.Printf("\nCaptureEnd\n")
-	fmt.Printf("Counter: %d\n", d.counter)
 }

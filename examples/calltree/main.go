@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/program"
@@ -33,32 +34,37 @@ import (
 	program2 "github.com/holiman/goevmlab/utils"
 )
 
-type dumbTracer struct {
-	common2.BasicTracer
+type customTracer struct {
 	counter uint64
 }
 
-func (d *dumbTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	fmt.Printf("captureStart\n")
-	fmt.Printf("	from: %v\n", from.Hex())
-	fmt.Printf("	to: %v\n", to.Hex())
-}
+func (d *customTracer) Hooks() *tracing.Hooks {
+	return &tracing.Hooks{
+		OnOpcode: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, rData []byte, depth int, err error) {
+			if vm.OpCode(op) == vm.CALL {
+				if depth == 1 {
+					fmt.Println("")
+				} else {
+					d.counter++
+				}
+				if depth < 2 {
+					fmt.Printf("(%d: %d)", depth, gas)
+				}
+			}
+		},
+		OnFault: func(pc uint64, op byte, gas, cost uint64, scope tracing.OpContext, depth int, err error) {
+			fmt.Printf("CaptureFault %v\n", err)
+		},
+		OnTxStart: func(vm *tracing.VMContext, tx *types.Transaction, from common.Address) {
+			fmt.Printf("captureStart\n")
+			fmt.Printf("	from: %v\n", from.Hex())
+			fmt.Printf("	to: %v\n", tx.To())
 
-func (d *dumbTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
-	fmt.Printf("\nCaptureEnd\n")
-	fmt.Printf("Counter: %d\n", d.counter)
-}
-
-func (d *dumbTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	if op == vm.CALL {
-		if depth == 1 {
-			fmt.Println("")
-		} else {
-			d.counter++
-		}
-		if depth < 2 {
-			fmt.Printf("(%d: %d)", depth, gas)
-		}
+		},
+		OnTxEnd: func(receipt *types.Receipt, err error) {
+			fmt.Printf("\nCaptureEnd\n")
+			fmt.Printf("Counter: %d\n", d.counter)
+		},
 	}
 }
 
@@ -115,9 +121,9 @@ func runit() error {
 	)
 	statedb.CreateAccount(sender)
 	var vmConf vm.Config
-	if false {
+	if true {
 		vmConf = vm.Config{
-			Tracer: new(dumbTracer).Hooks(),
+			Tracer: new(customTracer).Hooks(),
 		}
 	}
 	runtimeConfig := runtime.Config{
