@@ -143,11 +143,12 @@ RUN apt-get update -q
 #   - curl (for installing rust),  
 #   - gcc for building 'py-arkworks-bls12381', 
 #   - python3-dev for bulding 'lru-dict'
+#   - pkg-config (see https://github.com/ethereum/execution-specs/issues/1103)
 RUN apt-get install -qy --no-install-recommends \
 	libssl-dev  \
 	openjdk-21-jre \ 
 	libstdc++-13-dev \
-	pipx git curl gcc python3-dev
+	pipx git curl gcc python3-dev pkg-config
 
 # Install execution-specs (EELS)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
