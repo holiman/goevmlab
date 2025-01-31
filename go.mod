@@ -1,18 +1,18 @@
 module github.com/holiman/goevmlab
 
-go 1.22
+go 1.22.0
 
 toolchain go1.23.2
 
 require (
 	github.com/consensys/gnark-crypto v0.14.0
-	github.com/ethereum/go-ethereum v1.14.6-0.20241217142603-feaf1c95b13b
+	github.com/ethereum/go-ethereum v1.14.6-0.20250131093649-8daefeb890e8
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/golang/snappy v0.0.5-0.20231225225746-43d5d4cd4e0e
 	github.com/holiman/uint256 v1.3.2
 	github.com/rivo/tview v0.0.0-20240519200218-0ac5f73025a8
 	github.com/urfave/cli/v2 v2.27.1
-	golang.org/x/crypto v0.31.0
+	golang.org/x/crypto v0.32.0
 )
 
 require (
@@ -51,8 +51,8 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
