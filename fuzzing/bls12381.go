@@ -136,14 +136,10 @@ func newG2MSM() []byte {
 	return append(a, mul...)
 }
 
-// TODO This should return 64 bytes
-// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2537.md#abi-for-mapping-fp-element-to-g1-point
 func newFPtoG1() []byte {
 	return newFieldElement()
 }
 
-// TODO This should return 128 bytes
-// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2537.md#abi-for-mapping-fp2-element-to-g2-point
 func newFP2toG2() []byte {
 	a := newFieldElement()
 	b := newFieldElement()
@@ -170,8 +166,7 @@ func randInt64() int64 {
 // We create the following pairing:
 // e(aMul1 * G1, bMul1 * G2) * e(aMul2 * G1, bMul2 * G2) * ... * e(aMuln * G1, bMuln * G2) == e(G1, G2) ^ s
 // with s = sum(x: 1 -> n: (aMulx * bMulx))
-// TODO!
-// Check that it returns k * 384 bytes!
+//
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2537.md#abi-for-pairing-check
 func newPairing() []byte {
 	_, _, _, genG2 := gnark.Generators()
