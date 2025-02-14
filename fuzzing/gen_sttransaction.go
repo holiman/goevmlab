@@ -17,9 +17,9 @@ var _ = (*stTransactionMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (s StTransaction) MarshalJSON() ([]byte, error) {
 	type StTransaction struct {
-		GasPrice             *math.HexOrDecimal256 `json:"gasPrice"`
-		MaxFeePerGas         *math.HexOrDecimal256 `json:"maxFeePerGas"`
-		MaxPriorityFeePerGas *math.HexOrDecimal256 `json:"maxPriorityFeePerGas"`
+		GasPrice             *math.HexOrDecimal256 `json:"gasPrice,omitempty"`
+		MaxFeePerGas         *math.HexOrDecimal256 `json:"maxFeePerGas,omitempty"`
+		MaxPriorityFeePerGas *math.HexOrDecimal256 `json:"maxPriorityFeePerGas,omitempty"`
 		Nonce                math.HexOrDecimal64   `json:"nonce"`
 		To                   string                `json:"to"`
 		Data                 []string              `json:"data"`

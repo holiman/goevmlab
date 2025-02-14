@@ -153,8 +153,8 @@ type stEnvMarshaling struct {
 
 type StTransaction struct {
 	GasPrice             *big.Int            `json:"gasPrice"`
-	MaxFeePerGas         *big.Int            `json:"maxFeePerGas"`
-	MaxPriorityFeePerGas *big.Int            `json:"maxPriorityFeePerGas"`
+	MaxFeePerGas         *big.Int            `json:"maxFeePerGas,omitempty"`
+	MaxPriorityFeePerGas *big.Int            `json:"maxPriorityFeePerGas,omitempty"`
 	Nonce                uint64              `json:"nonce"`
 	To                   string              `json:"to"`
 	Data                 []string            `json:"data"`
