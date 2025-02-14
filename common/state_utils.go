@@ -31,7 +31,7 @@ func StateDBWithAlloc(alloc types.GenesisAlloc) *state.StateDB {
 	for addr, acc := range alloc {
 		statedb.CreateAccount(addr)
 		statedb.SetCode(addr, acc.Code)
-		statedb.SetNonce(addr, acc.Nonce)
+		statedb.SetNonce(addr, acc.Nonce, 0)
 		if acc.Balance != nil {
 			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
 		}

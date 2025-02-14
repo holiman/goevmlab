@@ -6,7 +6,7 @@ toolchain go1.23.2
 
 require (
 	github.com/consensys/gnark-crypto v0.14.0
-	github.com/ethereum/go-ethereum v1.14.6-0.20250131093649-8daefeb890e8
+	github.com/ethereum/go-ethereum v1.15.1
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/golang/snappy v0.0.5-0.20231225225746-43d5d4cd4e0e
 	github.com/holiman/uint256 v1.3.2
@@ -45,7 +45,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
-	github.com/supranational/blst v0.3.13 // indirect
+	github.com/supranational/blst v0.3.14 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
