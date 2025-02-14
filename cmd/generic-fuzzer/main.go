@@ -41,8 +41,8 @@ var (
 	}
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",
-		Usage: "What fork to use (London, Merge, Byzantium, Shanghai, etc)",
-		Value: "Merge",
+		Usage: fmt.Sprintf("Fork to use %v", ops.ForkNames()),
+		Value: "Cancun",
 	}
 	app = initApp()
 )

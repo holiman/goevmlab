@@ -117,10 +117,16 @@ func newG1Add() []byte {
 }
 
 func newG1MSM() []byte {
-	a := newG1Point()
-	mul := make([]byte, 32)
-	_, _ = crand.Read(mul)
-	return append(a, mul...)
+	k := 1 + randInt64()
+	var res []byte
+	for i := 0; i < int(k); i++ {
+		a := newG1Point()
+		res = append(res, a...)
+		mul := make([]byte, 32)
+		_, _ = crand.Read(mul)
+		res = append(res, mul...)
+	}
+	return res
 }
 
 func newG2Add() []byte {
@@ -130,10 +136,16 @@ func newG2Add() []byte {
 }
 
 func newG2MSM() []byte {
-	a := newG2Point()
-	mul := make([]byte, 32)
-	_, _ = crand.Read(mul)
-	return append(a, mul...)
+	k := 1 + randInt64()
+	var res []byte
+	for i := 0; i < int(k); i++ {
+		a := newG2Point()
+		res = append(res, a...)
+		mul := make([]byte, 32)
+		_, _ = crand.Read(mul)
+		res = append(res, mul...)
+	}
+	return res
 }
 
 func newFPtoG1() []byte {
@@ -170,7 +182,7 @@ func randInt64() int64 {
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2537.md#abi-for-pairing-check
 func newPairing() []byte {
 	_, _, _, genG2 := gnark.Generators()
-	pairs := randInt64()
+	pairs := 1 + randInt64()
 	var res []byte
 	target := new(big.Int)
 	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
@@ -179,16 +191,17 @@ func newPairing() []byte {
 		bMul := randScalar()
 		g1 := new(gnark.G1Affine).ScalarMultiplicationBase(aMul)
 		g2 := new(gnark.G2Affine).ScalarMultiplication(&genG2, bMul)
-		res = append(res, g1.Marshal()...)
-		res = append(res, g2.Marshal()...)
+
+		res = append(res, encodePointG1(g1)...)
+		res = append(res, encodePointG2(g2)...)
 		// Add to s
 		target = target.Add(target, aMul.Mul(aMul, bMul))
 	}
 	// RHS: e(G1, G2) ^ s
 	ta := new(gnark.G1Affine).ScalarMultiplicationBase(target)
 	ta.Neg(ta)
-	res = append(res, ta.Marshal()...)
-	res = append(res, genG2.Marshal()...)
+	res = append(res, encodePointG1(ta)...)
+	res = append(res, encodePointG2(&genG2)...)
 	return res
 }
 

@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
+	"github.com/holiman/goevmlab/ops"
 	"github.com/urfave/cli/v2"
 )
 
@@ -39,8 +40,8 @@ var (
 	}
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",
-		Usage: "What fork to use (London, Merge, Byzantium, Shanghai, etc)",
-		Value: "Merge",
+		Usage: fmt.Sprintf("Fork to use %v", ops.ForkNames()),
+		Value: "Cancun",
 	}
 	app = initApp()
 )
