@@ -26,6 +26,7 @@ import (
 	"hash"
 	"io"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -46,7 +47,6 @@ import (
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/holiman/goevmlab/utils"
 	"github.com/urfave/cli/v2"
-	"net/http"
 )
 
 var (

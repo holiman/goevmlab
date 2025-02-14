@@ -20,16 +20,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
-	"sync/atomic"
-
-	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
+	"github.com/holiman/goevmlab/ops"
 	"github.com/urfave/cli/v2"
 )
 
