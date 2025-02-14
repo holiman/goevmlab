@@ -196,6 +196,14 @@ var (
 	}
 )
 
+func ForkNames() []string {
+	var names []string
+	for _, f := range forks {
+		names = append(names, f.Name)
+	}
+	return names
+}
+
 // ValidOpcodesInFork returns the set of valid opcodes for the given fork, or
 // error if the fork is not defined.
 func ValidOpcodesInFork(fork string) ([]OpCode, error) {

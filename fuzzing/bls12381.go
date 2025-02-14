@@ -21,13 +21,14 @@ import (
 	"math/big"
 	"math/rand"
 
-	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	gnark "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/program"
 )
 
-var modulo, _ = big.NewInt(0).SetString("0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 0)
+var modulo, _ = big.NewInt(0).SetString("1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 16)
 
 type blsPrec struct {
 	addr    int
@@ -37,14 +38,12 @@ type blsPrec struct {
 
 var precompilesBLS = []blsPrec{
 	{0xb, newG1Add, 128},    // G1Add
-	{0xc, newG1Mul, 128},    // G1Mul
-	{0xd, newG1Exp, 128},    // G1MultiExp
-	{0xe, newG2Add, 256},    // G2Add
-	{0xf, newG2Mul, 256},    // G2Mul
-	{0x10, newG2Exp, 256},   // G2MultiExp
-	{0x11, newPairing, 32},  // Pairing
-	{0x12, newFPtoG1, 128},  // FP to G1
-	{0x13, newFP2toG2, 256}, // FP2 to G2
+	{0xc, newG1MSM, 128},    // G1Mul
+	{0xd, newG2Add, 256},    // G2Add
+	{0xe, newG2MSM, 256},    // G2Mul
+	{0x0f, newPairing, 32},  // Pairing
+	{0x10, newFPtoG1, 128},  // FP to G1
+	{0x11, newFP2toG2, 256}, // FP2 to G2
 }
 
 func fillBls(gst *GstMaker, fork string) {
@@ -117,19 +116,15 @@ func newG1Add() []byte {
 	return append(a, b...)
 }
 
-func newG1Mul() []byte {
-	a := newG1Point()
-	mul := make([]byte, 32)
-	_, _ = crand.Read(mul)
-	return append(a, mul...)
-}
-
-func newG1Exp() []byte {
-	i := randInt64()
+func newG1MSM() []byte {
+	k := 1 + randInt64()
 	var res []byte
-	for k := 0; k < int(i); k++ {
-		input := newG1Mul()
-		res = append(res, input...)
+	for i := 0; i < int(k); i++ {
+		a := newG1Point()
+		res = append(res, a...)
+		mul := make([]byte, 32)
+		_, _ = crand.Read(mul)
+		res = append(res, mul...)
 	}
 	return res
 }
@@ -140,19 +135,15 @@ func newG2Add() []byte {
 	return append(a, b...)
 }
 
-func newG2Mul() []byte {
-	a := newG2Point()
-	mul := make([]byte, 32)
-	_, _ = crand.Read(mul)
-	return append(a, mul...)
-}
-
-func newG2Exp() []byte {
-	i := randInt64()
+func newG2MSM() []byte {
+	k := 1 + randInt64()
 	var res []byte
-	for k := 0; k < int(i); k++ {
-		input := newG2Mul()
-		res = append(res, input...)
+	for i := 0; i < int(k); i++ {
+		a := newG2Point()
+		res = append(res, a...)
+		mul := make([]byte, 32)
+		_, _ = crand.Read(mul)
+		res = append(res, mul...)
 	}
 	return res
 }
@@ -187,27 +178,30 @@ func randInt64() int64 {
 // We create the following pairing:
 // e(aMul1 * G1, bMul1 * G2) * e(aMul2 * G1, bMul2 * G2) * ... * e(aMuln * G1, bMuln * G2) == e(G1, G2) ^ s
 // with s = sum(x: 1 -> n: (aMulx * bMulx))
+//
+// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2537.md#abi-for-pairing-check
 func newPairing() []byte {
-	_, _, _, genG2 := bls12381.Generators()
-	pairs := randInt64()
+	_, _, _, genG2 := gnark.Generators()
+	pairs := 1 + randInt64()
 	var res []byte
 	target := new(big.Int)
 	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
 	for k := 0; k < int(pairs); k++ {
 		aMul := randScalar()
 		bMul := randScalar()
-		g1 := new(bls12381.G1Affine).ScalarMultiplicationBase(aMul)
-		g2 := new(bls12381.G2Affine).ScalarMultiplication(&genG2, bMul)
-		res = append(res, g1.Marshal()...)
-		res = append(res, g2.Marshal()...)
+		g1 := new(gnark.G1Affine).ScalarMultiplicationBase(aMul)
+		g2 := new(gnark.G2Affine).ScalarMultiplication(&genG2, bMul)
+
+		res = append(res, encodePointG1(g1)...)
+		res = append(res, encodePointG2(g2)...)
 		// Add to s
 		target = target.Add(target, aMul.Mul(aMul, bMul))
 	}
 	// RHS: e(G1, G2) ^ s
-	ta := new(bls12381.G1Affine).ScalarMultiplicationBase(target)
+	ta := new(gnark.G1Affine).ScalarMultiplicationBase(target)
 	ta.Neg(ta)
-	res = append(res, ta.Marshal()...)
-	res = append(res, genG2.Marshal()...)
+	res = append(res, encodePointG1(ta)...)
+	res = append(res, encodePointG2(&genG2)...)
 	return res
 }
 
@@ -221,29 +215,47 @@ func randScalar() *big.Int {
 
 func newFieldElement() []byte {
 	bytes := randScalar().Bytes()
-	buf := make([]byte, 48)
-	copy(buf[48-len(bytes):], bytes)
+	buf := make([]byte, 64)
+	copy(buf[16+48-len(bytes):], bytes)
 	return buf
 }
 
-// newG1Point generates a random G1 and returns it as a 96-byte
-// byte slice (without point compression)
+// newG1Point generates a random G1 and returns it as a 128-byte slice.
 func newG1Point() []byte {
+	// sample a random scalar
 	s := randScalar()
-	_, _, g1Gen, _ := bls12381.Generators()
-	cp := new(bls12381.G1Affine)
+	// compute a random point
+	cp := new(gnark.G1Affine)
+	_, _, g1Gen, _ := gnark.Generators()
 	cp.ScalarMultiplication(&g1Gen, s)
-	marshalled := cp.Marshal()
-	return marshalled[:]
+	return encodePointG1(cp)
 }
 
-// newG2Point generates a random G2 and returns it as a 192-byte
-// byte slice (without point compression)
+// encodePointG1 encodes a point into 128 bytes.
+func encodePointG1(p *gnark.G1Affine) []byte {
+	out := make([]byte, 128)
+	fp.BigEndian.PutElement((*[fp.Bytes]byte)(out[16:]), p.X)
+	fp.BigEndian.PutElement((*[fp.Bytes]byte)(out[64+16:]), p.Y)
+	return out
+}
+
+// newG2Point generates a random G2 and returns it as a 256-byte byte slice.
 func newG2Point() []byte {
 	s := randScalar()
-	_, _, _, g2gen := bls12381.Generators()
-	cp := new(bls12381.G2Affine)
+	_, _, _, g2gen := gnark.Generators()
+	cp := new(gnark.G2Affine)
 	cp.ScalarMultiplication(&g2gen, s)
-	marshalled := cp.Marshal()
-	return marshalled[:]
+	return encodePointG2(cp)
+}
+
+// encodePointG2 encodes a point into 256 bytes.
+func encodePointG2(p *gnark.G2Affine) []byte {
+	out := make([]byte, 256)
+	// encode x
+	fp.BigEndian.PutElement((*[fp.Bytes]byte)(out[16:16+48]), p.X.A0)
+	fp.BigEndian.PutElement((*[fp.Bytes]byte)(out[80:80+48]), p.X.A1)
+	// encode y
+	fp.BigEndian.PutElement((*[fp.Bytes]byte)(out[144:144+48]), p.Y.A0)
+	fp.BigEndian.PutElement((*[fp.Bytes]byte)(out[208:208+48]), p.Y.A1)
+	return out
 }
