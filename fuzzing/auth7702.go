@@ -105,6 +105,7 @@ func fill7702(gst *GstMaker, fork string) {
 	for _, addr := range h.addrs[1:] {
 		gst.AddAccount(addr, GenesisAccount{
 			Balance: big.NewInt(1),
+			Storage: make(map[common.Hash]common.Hash),
 		})
 	}
 	//

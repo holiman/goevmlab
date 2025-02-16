@@ -26,6 +26,7 @@ FROM golang:latest as golang-builder
 RUN git clone https://github.com/holiman/goevmlab --depth 1
 RUN cd goevmlab && \
   go build ./cmd/generic-fuzzer && \
+  go build ./cmd/generic-generator && \
   go build ./cmd/checkslow && \
   go build ./cmd/minimizer && \
   go build ./cmd/repro && \
@@ -158,6 +159,7 @@ ENV EELS_BIN=/ethereum-spec-evm
 
 # Go-evmlab targets
 COPY --from=golang-builder /go/goevmlab/generic-fuzzer /usr/bin
+COPY --from=golang-builder /go/goevmlab/generic-generator /usr/bin
 COPY --from=golang-builder /go/goevmlab/checkslow  /usr/bin
 COPY --from=golang-builder /go/goevmlab/minimizer /usr/bin
 COPY --from=golang-builder /go/goevmlab/repro /usr/bin
