@@ -26,7 +26,7 @@ func newHelper() *authHelper {
 		keys:   make(map[common.Address]*ecdsa.PrivateKey),
 		nonces: make(map[common.Address]uint64),
 	}
-	h.chainId = uint256.NewInt(1)
+	h.chainId = uint256.NewInt(0)
 	addKey := func(pKey string) {
 		key, err := crypto.HexToECDSA(pKey)
 		if err != nil {
@@ -114,7 +114,23 @@ func fill7702(gst *GstMaker, fork string) {
 	for i := 0; i < 1+rand.Intn(25); i++ {
 		source := h.addrs[rand.Int()%len(h.addrs)]
 		dest := allAddresses[rand.Int()%len(allAddresses)]
-		a, err := h.makeAuth(source, dest)
+
+		nonce := h.consumeNonce(source)
+		unsigned := types.SetCodeAuthorization{
+			ChainID: *h.chainId,
+			Address: dest,
+			Nonce:   nonce,
+		}
+		rnd := rand.Intn(20)
+		if rnd == 0 {
+			// Random chain id
+			unsigned.ChainID = randU256()
+		} else if rnd == 1 {
+			// Random nonce
+			unsigned.Nonce = rand.Uint64()
+		}
+		a, err := types.SignSetCode(h.keys[source], unsigned)
+		//		a, err := h.makeAuth(source, dest)
 		if err != nil {
 			panic(err)
 		}
@@ -133,16 +149,35 @@ func fill7702(gst *GstMaker, fork string) {
 	{
 		tx := &StTransaction{
 			// 8M gaslimit
-			GasLimit:          []uint64{8000000},
-			Nonce:             0,
-			Value:             []string{randHex(4)},
-			Data:              []string{randHex(100)},
-			GasPrice:          big.NewInt(0x10),
-			To:                allAddresses[rand.Int()%len(allAddresses)].Hex(),
-			Sender:            sender,
-			PrivateKey:        hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
-			AuthorizationList: authList,
+			GasLimit:             []uint64{8000000},
+			Nonce:                0,
+			Value:                []string{randHex(4)},
+			Data:                 []string{randHex(100)},
+			MaxFeePerGas:         big.NewInt(0x10),
+			MaxPriorityFeePerGas: big.NewInt(0x10),
+			To:                   allAddresses[rand.Int()%len(allAddresses)].Hex(),
+			Sender:               sender,
+			PrivateKey:           hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8"),
+			AuthorizationList:    authList,
 		}
 		gst.SetTx(tx)
 	}
+}
+
+func randU256() uint256.Int {
+	var a uint256.Int
+
+	if rand.Int()%1 == 0 {
+		a[0] = rand.Uint64()
+	}
+	if rand.Int()%1 == 0 {
+		a[1] = rand.Uint64()
+	}
+	if rand.Int()%1 == 0 {
+		a[2] = rand.Uint64()
+	}
+	if rand.Int()%1 == 0 {
+		a[3] = rand.Uint64()
+	}
+	return a
 }
