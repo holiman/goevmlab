@@ -59,21 +59,6 @@ func (h *authHelper) consumeNonce(addr common.Address) uint64 {
 	return cur
 }
 
-// makes an auth using the current nonce, and bumps the nonce
-func (h *authHelper) makeAuth(from, to common.Address) (types.SetCodeAuthorization, error) {
-	nonce := h.consumeNonce(from)
-	return h.makeAuthWithNonce(from, nonce, to)
-}
-
-func (h *authHelper) makeAuthWithNonce(from common.Address, nonce uint64, to common.Address) (types.SetCodeAuthorization, error) {
-	unsigned := types.SetCodeAuthorization{
-		ChainID: *h.chainId,
-		Address: to,
-		Nonce:   nonce,
-	}
-	return types.SignSetCode(h.keys[from], unsigned)
-}
-
 func fill7702(gst *GstMaker, fork string) {
 	h := newHelper()
 	contracts := []common.Address{
@@ -166,17 +151,16 @@ func fill7702(gst *GstMaker, fork string) {
 
 func randU256() uint256.Int {
 	var a uint256.Int
-
-	if rand.Int()%1 == 0 {
+	if rand.Int()%2 == 0 {
 		a[0] = rand.Uint64()
 	}
-	if rand.Int()%1 == 0 {
+	if rand.Int()%2 == 0 {
 		a[1] = rand.Uint64()
 	}
-	if rand.Int()%1 == 0 {
+	if rand.Int()%2 == 0 {
 		a[2] = rand.Uint64()
 	}
-	if rand.Int()%1 == 0 {
+	if rand.Int()%2 == 0 {
 		a[3] = rand.Uint64()
 	}
 	return a
