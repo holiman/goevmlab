@@ -22,6 +22,7 @@ func (s stAuthorization) MarshalJSON() ([]byte, error) {
 		V       math.HexOrDecimal64   `json:"v" gencodec:"required"`
 		R       *math.HexOrDecimal256 `json:"r" gencodec:"required"`
 		S       *math.HexOrDecimal256 `json:"s" gencodec:"required"`
+		Signer  *common.Address       `json:"signer"`
 	}
 	var enc stAuthorization
 	enc.ChainID = (*math.HexOrDecimal256)(s.ChainID)
@@ -30,6 +31,7 @@ func (s stAuthorization) MarshalJSON() ([]byte, error) {
 	enc.V = math.HexOrDecimal64(s.V)
 	enc.R = (*math.HexOrDecimal256)(s.R)
 	enc.S = (*math.HexOrDecimal256)(s.S)
+	enc.Signer = s.Signer
 	return json.Marshal(&enc)
 }
 

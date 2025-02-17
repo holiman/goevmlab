@@ -112,7 +112,7 @@ func fill7702(gst *GstMaker, fork string) {
 	var authList []*stAuthorization
 	for i := 0; i < 1+rand.Intn(25); i++ {
 		source := h.addrs[rand.Int()%len(h.addrs)]
-		dest := h.addrs[rand.Int()%len(h.addrs)]
+		dest := allAddresses[rand.Int()%len(allAddresses)]
 		a, err := h.makeAuth(source, dest)
 		if err != nil {
 			panic(err)
@@ -124,6 +124,7 @@ func fill7702(gst *GstMaker, fork string) {
 			V:       a.V,
 			R:       a.R.ToBig(),
 			S:       a.S.ToBig(),
+			Signer:  &source,
 		})
 	}
 
