@@ -630,8 +630,12 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 		hasher.Reset()
 		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
 		if err != nil {
-			log.Error("Error starting vm", "err", err, "evm", evm.Name())
-			t.err = fmt.Errorf("error starting vm %v: %w", evm.Name(), err)
+			if res != nil {
+				log.Error("Error running vm", "err", err, "evm", evm.Name(), "file", t.file, "cmd", res.Cmd)
+			} else {
+				log.Error("Error running vm", "err", err, "evm", evm.Name(), "file", t.file)
+			}
+			t.err = fmt.Errorf("error running vm %v: %w", evm.Name(), err)
 			// Send back
 			resultCh <- t
 			continue

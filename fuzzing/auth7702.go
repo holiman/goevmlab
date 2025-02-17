@@ -91,6 +91,7 @@ func fill7702(gst *GstMaker, fork string) {
 	var allAddresses []common.Address
 	allAddresses = append(allAddresses, contracts...)
 	allAddresses = append(allAddresses, h.addrs...)
+	allAddresses = append(allAddresses, common.Address{})
 
 	// each contract does a bit calling within the global set
 	for _, addr := range contracts {
