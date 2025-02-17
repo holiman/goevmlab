@@ -124,7 +124,7 @@ RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Run
 FROM ubuntu:24.04 as java-builder
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates \
-  openjdk-21-jre-headless=21* libjemalloc-dev=5.* 
+  openjdk-21-jdk-headless=21* libjemalloc-dev=5.* 
 RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
 RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
 RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
