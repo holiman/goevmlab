@@ -160,7 +160,7 @@ var (
 	traceLengthSA = utils.NewSlidingAverage()
 )
 
-func initVMs(c *cli.Context) []evms.Evm {
+func InitVMs(c *cli.Context) []evms.Evm {
 	var (
 		gethBins        = c.StringSlice(GethFlag.Name)
 		gethBatchBins   = c.StringSlice(GethBatchFlag.Name)
@@ -225,7 +225,7 @@ func initVMs(c *cli.Context) []evms.Evm {
 // if they all report the same post stateroot.
 func RootsEqual(path string, c *cli.Context) (bool, error) {
 	var (
-		vms   = initVMs(c)
+		vms   = InitVMs(c)
 		wg    sync.WaitGroup
 		roots = make([]string, len(vms))
 		errs  = make([]error, len(vms))
@@ -265,12 +265,8 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 // - true, err: test execution failed
 // - false, err: a consensus issue found
 // - false, nil: a consensus issue found
-func RunSingleTest(path string, c *cli.Context) (bool, error) {
-	var (
-		vms     = initVMs(c)
-		outputs []*os.File
-		outdir  = c.String(LocationFlag.Name)
-	)
+func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
+	var outputs []*os.File
 	if len(vms) < 1 {
 		return true, fmt.Errorf("No vms specified!")
 	}
@@ -337,7 +333,7 @@ func RunSingleTest(path string, c *cli.Context) (bool, error) {
 }
 
 func TestSpeed(dir string, c *cli.Context) error {
-	vms := initVMs(c)
+	vms := InitVMs(c)
 	if len(vms) < 1 {
 		return fmt.Errorf("No vms specified!")
 	}
@@ -398,7 +394,7 @@ func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) er
 
 func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, cleanupFiles bool) error {
 	var (
-		vms        = initVMs(c)
+		vms        = InitVMs(c)
 		numThreads = c.Int(ThreadFlag.Name)
 		skipTrace  = c.Bool(SkipTraceFlag.Name)
 		numClients = 2
