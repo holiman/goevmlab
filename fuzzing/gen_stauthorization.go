@@ -44,6 +44,7 @@ func (s *stAuthorization) UnmarshalJSON(input []byte) error {
 		V       *math.HexOrDecimal64  `json:"v" gencodec:"required"`
 		R       *math.HexOrDecimal256 `json:"r" gencodec:"required"`
 		S       *math.HexOrDecimal256 `json:"s" gencodec:"required"`
+		Signer  *common.Address       `json:"signer"`
 	}
 	var dec stAuthorization
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -73,5 +74,6 @@ func (s *stAuthorization) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 's' for stAuthorization")
 	}
 	s.S = (*big.Int)(dec.S)
+	s.Signer = dec.Signer
 	return nil
 }
