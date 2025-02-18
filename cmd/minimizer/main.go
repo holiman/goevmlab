@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -57,6 +58,7 @@ func initApp() *cli.App {
 	app.Flags = append(app.Flags, common.VmFlags...)
 	app.Flags = append(app.Flags, fullTraceFlag, patienceFlag, skipGasFlag)
 	app.Flags = append(app.Flags, common.VerbosityFlag)
+	app.Flags = append(app.Flags, common.LocationFlag)
 	app.Action = startFuzzer
 	return app
 }
@@ -84,6 +86,8 @@ func startFuzzer(c *cli.Context) error {
 		testPath  = c.Args().First()
 		compareFn func(path string, c *cli.Context) (bool, error)
 		patience  = c.Int(patienceFlag.Name)
+		vms       = common.InitVMs(c)
+		outdir    = c.String(common.LocationFlag.Name)
 	)
 	compareFn = func(path string, c *cli.Context) (bool, error) {
 		agree, err := common.RootsEqual(path, c)
@@ -96,9 +100,21 @@ func startFuzzer(c *cli.Context) error {
 		}
 		return agree, nil
 	}
-	if c.Bool(fullTraceFlag.Name) {
+	if len(vms) == 1 {
+		log.Info("Only one VM supplied, entering crash-mode (assuming the vm crashes)")
+		// In this mode, we just execute one VM which crashes.
+		evm := vms[0]
 		compareFn = func(path string, c *cli.Context) (bool, error) {
-			agree, err := common.RunSingleTest(path, c)
+			if _, err := evm.RunStateTest(path, io.Discard, false); err != nil {
+				log.Info("EVM crash occurred", "err", err)
+				return false, nil
+			}
+			log.Info("No crash occurred")
+			return true, nil
+		}
+	} else if c.Bool(fullTraceFlag.Name) {
+		compareFn = func(path string, c *cli.Context) (bool, error) {
+			agree, err := common.RunSingleTest(path, outdir, vms)
 			if !agree {
 				return false, nil
 			}
