@@ -131,12 +131,11 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode 
 	if speedMode {
 		// In speednode, there's no jsonl output, it instead looks like
 		var r []stateRoot
-		err := json.NewDecoder(input).Decode(&r)
-		if err != nil {
-			return r[0]
+		if err := json.NewDecoder(input).Decode(&r); err != nil {
+			log.Warn("Error parsing nethermind output", "error", err)
+			return stateRoot{}
 		}
-		log.Warn("Error parsing nethermind output", "error", err)
-		return stateRoot{}
+		return r[0]
 	}
 	scanner := NewJsonlScanner("neth", input, os.Stderr)
 	defer scanner.Release()
