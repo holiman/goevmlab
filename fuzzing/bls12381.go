@@ -111,8 +111,8 @@ func RandCallBLS() []byte {
 }
 
 func newG1Add() []byte {
-	a := newG1Point()
-	b := newG1Point()
+	a := makeBadG1()
+	b := makeBadG1()
 	return append(a, b...)
 }
 
@@ -120,7 +120,7 @@ func newG1MSM() []byte {
 	k := 1 + randInt64()
 	var res []byte
 	for i := 0; i < int(k); i++ {
-		a := newG1Point()
+		a := makeBadG1()
 		res = append(res, a...)
 		mul := make([]byte, 32)
 		_, _ = crand.Read(mul)
@@ -130,8 +130,8 @@ func newG1MSM() []byte {
 }
 
 func newG2Add() []byte {
-	a := newG2Point()
-	b := newG2Point()
+	a := makeBadG2()
+	b := makeBadG2()
 	return append(a, b...)
 }
 
@@ -139,7 +139,7 @@ func newG2MSM() []byte {
 	k := 1 + randInt64()
 	var res []byte
 	for i := 0; i < int(k); i++ {
-		a := newG2Point()
+		a := makeBadG2()
 		res = append(res, a...)
 		mul := make([]byte, 32)
 		_, _ = crand.Read(mul)
@@ -188,12 +188,24 @@ func newPairing() []byte {
 	// LHS: sum(x: 1->n: e(aMulx * G1, bMulx * G2))
 	for k := 0; k < int(pairs); k++ {
 		aMul := randScalar()
-		bMul := randScalar()
 		g1 := new(gnark.G1Affine).ScalarMultiplicationBase(aMul)
+
+		bMul := randScalar()
 		g2 := new(gnark.G2Affine).ScalarMultiplication(&genG2, bMul)
 
-		res = append(res, encodePointG1(g1)...)
-		res = append(res, encodePointG2(g2)...)
+		if rand.Intn(10) == 0 {
+			data := makeBadG1()
+			res = append(res, data...)
+		} else {
+			res = append(res, encodePointG1(g1)...)
+		}
+		if rand.Intn(10) == 0 {
+			data := makeBadG2()
+			res = append(res, data...)
+		} else {
+			res = append(res, encodePointG2(g2)...)
+		}
+
 		// Add to s
 		target = target.Add(target, aMul.Mul(aMul, bMul))
 	}
@@ -206,11 +218,28 @@ func newPairing() []byte {
 }
 
 func randScalar() *big.Int {
-	ret, err := crand.Int(crand.Reader, modulo)
-	if err != nil {
-		panic(err)
+	switch rand.Intn(50) {
+	case 0: // zero
+		return new(big.Int)
+	case 1: // at modulo
+		return new(big.Int).Set(modulo)
+	case 2: // modulo + 1
+		ret := new(big.Int).Set(modulo)
+		ret.Add(ret, big.NewInt(1))
+		return ret
+	case 3: // no holds barred
+		v := make([]byte, 256)
+		crand.Read(v)
+		ret := new(big.Int)
+		ret.SetBytes(v)
+		return ret
+	default:
+		ret, err := crand.Int(crand.Reader, modulo)
+		if err != nil {
+			panic(err)
+		}
+		return ret
 	}
-	return ret
 }
 
 func newFieldElement() []byte {
@@ -229,6 +258,64 @@ func newG1Point() []byte {
 	_, _, g1Gen, _ := gnark.Generators()
 	cp.ScalarMultiplication(&g1Gen, s)
 	return encodePointG1(cp)
+}
+
+func makeBadG1() []byte {
+	var retval []byte
+	if rand.Intn(10) == 0 {
+		// Produces crappy G1s which are (usually not) on curve
+		retval = make([]byte, 128)
+		rand.Read(retval)
+		//zero out x and y top portions
+		for i := 0; i < 16; i++ {
+			retval[i] = 0
+			retval[i+64] = 0
+		}
+		// Make it smaller than modulus (in most cases)
+		retval[16] &= 0x1f
+		retval[64+16] &= 0x1f
+	} else {
+		// Produce a mostly correct G1
+		aMul := randScalar()
+		g1 := new(gnark.G1Affine).ScalarMultiplicationBase(aMul)
+		retval = encodePointG1(g1)
+	}
+	// Potentially mutate it a bit
+	if rand.Intn(10) == 0 {
+		retval[rand.Intn(len(retval))] = byte(rand.Int())
+	}
+	return retval
+}
+
+func makeBadG2() []byte {
+	var retval []byte
+	if rand.Intn(10) == 0 {
+		// Produces crappy G2s which are (usually not) on curve
+		retval = make([]byte, 256)
+		rand.Read(retval)
+		//zero out x and y top portions
+		for i := 0; i < 16; i++ {
+			retval[i] = 0
+			retval[i+64] = 0
+			retval[i+128] = 0
+			retval[i+192] = 0
+		}
+		// Make it smaller than modulus (in most cases)
+		retval[16] &= 0x1f
+		retval[64+16] &= 0x1f
+		retval[128+16] &= 0x1f
+		retval[192+16] &= 0x1f
+	} else {
+		// Produce a mostly correct G1
+		aMul := randScalar()
+		g2 := new(gnark.G2Affine).ScalarMultiplicationBase(aMul)
+		retval = encodePointG2(g2)
+	}
+	// Potentially mutate it a bit
+	if rand.Intn(10) == 0 {
+		retval[rand.Intn(len(retval))] = byte(rand.Int())
+	}
+	return retval
 }
 
 // encodePointG1 encodes a point into 128 bytes.
