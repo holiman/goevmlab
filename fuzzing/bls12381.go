@@ -245,7 +245,11 @@ func randScalar() *big.Int {
 func newFieldElement() []byte {
 	bytes := randScalar().Bytes()
 	buf := make([]byte, 64)
-	copy(buf[16+48-len(bytes):], bytes)
+	if len(bytes) > 48 {
+		copy(buf[16:], bytes)
+	} else {
+		copy(buf[16+48-len(bytes):], bytes)
+	}
 	return buf
 }
 

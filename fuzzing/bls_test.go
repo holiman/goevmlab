@@ -1,10 +1,11 @@
 package fuzzing
 
 import (
-	"errors"
-	"fmt"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
+
+	"errors"
+	"fmt"
 	"testing"
 )
 
