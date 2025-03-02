@@ -229,7 +229,7 @@ func randScalar() *big.Int {
 		return ret
 	case 3: // no holds barred
 		v := make([]byte, 256)
-		crand.Read(v)
+		_, _ = crand.Read(v)
 		ret := new(big.Int)
 		ret.SetBytes(v)
 		return ret
@@ -269,7 +269,7 @@ func makeBadG1() []byte {
 	if rand.Intn(10) == 0 {
 		// Produces crappy G1s which are (usually not) on curve
 		retval = make([]byte, 128)
-		rand.Read(retval)
+		_, _ = crand.Read(retval)
 		//zero out x and y top portions
 		for i := 0; i < 16; i++ {
 			retval[i] = 0
@@ -296,7 +296,7 @@ func makeBadG2() []byte {
 	if rand.Intn(10) == 0 {
 		// Produces crappy G2s which are (usually not) on curve
 		retval = make([]byte, 256)
-		rand.Read(retval)
+		_, _ = crand.Read(retval)
 		//zero out x and y top portions
 		for i := 0; i < 16; i++ {
 			retval[i] = 0
