@@ -169,13 +169,12 @@ func startFuzzer(c *cli.Context) error {
 	// Try removing auths
 	if len(gst[testname].Tx.AuthorizationList) > 0 {
 		log.Info("Reducing auths")
-		for i := 0; ; i++ {
+		for i := 0; ; {
 			current := gst[testname].Tx.AuthorizationList
 			if i >= len(current) {
 				break
 			}
-			next := fuzzing.CopyAndDropAuth(current, i)
-			gst[testname].Tx.AuthorizationList = next
+			gst[testname].Tx.AuthorizationList = fuzzing.CopyAndDropAuth(current, i)
 			log.Info("Dropped auth", "index", i)
 			if !inConsensus() {
 				continue
