@@ -206,3 +206,15 @@ func rlpHash(x interface{}) (h common.Hash) {
 	hw.Sum(h[:0])
 	return h
 }
+
+// CopyAndDropAuth returns a copy of the authorizationlist, with the item at the given
+// index dropped
+func CopyAndDropAuth(list []*stAuthorization, index int) []*stAuthorization {
+	var cpy []*stAuthorization
+	for i, auth := range list {
+		if i != index {
+			cpy = append(cpy, auth)
+		}
+	}
+	return cpy
+}
