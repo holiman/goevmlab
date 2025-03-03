@@ -1,0 +1,10 @@
+{"depth":1,"pc":0,"gas":7978312,"op":"0x6f","opName":"PUSH16","stack":[]}
+{"depth":1,"pc":17,"gas":7978309,"op":"0x60","opName":"PUSH1","stack":["0x114f4aaf5e94bfc3f2f2da4a8db5efc4"]}
+{"depth":1,"pc":19,"gas":7978306,"op":"0x52","opName":"MSTORE","stack":["0x114f4aaf5e94bfc3f2f2da4a8db5efc4","0x0"]}
+{"depth":1,"pc":20,"gas":7978300,"op":"0x7f","opName":"PUSH32","stack":[]}
+{"depth":1,"pc":7649,"gas":29301,"op":"0x55","opName":"SSTORE","stack":["0xeed071787f4cbc1a0cb73efedd6bc32","0x204"]}
+{"depth":1,"pc":7650,"gas":7201,"op":"0x60","opName":"PUSH1","stack":[]}
+{"depth":1,"pc":7652,"gas":7198,"op":"0x51","opName":"MLOAD","stack":["0xa0"]}
+{"depth":1,"pc":7653,"gas":7195,"op":"0x61","opName":"PUSH2","stack":["0x38a03877ba94e110d715a2b53638b50bc9624e0f7f095a64d7d5d0d9f341ba28"]}
+{"depth":1,"pc":7656,"gas":7192,"op":"0x55","opName":"SSTORE","stack":["0x38a03877ba94e110d715a2b53638b50bc9624e0f7f095a64d7d5d0d9f341ba28","0x205"]}
+{"stateRoot":"0xf0c3f3872f55550e290ae73bcaed7d11abfc75b5d29b7d48401998b305029b92"}

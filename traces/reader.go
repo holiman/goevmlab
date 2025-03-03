@@ -198,7 +198,7 @@ func convertToStructLog(op map[string]interface{}) (*logger.StructLog, error) {
 		case "memSize":
 			log.MemorySize = intify(v)
 		case "op":
-			log.Op = vm.OpCode(uint64(v.(float64)))
+			log.Op = vm.OpCode(uint64(intify(v)))
 			ok = true
 		case "gas":
 			log.Gas = uint64(intify(v))
