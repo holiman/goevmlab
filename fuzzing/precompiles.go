@@ -42,8 +42,8 @@ func randSize() int64 {
 	if b < 3 {
 		return 0
 	}
-	if b < 95 {
-		return rand.Int63n(257)
+	if b < 95 { // Make it a multiple of 32, up to 512 (16x)
+		return (1 + rand.Int63n(16)) * 32
 	}
 	return rand.Int63n(1024)
 }
