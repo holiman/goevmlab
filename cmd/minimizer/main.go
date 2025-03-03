@@ -166,6 +166,26 @@ func startFuzzer(c *cli.Context) error {
 		return allAgree
 	}
 
+	// Try removing auths
+	if len(gst[testname].Tx.AuthorizationList) > 0 {
+		log.Info("Reducing auths")
+		for i := 0; ; i++ {
+			current := gst[testname].Tx.AuthorizationList
+			if i >= len(current) {
+				break
+			}
+			next := fuzzing.CopyAndDropAuth(current, i)
+			gst[testname].Tx.AuthorizationList = next
+			log.Info("Dropped auth", "index", i)
+			if !inConsensus() {
+				continue
+			}
+			log.Info("Restoring change")
+			gst[testname].Tx.AuthorizationList = current
+			i++
+		}
+	}
+
 	// Try decreasing gas
 	if !c.Bool(skipGasFlag.Name) {
 		gas := sort.Search(int(gst[testname].Tx.GasLimit[0]), func(i int) bool {
@@ -233,6 +253,7 @@ func startFuzzer(c *cli.Context) error {
 			gst[testname].Pre[target].Storage[k] = v
 		}
 	}
+
 	log.Info("Done", "result", good)
 	return nil
 }
