@@ -153,7 +153,7 @@ RUN apt-get install -qy --no-install-recommends \
 
 # Install execution-specs (EELS)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
-RUN git clone https://github.com/ethereum/execution-specs.git --depth 1 
+RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/prague --depth 1
 RUN . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
 ENV EELS_BIN=/ethereum-spec-evm
 
