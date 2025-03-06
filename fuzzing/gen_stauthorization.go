@@ -20,6 +20,7 @@ func (s stAuthorization) MarshalJSON() ([]byte, error) {
 		Address common.Address        `json:"address" gencodec:"required"`
 		Nonce   math.HexOrDecimal64   `json:"nonce" gencodec:"required"`
 		V       math.HexOrDecimal64   `json:"v" gencodec:"required"`
+		YP      math.HexOrDecimal64   `json:"yParity" gencodec:"required"`
 		R       *math.HexOrDecimal256 `json:"r" gencodec:"required"`
 		S       *math.HexOrDecimal256 `json:"s" gencodec:"required"`
 		Signer  *common.Address       `json:"signer"`
@@ -29,6 +30,7 @@ func (s stAuthorization) MarshalJSON() ([]byte, error) {
 	enc.Address = s.Address
 	enc.Nonce = math.HexOrDecimal64(s.Nonce)
 	enc.V = math.HexOrDecimal64(s.V)
+	enc.YP = math.HexOrDecimal64(s.V)
 	enc.R = (*math.HexOrDecimal256)(s.R)
 	enc.S = (*math.HexOrDecimal256)(s.S)
 	enc.Signer = s.Signer
