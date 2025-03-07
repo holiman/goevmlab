@@ -56,6 +56,7 @@ func testVmsOutput(t *testing.T, testfile string) {
 		{NewErigonVM("", "erigon"), "", fmt.Sprintf("%v.erigon.stderr.txt", testfile)},
 		{NewGethEVM("", "gethvm"), "", fmt.Sprintf("%v.geth.stderr.txt", testfile)},
 		{NewNimbusEVM("", "nimbus"), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
+		{NewNimbusBatchVM("", "nimbusba"), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
 		{NewEvmoneVM("", "evmone"), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
 		{NewRethVM("", "rethvm"), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
 		{NewEelsEVM("", "eelsvm"), "", fmt.Sprintf("%v.eels.stderr.txt", testfile)},
