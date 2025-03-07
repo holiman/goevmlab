@@ -135,6 +135,10 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode 
 			log.Warn("Error parsing nethermind output", "error", err)
 			return stateRoot{}
 		}
+		rootJson, _ := json.Marshal(r[0])
+		if _, err := out.Write(append(rootJson, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		}
 		return r[0]
 	}
 	scanner := NewJsonlScanner("neth", input, os.Stderr)

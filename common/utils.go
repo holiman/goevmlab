@@ -94,6 +94,10 @@ var (
 		Name:  "nimbus",
 		Usage: "Location of nimbus 'evmstate' binary",
 	}
+	NimbusBatchFlag = &cli.StringSliceFlag{
+		Name:  "nimbusbatch",
+		Usage: "Location of nimbus 'evmstate' binary for batchmode execution",
+	}
 	EvmoneFlag = &cli.StringSliceFlag{
 		Name:  "evmone",
 		Usage: "Location of evmone 'evmone' binary",
@@ -154,6 +158,7 @@ var (
 		ErigonFlag,
 		ErigonBatchFlag,
 		NimbusFlag,
+		NimbusBatchFlag,
 		EvmoneFlag,
 		RethFlag,
 	}
@@ -173,6 +178,7 @@ func InitVMs(c *cli.Context) []evms.Evm {
 		erigonBins      = c.StringSlice(ErigonFlag.Name)
 		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
 		nimBins         = c.StringSlice(NimbusFlag.Name)
+		nimBatchBins    = c.StringSlice(NimbusBatchFlag.Name)
 		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
 		revmBins        = c.StringSlice(RethFlag.Name)
 
@@ -210,6 +216,9 @@ func InitVMs(c *cli.Context) []evms.Evm {
 	}
 	for i, bin := range nimBins {
 		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
+	}
+	for i, bin := range nimBatchBins {
+		vms = append(vms, evms.NewNimbusBatchVM(bin, fmt.Sprintf("nimbusbatch-%d", i)))
 	}
 	for i, bin := range evmoneBins {
 		vms = append(vms, evms.NewEvmoneVM(bin, fmt.Sprintf("%d", i)))
