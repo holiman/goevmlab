@@ -60,6 +60,8 @@ func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 		stdin   io.WriteCloser
 		cmd     = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "--nostorage")
 	)
+	evm.mu.Lock()
+	defer evm.mu.Unlock()
 	if evm.cmd == nil {
 		if !speedTest {
 			// in normal execution, we read traces from standard error
@@ -84,11 +86,9 @@ func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 		evm.procOut = procOut
 		evm.stdin = stdin
 	}
-	evm.mu.Lock()
-	defer evm.mu.Unlock()
 	_, err = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	if err != nil {
-		log.Error("Error writing to nethermind", "err", err)
+		log.Error("Error writing to nimbus", "path", path, "err", err)
 	}
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.procOut, speedTest)

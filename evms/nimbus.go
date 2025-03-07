@@ -127,8 +127,12 @@ func (evm *NimbusEVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode boo
 		// In speednode, there's no jsonl output, it instead looks like
 		var r []stateRoot
 		if err := json.NewDecoder(input).Decode(&r); err != nil {
-			log.Warn("Error parsing nethermind output", "error", err)
+			log.Warn("Error parsing nimbus output", "error", err)
 			return stateRoot{}
+		}
+		rootJson, _ := json.Marshal(r[0])
+		if _, err := out.Write(append(rootJson, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
 		return r[0]
 	}
