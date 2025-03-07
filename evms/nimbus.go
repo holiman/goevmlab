@@ -118,9 +118,23 @@ func (vm *NimbusEVM) Close() {
 }
 
 func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
-	scanner := NewJsonlScanner("geth", input, os.Stderr)
+	evm.copyUntilEnd(out, input, false)
+}
+
+// copyUntilEnd copies the input to output, and returns the stateroot on completion
+func (evm *NimbusEVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool) stateRoot {
+	if speedMode {
+		// In speednode, there's no jsonl output, it instead looks like
+		var r []stateRoot
+		if err := json.NewDecoder(input).Decode(&r); err != nil {
+			log.Warn("Error parsing nethermind output", "error", err)
+			return stateRoot{}
+		}
+		return r[0]
+	}
+	scanner := NewJsonlScanner("nimb", input, os.Stderr)
 	defer scanner.Release()
-	var stateRoot stateRoot
+	var root stateRoot
 
 	// When nimbus encounters an error, it may already have spat out the info prematurely.
 	// We need to merge it back to one item, just like geth
@@ -153,7 +167,7 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 		}
 		// If we have a stateroot, we're done
 		if len(elem.StateRoot1) != 0 {
-			stateRoot.StateRoot = elem.StateRoot1
+			root.StateRoot = elem.StateRoot1
 			break
 		}
 		// If the output cannot be marshalled, all fields will be blanks.
@@ -170,10 +184,11 @@ func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
 		yield(&elem)
 	}
 	yield(nil)
-	root, _ := json.Marshal(stateRoot)
-	if _, err := out.Write(append(root, '\n')); err != nil {
+	rootJson, _ := json.Marshal(root)
+	if _, err := out.Write(append(rootJson, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
+	return root
 }
 
 func (evm *NimbusEVM) Stats() []any {
