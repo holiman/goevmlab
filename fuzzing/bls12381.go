@@ -266,7 +266,7 @@ func newG1Point() []byte {
 
 func makeBadG1() []byte {
 	var retval []byte
-	if rand.Intn(10) == 0 {
+	if c := rand.Intn(10); c == 0 {
 		// Produces crappy G1s which are (usually not) on curve
 		retval = make([]byte, 128)
 		_, _ = crand.Read(retval)
@@ -278,6 +278,12 @@ func makeBadG1() []byte {
 		// Make it smaller than modulus (in most cases)
 		retval[16] &= 0x1f
 		retval[64+16] &= 0x1f
+	} else if c == 1 || c == 2 {
+		//  Wrong subgroup
+		f, _ := new(fp.Element).SetRandom()
+		g1Jac := gnark.GeneratePointNotInG1(*f)
+		g1aff := new(gnark.G1Affine).FromJacobian(&g1Jac)
+		retval = encodePointG1(g1aff)
 	} else {
 		// Produce a mostly correct G1
 		aMul := randScalar()
@@ -293,7 +299,7 @@ func makeBadG1() []byte {
 
 func makeBadG2() []byte {
 	var retval []byte
-	if rand.Intn(10) == 0 {
+	if c := rand.Intn(10); c == 0 {
 		// Produces crappy G2s which are (usually not) on curve
 		retval = make([]byte, 256)
 		_, _ = crand.Read(retval)
@@ -309,6 +315,13 @@ func makeBadG2() []byte {
 		retval[64+16] &= 0x1f
 		retval[128+16] &= 0x1f
 		retval[192+16] &= 0x1f
+	} else if c == 1 || c == 2 {
+		//  Wrong subgroup
+		f1, _ := new(fp.Element).SetRandom()
+		f2, _ := new(fp.Element).SetRandom()
+		g2Jac := gnark.GeneratePointNotInG2(*f1, *f2)
+		g2aff := new(gnark.G2Affine).FromJacobian(&g2Jac)
+		retval = encodePointG2(g2aff)
 	} else {
 		// Produce a mostly correct G1
 		aMul := randScalar()
