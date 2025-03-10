@@ -149,7 +149,8 @@ RUN apt-get install -qy --no-install-recommends \
 	libssl-dev  \
 	openjdk-21-jre \ 
 	libstdc++-13-dev \
-	pipx git curl gcc python3-dev pkg-config
+	pipx git curl gcc python3-dev pkg-config \
+	jq nano
 
 # Install execution-specs (EELS)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
@@ -196,11 +197,20 @@ COPY readme_docker.md  /README.md
 
 ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
  --nethbatch=$NETH_BIN \
- --nimbus=$NIMB_BIN \
+ --nimbusbatch=$NIMB_BIN \
  --revme=$RETH_BIN \
  --erigonbatch=$ERIG_BIN \
  --besubatch=$BESU_BIN \
  --evmone=$EVMO_BIN \
  --eelsbatch=$EELS_BIN"
+
+ENV FUZZ_CLIENTS_PLAIN="--geth=$GETH_BIN \
+ --neth=$NETH_BIN \
+ --nimbus=$NIMB_BIN \
+ --revme=$RETH_BIN \
+ --erigon=$ERIG_BIN \
+ --besu=$BESU_BIN \
+ --evmone=$EVMO_BIN \
+ --eels=$EELS_BIN"
 
 ENTRYPOINT ["/bin/bash"]
