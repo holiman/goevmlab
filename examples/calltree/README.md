@@ -1,7 +1,7 @@
 # EIP 1380
 
 This is a benchmarking tool for testing [EIP-1380 Reduced gas cost for call to self ](https://eips.ethereum.org/EIPS/eip-1380).
-All benchmarks are basd on geth.
+All benchmarks are based on geth.
 
 ## Approach
 

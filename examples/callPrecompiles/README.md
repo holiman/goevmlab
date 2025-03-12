@@ -1,7 +1,7 @@
 # EIP 2046
 
 This is a benchmarking tool for testing [EIP 2046: Reduced gas cost for static calls made to precompiles](https://eips.ethereum.org/EIPS/eip-2046).
-All benchmarks are basd on geth.
+All benchmarks are based on geth.
 
 ## Approach
 

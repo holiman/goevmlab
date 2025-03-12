@@ -45,7 +45,7 @@ func runit() error {
 	aAddr := common.HexToAddress("0xff0a")
 	bAddr := common.HexToAddress("0xff0b")
 
-	// Callling contract : call contract B, modify storage, revert
+	// Calling contract : call contract B, modify storage, revert
 	// Call it again, send 1 wei to signal no revert
 	aBytes := program.New().
 		Call(nil, 0xff0b, 1, 0, 0, 0, 0).
