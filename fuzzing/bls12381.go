@@ -319,7 +319,7 @@ func makeBadG2() []byte {
 		//  Wrong subgroup
 		f1, _ := new(fp.Element).SetRandom()
 		f2, _ := new(fp.Element).SetRandom()
-		g2Jac := gnark.GeneratePointNotInG2(*f1, *f2)
+		g2Jac := gnark.GeneratePointNotInG2(gnark.E2{f1: *f1, f2: *f2})
 		g2aff := new(gnark.G2Affine).FromJacobian(&g2Jac)
 		retval = encodePointG2(g2aff)
 	} else {
