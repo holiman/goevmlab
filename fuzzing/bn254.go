@@ -107,7 +107,7 @@ func newBnScalarMul() []byte {
 	// Takes one 64-byte point, and one 32-byte scalar as input
 	a := makeBadBn254G1()
 	b := make([]byte, 32)
-	crand.Read(b)
+	_, _ = crand.Read(b)
 	return append(a, b...)
 }
 

@@ -62,7 +62,7 @@ func randomElement() fp.Element {
 	var x fp.Element
 	// In 9/10 cases, generate random but otherwise ok
 	if rand.IntN(10) > 0 {
-		x.SetRandom()
+		_, _ = x.SetRandom()
 		return x
 	}
 	return specialElement()
