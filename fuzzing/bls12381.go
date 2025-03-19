@@ -284,7 +284,15 @@ func makeBadG1() []byte {
 		g1Jac := gnark.GeneratePointNotInG1(*f)
 		g1aff := new(gnark.G1Affine).FromJacobian(&g1Jac)
 		retval = encodePointG1(g1aff)
-	} else {
+	} else if c == 3 || c == 4 {
+		// Passes subgroup check, but wrong curve
+		t := generatePointOnTwistedCurve()
+		g1aff := &gnark.G1Affine{
+			X: t.x,
+			Y: t.y,
+		}
+		retval = encodePointG1(g1aff)
+	} else { // 5-10
 		// Produce a mostly correct G1
 		aMul := randScalar()
 		g1 := new(gnark.G1Affine).ScalarMultiplicationBase(aMul)
