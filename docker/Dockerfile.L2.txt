@@ -1,0 +1,108 @@
+#
+# The (second) Mega Dockerfile
+#
+# This dockerfile is an attempt to bundle the following components into
+# one big dockerfile:
+#
+# - [x] Goevmlab binary 'generic-fuzzer' (bor-fork)
+# - [x] Go-ethereum binary 'evm' (holiman/bor fork)
+# - [x] Polygon 'bor'
+#
+
+#---------------------------------------------------------------
+# golang-builder (debian-based)
+#---------------------------------------------------------------
+#FROM golang:latest as golang-builder 
+# The polygon/bor repo contains an older version of blst, which is affected by
+# https://github.com/supranational/blst/issues/245 . Thus, we cannot use 'latest', until
+# bor updates to a newer base-version of geth/blst
+FROM golang:1.23 as golang-builder 
+
+# Clone all as a single step
+
+RUN git clone https://github.com/holiman/goevmlab --depth 1 && \
+    git clone https://github.com/ethereum/go-ethereum --depth 1 && \
+    git clone https://github.com/holiman/go-ethereum --depth 1 --branch bor borgo-ethereum && \
+    git clone https://github.com/maticnetwork/bor --depth 1 && \
+    git clone https://github.com/ethereum-optimism/op-geth --depth 1 && \
+    git clone https://github.com/OffchainLabs/go-ethereum --depth 1 arbitrum
+
+
+#
+# Go-evmlab
+#
+
+RUN cd goevmlab && git pull
+RUN cd goevmlab && \
+  go build ./cmd/generic-fuzzer && \
+  go build ./cmd/generic-generator && \
+  go build ./cmd/checkslow && \
+  go build ./cmd/minimizer && \
+  go build ./cmd/repro && \
+  go build ./cmd/runtest && \
+  go build ./cmd/tracediff && \
+  go build ./cmd/traceview
+
+# GETH (regular)
+#
+RUN cd go-ethereum && git pull && go run build/ci.go install -static ./cmd/evm
+
+# GETH (bor/Polygon flavour)
+#
+RUN cd borgo-ethereum && git pull && go run build/ci.go install -static ./cmd/evm
+
+# BOR (Polygon)
+#
+RUN cd bor && git pull && go run build/ci.go install -static ./cmd/evm
+
+# OP-Geth (Optimism)
+#
+RUN cd op-geth && git pull && go run build/ci.go install -static ./cmd/evm
+
+# Offchain labs (Arbitrum)
+#
+RUN cd arbitrum && git pull && go run build/ci.go install -static ./cmd/evm
+
+#
+# Main non-builder
+#
+
+FROM debian:testing
+
+RUN apt-get update -q
+RUN apt-get install -qy --no-install-recommends  curl jq nano
+
+# Go-evmlab targets
+COPY --from=golang-builder /go/goevmlab/generic-fuzzer /usr/bin
+COPY --from=golang-builder /go/goevmlab/generic-generator /usr/bin
+COPY --from=golang-builder /go/goevmlab/checkslow  /usr/bin
+COPY --from=golang-builder /go/goevmlab/minimizer /usr/bin
+COPY --from=golang-builder /go/goevmlab/repro /usr/bin
+COPY --from=golang-builder /go/goevmlab/runtest /usr/bin
+COPY --from=golang-builder /go/goevmlab/tracediff /usr/bin
+COPY --from=golang-builder /go/goevmlab/traceview /usr/bin
+
+
+COPY  --from=golang-builder /go/borgo-ethereum/build/bin/evm /borgovm
+ENV BORGETH_BIN=/borgovm
+
+COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
+ENV GETH_BIN=/gethvm
+
+COPY --from=golang-builder /go/bor/build/bin/evm /borvm
+ENV BOR_BIN=/borvm
+
+COPY --from=golang-builder /go/op-geth/build/bin/evm /opvm
+ENV OP_BIN=/opvm
+
+COPY --from=golang-builder /go/arbitrum/build/bin/evm /arbvm
+ENV ARB_BIN=/arbvm
+
+
+COPY readme_l2.md  /README.md
+
+ENV VMS_REGULAR="--gethbatch=$GETH_BIN  --gethbatch=$OP_BIN --gethbatch=$ARB_BIN"
+
+ENV VMS_BOR="--gethbatch=$BORGETH_BIN --borbatch=$BOR_BIN"
+
+ENTRYPOINT ["/bin/bash"]
