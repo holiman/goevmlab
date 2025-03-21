@@ -40,6 +40,11 @@ or
 ```
 docker run -it -v /home/user/fuzzing:/fuzztmp
 
-$ generic-fuzzer --outdir=/fuzztmp  --fork=Cancun $VMS_BOR
+$ generic-fuzzer --outdir=/fuzztmp  --fork=London $VMS_BOR
 ```
+or
+```
+docker run -it -v /home/user/fuzzing:/fuzztmp
 
+$ generic-fuzzer --outdir=/fuzztmp  --fork=Prague $VMS_BSC
+```
