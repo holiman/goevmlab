@@ -3,8 +3,9 @@ The evm binaries are available as ENV vars:
 
 - "regular" vms
   - `$GETH_BIN`=/gethvm - The regular normal geth.
-  - `$OP_BIN`=/opvm - optimism fork of geth
-  - `$ARB_BIN`=/arbvm - offchain labs arbitrum fork of geth
+  - `$OP_BIN`=/opvm - optimism fork of geth. Supports up to Prague
+  - `$ARB_BIN`=/arbvm - offchain labs arbitrum fork of geth. Supports up to Prague
+  - `$CELO_BIN`=/celovm - celo fork of op-geth. Supports Prague
 
 - "non-regular" vms, where the consensus rules are changed.
   - `$BORGETH_BIN`=/borgovm - A bor-flavoured geth, which is same as regular geth but with a few tiny tweaks to make it execute statetests similarly.

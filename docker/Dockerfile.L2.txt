@@ -25,7 +25,8 @@ RUN git clone https://github.com/holiman/goevmlab --depth 1 && \
     git clone https://github.com/holiman/go-ethereum --depth 1 --branch bor borgo-ethereum && \
     git clone https://github.com/maticnetwork/bor --depth 1 && \
     git clone https://github.com/ethereum-optimism/op-geth --depth 1 && \
-    git clone https://github.com/OffchainLabs/go-ethereum --depth 1 arbitrum
+    git clone https://github.com/OffchainLabs/go-ethereum --depth 1 arbitrum && \
+    git clone https://github.com/celo-org/op-geth --depth 1 celo
 
 # BSC:
 RUN git clone https://github.com/node-real/bsc-erigon.git && \
@@ -65,6 +66,9 @@ RUN cd op-geth && git pull && go run build/ci.go install -static ./cmd/evm
 # Offchain labs (Arbitrum)
 #
 RUN cd arbitrum && git pull && go run build/ci.go install -static ./cmd/evm
+
+# Celo
+RUN cd celo && git pull && go build -o celovm ./cmd/evm
 
 # Two different binance bsc clients
 RUN cd bsc-geth && git pull && go run build/ci.go install -static ./cmd/evm
@@ -106,6 +110,9 @@ ENV OP_BIN=/opvm
 COPY --from=golang-builder /go/arbitrum/build/bin/evm /arbvm
 ENV ARB_BIN=/arbvm
 
+COPY --from=golang-builder /go/celo/celovm /celovm
+ENV CELO_BIN=/celovm
+
 COPY --from=golang-builder /go/bsc-geth/build/bin/evm /bsc-gethvm
 ENV BSC_GETH_BIN=/bsc-gethvm
 COPY --from=golang-builder /go/bsc-erigon/evm /bsc-erigonvm
@@ -114,7 +121,7 @@ ENV BSC_ERIG_BIN=/bsc-erigonvm
 COPY readme_l2.md  /README.md
 
 # Arbitrum and Optimism are same same as mainnet (but only up to London(?))
-ENV VMS_REGULAR="--gethbatch=$GETH_BIN  --gethbatch=$OP_BIN --gethbatch=$ARB_BIN"
+ENV VMS_REGULAR="--gethbatch=$GETH_BIN  --gethbatch=$OP_BIN --gethbatch=$ARB_BIN --gethbatch=$CELO_BIN"
 
 # On bor, we can only run the real bor-client against the bor-flavoured geth
 ENV VMS_BOR="--gethbatch=$BORGETH_BIN --borbatch=$BOR_BIN"
