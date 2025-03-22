@@ -68,7 +68,7 @@ RUN cd arbitrum && git pull && go run build/ci.go install -static ./cmd/evm
 
 # Two different binance bsc clients
 RUN cd bsc-geth && git pull && go run build/ci.go install -static ./cmd/evm
-RUN cd bsc-erigon && git pull && go run build/ci.go install -static ./cmd/evm
+RUN cd bsc-erigon && git pull && go build ./cmd/evm 
 
 
 #
@@ -108,7 +108,7 @@ ENV ARB_BIN=/arbvm
 
 COPY --from=golang-builder /go/bsc-geth/build/bin/evm /bsc-gethvm
 ENV BSC_GETH_BIN=/bsc-gethvm
-COPY --from=golang-builder /go/bsc-erigon/build/bin/evm /bsc-erigonvm
+COPY --from=golang-builder /go/bsc-erigon/evm /bsc-erigonvm
 ENV BSC_ERIG_BIN=/bsc-erigonvm
 
 COPY readme_l2.md  /README.md
