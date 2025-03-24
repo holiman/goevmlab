@@ -82,7 +82,7 @@ RUN cd bsc-erigon && git pull && go build ./cmd/evm
 FROM debian:testing
 
 RUN apt-get update -q
-RUN apt-get install -qy --no-install-recommends  curl jq nano
+RUN apt-get install -qy --no-install-recommends  curl jq nano ca-certificates
 
 # Go-evmlab targets
 COPY --from=golang-builder /go/goevmlab/generic-fuzzer /usr/bin
