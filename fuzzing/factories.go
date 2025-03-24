@@ -16,6 +16,11 @@
 
 package fuzzing
 
+import (
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/holiman/goevmlab/ops"
+)
+
 // fillers is a mapping of names to functions that can fill a statetest.
 var fillers = map[string]func(*GstMaker, string){
 	"ecrecover":    fillEcRecover,
@@ -32,6 +37,11 @@ var fillers = map[string]func(*GstMaker, string){
 }
 
 func Factory(name, fork string) func() *GstMaker {
+	// "auth" engine is moot before Prague
+	if name == "auth" && ops.LookupRules(fork).IsPrague {
+		log.Error("Engine 'auth' not available pre-Prague, it will not be enabled...")
+		return nil
+	}
 	if filler, ok := fillers[name]; ok {
 		return func() *GstMaker {
 			gst := BasicStateTest(fork)

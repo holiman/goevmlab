@@ -101,12 +101,16 @@ func startFuzzer(ctx *cli.Context) (err error) {
 		var factories []common.GeneratorFn
 		for _, fName := range fNames {
 			if f := fuzzing.Factory(fName, fork); f == nil {
-				return fmt.Errorf("unknown target %v", fName)
+				log.Error("Unknown or unavailable fuzzing engine", "engine", fName)
 			} else {
 				factories = append(factories, f)
 			}
 			log.Info("Added factory", "name", fName)
 		}
+		if len(factories) == 0 {
+			return fmt.Errorf("no fuzzing-engines enabled")
+		}
+
 		var index atomic.Uint64
 		factory = func() *fuzzing.GstMaker {
 			i := int(index.Add(1))
