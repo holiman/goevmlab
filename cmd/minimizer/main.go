@@ -31,6 +31,7 @@ import (
 	"github.com/holiman/goevmlab/common"
 	"github.com/holiman/goevmlab/fuzzing"
 	"github.com/urfave/cli/v2"
+	"time"
 )
 
 var fullTraceFlag = &cli.BoolFlag{
@@ -225,14 +226,16 @@ func startFuzzer(c *cli.Context) error {
 				continue
 			}
 			m.reset(acc.Code)
-			log.Info("Reducing code", "mutator", i, "target", target)
+			log.Info("Reducing code", "mutator", i, "type", fmt.Sprintf("%T", m), "target", target)
+			time.Sleep(2 * time.Second)
 
 			for fails := 0; fails < patience; {
 				exhausted := m.proceed()
 				select {
 				case <-skipCh:
 					exhausted = true
-					fmt.Printf("Skipping ahead\n")
+					log.Info("Skipping ahead")
+					time.Sleep(2 * time.Second)
 				default:
 				}
 				if exhausted {

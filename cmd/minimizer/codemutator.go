@@ -54,15 +54,17 @@ func (m *balancedCodeMutator) proceed() bool {
 	m.lastGood = m.current
 	// Now mutate current
 	var (
-		next    []byte
-		max     = ops.InstructionCount(m.lastGood)
-		removed = 0
+		next     []byte
+		max      = ops.InstructionCount(m.lastGood)
+		removed  = 0
+		cutPoint = int(0)
 	)
 	for removed == 0 {
 		it := ops.NewInstructionIterator(m.lastGood)
-		cutPoint := rand.Intn(max)
+		cutPoint = rand.Intn(max)
 		next = make([]byte, 0)
 		for it.Next() {
+			// skip ahead until we reach cutpoint
 			if removed == 0 && it.PC() > uint64(cutPoint) {
 				// Remove until the stack balances out
 				delta := 0
@@ -84,7 +86,7 @@ func (m *balancedCodeMutator) proceed() bool {
 			}
 		}
 	}
-	log.Info("Mutating code", "length", len(next), "previous", len(m.lastGood))
+	log.Info("Mutating code", "length", len(next), "cutpoint", cutPoint, "previous", len(m.lastGood))
 	m.current = next
 	return len(next) == len(m.lastGood)
 }
@@ -169,7 +171,7 @@ func (m *codeRandomMutator) proceed() bool {
 	next = make([]byte, 0)
 	for it.Next() {
 		if modified == 0 && it.PC() >= uint64(cutPoint) {
-			if it.Op() == ops.PUSH0 || it.Op() == ops.POP {
+			if it.Op() == ops.PUSH1 || it.Op() == ops.POP {
 				// just drop it this time
 				log.Info("Dropped op", "prev", it.Op().String(), "index", cutPoint)
 				modified++
@@ -177,8 +179,8 @@ func (m *codeRandomMutator) proceed() bool {
 			}
 			delta := it.Op().Stackdelta()
 			for i := 0; i < delta; i++ {
-				log.Info("Swapped op", "prev", it.Op().String(), "to", "PUSH0", "index", cutPoint)
-				next = append(next, byte(ops.PUSH0))
+				log.Info("Swapped op", "prev", it.Op().String(), "to", "PUSH1 00", "index", cutPoint)
+				next = append(next, byte(ops.PUSH1), byte(0x00))
 			}
 			for i := 0; i > delta; i-- {
 				log.Info("Swapped op", "prev", it.Op().String(), "to", "POP", "index", cutPoint)
