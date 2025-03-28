@@ -18,7 +18,6 @@ package evms
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -69,35 +68,31 @@ func CompareFiles(vms []Evm, readers []io.Reader) (bool, int, string) {
 
 	}
 	var (
-		count    = 0
-		prevLine = ""
-		refOut   = scanners[0]
-		refVM    = vms[0]
+		count     = 0
+		prevLine  = ""
+		curLines  = make([]string, len(scanners))
+		diffFound = false
 	)
-	for refOut.Scan() {
-		for i, scanner := range scanners[1:] {
-			scanner.Scan()
-			if !bytes.Equal(refOut.Bytes(), scanner.Bytes()) {
-				fmt.Fprintf(output, "-------\nprev:%15v: %v\ndiff:%15v: %v\ndiff:%15v: %v\n",
-					"both", prevLine,
-					refVM.Name(), string(refOut.Bytes()),
-					vms[i+1].Name(), string(scanner.Bytes()))
-				return false, count, output.String()
+	for curLines[0] != "EOF" {
+		// Scan next line of output from every VM
+		for i, scanner := range scanners {
+			if !scanner.Scan() {
+				curLines[i] = "EOF"
+			} else {
+				curLines[i] = scanner.Text()
 			}
+			diffFound = diffFound || (curLines[i] != curLines[0])
 		}
-		prevLine = string(refOut.Bytes())
-		count++
-	}
-	// The source is 'done', need to also check if the other scanners are done
-	for i, scanner := range scanners[1:] {
-		if scanner.Scan() {
-			fmt.Fprintf(output, "diff: \n%15v: %v\n%15v: %v\n",
-				refVM.Name(),
-				string("--  depleted --"),
-				vms[i+1].Name(),
-				string(scanner.Bytes()))
+		// If diff, show output and return
+		if diffFound {
+			fmt.Fprintf(output, "-------\n%4d: %15v: %v\n", count, "all", prevLine)
+			for i, line := range curLines {
+				fmt.Fprintf(output, "%4d: %15v: %v\n", count+1, vms[i].Name(), line)
+			}
 			return false, count, output.String()
 		}
+		count++
+		prevLine = curLines[0]
 	}
 	return true, count, output.String()
 }
