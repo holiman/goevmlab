@@ -757,6 +757,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	}
 	var executing = make(map[string]*execResult)
 	readResults := func(count int) {
+		wantIdx := 0
 		for i := 0; i < count; i++ {
 			t := <-resultCh                // result delivery
 			ready = append(ready, t.vmIdx) // add client to ready-set
@@ -774,9 +775,11 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 			// check results
 			if execRs.hash == nil { // first
 				execRs.hash = t.result
-			}
-			if !bytes.Equal(execRs.hash, t.result) {
-				log.Info("Consensus flaw", "file", t.file)
+				wantIdx = t.vmIdx
+			} else if !bytes.Equal(execRs.hash, t.result) {
+				log.Info("Consensus flaw", "file", t.file, "vm", t.vmIdx,
+					"have", fmt.Sprintf("%x", execRs.hash), "ref vm", wantIdx,
+					"want", fmt.Sprintf("%x", t.result))
 				execRs.consensusFlaw = true
 			}
 			if execRs.waiting > 0 {
