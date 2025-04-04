@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/uint256"
@@ -76,7 +77,10 @@ func fill7702(gst *GstMaker, fork string) {
 	var allAddresses []common.Address
 	allAddresses = append(allAddresses, contracts...)
 	allAddresses = append(allAddresses, h.addrs...)
+	// Add the empty-addr (acts as a clearing-marker)
 	allAddresses = append(allAddresses, common.Address{})
+	// Also add precompile-addresses
+	allAddresses = append(allAddresses, vm.PrecompiledAddressesPrague...)
 
 	// each contract does a bit calling within the global set
 	for _, addr := range contracts {

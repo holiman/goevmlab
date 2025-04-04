@@ -12,6 +12,13 @@ The evm binaries are available as ENV vars:
 
 There's also an env var $FUZZ_CLIENTS which provides the arguments if you want to do fuzzing with all clients.
 
+## Sanity-check
+
+To check if the clients seem to be behaving correctly, you can do
+```
+$ evms.test -test.run TestVMsFromEnv -test.v
+```
+
 ## Generating reference output
 
 Mount the reference tests, and execute the `run.sh` to create them:

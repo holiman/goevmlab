@@ -32,8 +32,8 @@ RUN cd goevmlab && \
   go build ./cmd/repro && \
   go build ./cmd/runtest && \
   go build ./cmd/tracediff && \
-  go build ./cmd/traceview
-
+  go build ./cmd/traceview && \
+  go test -c ./evms
 #
 # GETH
 #
@@ -167,6 +167,7 @@ COPY --from=golang-builder /go/goevmlab/repro /usr/bin
 COPY --from=golang-builder /go/goevmlab/runtest /usr/bin
 COPY --from=golang-builder /go/goevmlab/tracediff /usr/bin
 COPY --from=golang-builder /go/goevmlab/traceview /usr/bin
+COPY --from=golang-builder /go/evms.test /usr/bin
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm

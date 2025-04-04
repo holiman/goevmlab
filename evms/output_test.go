@@ -18,6 +18,7 @@ package evms
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"io"
 	"os"
@@ -157,6 +158,102 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 		}
 		if have != want {
 			t.Errorf("case %d, %v: have '%v' want '%v'", i, finfo.Name(), have, want)
+		}
+	}
+}
+
+// We embed the reference cases here
+//
+//go:embed testdata/cases
+var testcases embed.FS
+
+// TestVMsFromEnv is meant to be used as a sanity-check, primarily inside docker
+// containers where the client binaries are available. This test simply executes the
+// reference tests on all clients, and compares them with each other.
+// The idea is to build this as a standalone binary
+//
+//	go test -c ./evms
+//
+// And then, later on, do
+//
+//	./evms.test -test.run TestVMsFromEnv -test.v
+func TestVMsFromEnv(t *testing.T) {
+	var vms []Evm
+	if k := "GETH_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewGethEVM(os.Getenv(k), "geth"))
+		vms = append(vms, NewGethBatchVM(os.Getenv(k), "gethbatch"))
+	}
+	if k := "NETH_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewNethermindVM(os.Getenv(k), "neth"))
+		vms = append(vms, NewNethermindBatchVM(os.Getenv(k), "nethbatch"))
+	}
+	if k := "NIMB_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewNimbusEVM(os.Getenv(k), "nimb"))
+		vms = append(vms, NewNimbusBatchVM(os.Getenv(k), "nimbbatch"))
+	}
+	if k := "RETH_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewRethVM(os.Getenv(k), "reth"))
+	}
+	if k := "ERIG_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewErigonVM(os.Getenv(k), "erigon"))
+		vms = append(vms, NewErigonBatchVM(os.Getenv(k), "erigonbatch"))
+	}
+	if k := "BESU_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewBesuVM(os.Getenv(k), "besu"))
+		vms = append(vms, NewBesuBatchVM(os.Getenv(k), "besubatch"))
+	}
+	if k := "EVMO_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewEvmoneVM(os.Getenv(k), "evmone"))
+	}
+	if k := "EELS_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewEelsEVM(os.Getenv(k), "eels"))
+		vms = append(vms, NewEelsBatchVM(os.Getenv(k), "eelsbatch"))
+	}
+	t.Cleanup(func() {
+		for _, vm := range vms {
+			vm.Close()
+		}
+	})
+	if len(vms) < 2 {
+		t.Skipf("Need at least 2 vms for sanity-test, have %v, skipping", len(vms))
+		return
+	}
+
+	// We need to write the testcases from embedding to actual disk, so
+	// the vms can execute them
+	var testfiles []string
+	{
+		path := filepath.Join("testdata", "cases")
+		embedded, err := testcases.ReadDir(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := t.TempDir()
+		for _, finfo := range embedded {
+			src := filepath.Join(path, finfo.Name())
+			dst := filepath.Join(dir, finfo.Name())
+			data, _ := testcases.ReadFile(src)
+			os.WriteFile(dst, data, 0777)
+			testfiles = append(testfiles, dst)
+			t.Logf("Copied embed:%v -> %v", src, dst)
+		}
+	}
+
+	var readers []io.Reader = make([]io.Reader, len(vms))
+	for _, testfile := range testfiles {
+		for i, vm := range vms {
+			output := bytes.NewBuffer(nil)
+			res, err := vm.RunStateTest(testfile, output, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			readers[i] = output
+			t.Logf("Executed test, cmd: %q", res.Cmd)
+		}
+		equal, _, diff := CompareFiles(vms, readers)
+		if !equal {
+			t.Log(diff)
+			t.Errorf("Difference found")
 		}
 	}
 }
