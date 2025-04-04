@@ -167,17 +167,8 @@ func testStateRootOnly(t *testing.T, vm Evm, name string) {
 //go:embed testdata/cases
 var testcases embed.FS
 
-// TestVMsFromEnv is meant to be used as a sanity-check, primarily inside docker
-// containers where the client binaries are available. This test simply executes the
-// reference tests on all clients, and compares them with each other.
-// The idea is to build this as a standalone binary
-//
-//	go test -c ./evms
-//
-// And then, later on, do
-//
-//	./evms.test -test.run TestVMsFromEnv -test.v
-func TestVMsFromEnv(t *testing.T) {
+// createEvmsFromEnv instantiates vms bsaed on ENV info.
+func createEvmsFromEnv() []Evm {
 	var vms []Evm
 	if k := "GETH_BIN"; os.Getenv(k) != "" {
 		vms = append(vms, NewGethEVM(os.Getenv(k), "geth"))
@@ -209,6 +200,52 @@ func TestVMsFromEnv(t *testing.T) {
 		vms = append(vms, NewEelsEVM(os.Getenv(k), "eels"))
 		vms = append(vms, NewEelsBatchVM(os.Getenv(k), "eelsbatch"))
 	}
+	return vms
+}
+
+// writeReferenceTestsToDisk writes the testcases from embedding to actual disk,
+// so the external vms can execute them.
+func writeReferenceTestsToDisk(t *testing.T) []string {
+	t.Helper()
+	var testfiles []string
+	path := filepath.Join("testdata", "cases")
+	embedded, err := testcases.ReadDir(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	for _, finfo := range embedded {
+		if finfo.Name() == "eofcode.json" {
+			// We skip this one. Evmone refuse to run it.
+			// https://github.com/holiman/goevmlab/issues/127
+			continue
+		}
+		src := filepath.Join(path, finfo.Name())
+		dst := filepath.Join(dir, finfo.Name())
+		data, _ := testcases.ReadFile(src)
+		_ = os.WriteFile(dst, data, 0777)
+		testfiles = append(testfiles, dst)
+		t.Logf("Copied embed:%v -> %v", src, dst)
+	}
+	return testfiles
+}
+
+// TestVMsFromEnv_tracing is meant to be used as a sanity-check, testing the
+// tracing-functionality of an (external) evm is compatible with goevmlabm.
+// The intended use for this is primarily from inside docke containers,
+// where the client binaries are available.
+//
+// This test simply executes the reference tests on all clients, and compares the
+// traces between them. The idea is to build this as a standalone binary, and bundle
+// in the docker image:
+//
+//	go test -c ./evms
+//
+// And then, later on, do
+//
+//	./evms.test -test.run TestVMsFromEnv_tracing -test.v
+func TestVMsFromEnv_tracing(t *testing.T) {
+	vms := createEvmsFromEnv()
 	t.Cleanup(func() {
 		for _, vm := range vms {
 			vm.Close()
@@ -218,33 +255,11 @@ func TestVMsFromEnv(t *testing.T) {
 		t.Skipf("Need at least 2 vms for sanity-test, have %v, skipping", len(vms))
 		return
 	}
-
 	// We need to write the testcases from embedding to actual disk, so
 	// the vms can execute them
-	var testfiles []string
-	{
-		path := filepath.Join("testdata", "cases")
-		embedded, err := testcases.ReadDir(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		dir := t.TempDir()
-		for _, finfo := range embedded {
-			if finfo.Name() == "eofcode.json" {
-				// We skip this one. Evmone refuse to run it.
-				// https://github.com/holiman/goevmlab/issues/127
-				continue
-			}
-			src := filepath.Join(path, finfo.Name())
-			dst := filepath.Join(dir, finfo.Name())
-			data, _ := testcases.ReadFile(src)
-			_ = os.WriteFile(dst, data, 0777)
-			testfiles = append(testfiles, dst)
-			t.Logf("Copied embed:%v -> %v", src, dst)
-		}
-	}
-
+	testfiles := writeReferenceTestsToDisk(t)
 	var readers []io.Reader = make([]io.Reader, len(vms))
+	// Check the full-trace functionality
 	for _, testfile := range testfiles {
 		for i, vm := range vms {
 			output := bytes.NewBuffer(nil)
@@ -259,6 +274,56 @@ func TestVMsFromEnv(t *testing.T) {
 		if !equal {
 			t.Log(diff)
 			t.Errorf("Difference found")
+		}
+	}
+}
+
+// TestVMsFromEnv_stateroot is meant to be used as a sanity-check, testing the
+// ability of goevmlab to obtain a stateroot from a test execution.
+// The intended use for this is primarily from inside docke containers,
+// where the client binaries are available.
+//
+// This test simply executes the reference tests on all clients, and compares the
+// stateroot against the known wanted roots. The idea is to build this as a
+// standalone binary, and bundle in the docker image:
+//
+//	go test -c ./evms
+//
+// And then, later on, do
+//
+//	./evms.test -test.run TestVMsFromEnv_stateroot -test.v
+func TestVMsFromEnv_stateroot(t *testing.T) {
+	vms := createEvmsFromEnv()
+	t.Cleanup(func() {
+		for _, vm := range vms {
+			vm.Close()
+		}
+	})
+	testfiles := writeReferenceTestsToDisk(t)
+	wants := map[string]string{
+		"00000006-naivefuzz-0.json":      "0xad1024c87b5548e77c937aa50f72b6cb620d278f4dd79bae7f78f71ff75af458",
+		"00003656-naivefuzz-0.json":      "0x75dc56643cc707a2e6c9a4cf7e28061e9598bd02ecac22c406365c058088d59b",
+		"statetest1.json":                "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134",
+		"00016209-naivefuzz-0.json":      "0x9b732142c31ee7c3c1d28a1c5f451f555524e0bb39371d94a9698000203742fb",
+		"statetest_filled.json":          "0xa2b3391f7a85bf1ad08dc541a1b99da3c591c156351391f26ec88c557ff12134",
+		"stackUnderflow_nonzeroMem.json": "0x1f07fb182fd18ad9b11f8ef6cf369981e87e9f8514c803a1f2df145724f62fa4",
+		"00000936-mixed-1.json":          "0xd14c10ed22a1cfb642e374be985ac581c39f3969bd59249e0405aca3beb47a47",
+		"negative_refund.json":           "0xee0bbf0438796320ede24ca3c52e31f04dccbfe1fce282f79fe44e67a23351e9",
+		"eofcode.json":                   "0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f",
+	}
+	// Check stateroot functionality
+	for _, testfile := range testfiles {
+		for _, vm := range vms {
+			root, cmd, err := vm.GetStateRoot(testfile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fname := filepath.Base(testfile)
+			want := wants[fname]
+			if want != root {
+				t.Errorf("Wrong root, have %v, want %v, file %v", root, want, fname)
+			}
+			t.Logf("Executed test %v, root %v, cmd %q", fname, root, cmd)
 		}
 	}
 }
