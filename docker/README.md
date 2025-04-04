@@ -23,6 +23,10 @@ and then build
 ```
 docker buildx   build   --progress=plain -t holiman/omnifuzz .
 ```
+or
+```
+docker buildx build --progress=plain --push --load  -t holiman/omnifuzz-l2  -f Dockerfile.L2.txt .
+```
 
 ## The container itself
 
