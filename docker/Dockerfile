@@ -55,9 +55,9 @@ RUN cd erigon && mkdir /erigon/ && make evm && \
 #
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends make
-RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules
-RUN cd nimbus-eth1 && make -j8 update 
-RUN cd nimbus-eth1 && make -j8 evmstate && cp ./tools/evmstate/evmstate /evmstate
+RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules && \
+ cd nimbus-eth1 && make -j8 update && \
+ make -j8 evmstate && cp ./tools/evmstate/evmstate /evmstate
 
 
 
@@ -167,7 +167,7 @@ COPY --from=golang-builder /go/goevmlab/repro /usr/bin
 COPY --from=golang-builder /go/goevmlab/runtest /usr/bin
 COPY --from=golang-builder /go/goevmlab/tracediff /usr/bin
 COPY --from=golang-builder /go/goevmlab/traceview /usr/bin
-COPY --from=golang-builder /go/evms.test /usr/bin
+COPY --from=golang-builder /go/goevmlab/evms.test /usr/bin
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
