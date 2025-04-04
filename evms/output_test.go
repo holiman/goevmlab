@@ -230,10 +230,15 @@ func TestVMsFromEnv(t *testing.T) {
 		}
 		dir := t.TempDir()
 		for _, finfo := range embedded {
+			if finfo.Name() == "eofcode.json" {
+				// We skip this one. Evmone refuse to run it.
+				// https://github.com/holiman/goevmlab/issues/127
+				continue
+			}
 			src := filepath.Join(path, finfo.Name())
 			dst := filepath.Join(dir, finfo.Name())
 			data, _ := testcases.ReadFile(src)
-			os.WriteFile(dst, data, 0777)
+			_ = os.WriteFile(dst, data, 0777)
 			testfiles = append(testfiles, dst)
 			t.Logf("Copied embed:%v -> %v", src, dst)
 		}
