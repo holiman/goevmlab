@@ -321,7 +321,7 @@ func TestVMsFromEnv_stateroot(t *testing.T) {
 			fname := filepath.Base(testfile)
 			want := wants[fname]
 			if want != root {
-				t.Errorf("Wrong root, have %v, want %v, file %v", root, want, fname)
+				t.Errorf("Wrong root, have %v, want %v, file %v, cmd %q", root, want, fname, cmd)
 			}
 			t.Logf("Executed test %v, root %v, cmd %q", fname, root, cmd)
 		}
