@@ -117,12 +117,25 @@ func (vm *ErigonVM) Close() {
 // Copy reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
-	evm.copyUntilEnd(out, input)
+	evm.copyUntilEnd(out, input, false)
 }
 
 // copyUntilEnd reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
-func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
+func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool) stateRoot {
+	if speedMode {
+		// In speednode, there's no jsonl output, just the json stateroot
+		var r []stateRoot
+		if err := json.NewDecoder(input).Decode(&r); err != nil {
+			log.Warn("Error parsing erigonbatch output", "error", err)
+			return stateRoot{}
+		}
+		rootJson, _ := json.Marshal(r[0])
+		if _, err := out.Write(append(rootJson, '\n')); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
+		}
+		return r[0]
+	}
 	scanner := NewJsonlScanner("erigon", input, os.Stderr)
 	defer scanner.Release()
 	var stateRoot stateRoot

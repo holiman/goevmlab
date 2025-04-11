@@ -81,7 +81,7 @@ func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
 	// copy everything for the _current_ statetest to the given writer
-	evm.copyUntilEnd(out, evm.stdout)
+	evm.copyUntilEnd(out, evm.stdout, speedTest)
 	// release resources, handle error but ignore non-zero exit codes
 	duration, slow := evm.stats.TraceDone(t0)
 	return &tracingResult{
@@ -102,7 +102,7 @@ func (vm *ErigonBatchVM) Close() {
 
 func (evm *ErigonBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path)
+		evm.cmd = exec.Command(evm.path, "statetest")
 		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
@@ -116,6 +116,6 @@ func (evm *ErigonBatchVM) GetStateRoot(path string) (root, command string, err e
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
-	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
+	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout, true)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }

@@ -61,7 +61,7 @@ func (evm *EelsBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	)
 	if evm.cmd == nil {
 		if speedTest {
-			cmd = exec.Command(evm.path, "statetest", "--nomemory", "--noreturndata", "--nostack")
+			cmd = exec.Command(evm.path, "statetest")
 		} else {
 			cmd = exec.Command(evm.path, "statetest", "--json", "--noreturndata", "--nomemory")
 		}
@@ -103,8 +103,8 @@ func (vm *EelsBatchVM) Close() {
 
 func (evm *EelsBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path)
-		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
+		evm.cmd = exec.Command(evm.path, "statetest")
+		if evm.stdout, err = evm.cmd.StderrPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
 		if evm.stdin, err = evm.cmd.StdinPipe(); err != nil {
@@ -117,6 +117,7 @@ func (evm *EelsBatchVM) GetStateRoot(path string) (root, command string, err err
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+
 	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }
