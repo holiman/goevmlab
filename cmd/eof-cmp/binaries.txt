@@ -1,0 +1,7 @@
+# These are bundled in the docker image
+/gethvm eofparse
+/besu-vm code-validate
+/neth_eof/netheofparse --stdin
+/evmone-eofparse
+
+# js="ts-node /home/user/workspace/txparse-js/eofparse.ts --stdin"
