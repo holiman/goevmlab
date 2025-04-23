@@ -123,7 +123,7 @@ RUN apt-get install -qy --no-install-recommends \
 
 # Go-evmlab targets
 COPY --from=golang-builder /go/goevmlab/eof-cmp /usr/bin
-COPY --from=golang-builder /go/goevmlab/cmd/binaries.txt /binaries.txt
+COPY --from=golang-builder /go/goevmlab/cmd/eof-cmp/binaries.txt /binaries.txt
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
@@ -162,4 +162,4 @@ ENV FUZZ_CLIENTS_PLAIN="--geth=$GETH_BIN \
  --evmone=$EVMO_BIN \
  --eels=$EELS_BIN"
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/usr/bin/eof-cmp"]
