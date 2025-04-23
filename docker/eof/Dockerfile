@@ -24,7 +24,7 @@ FROM golang:latest as golang-builder
 # Go-evmlab
 #
 
-RUN git clone https://github.com/holiman/goevmlab --depth 1
+RUN git clone https://github.com/holiman/goevmlab --branch eofparse --depth 1
 RUN cd goevmlab && \
   go build ./cmd/eof-cmp
 
