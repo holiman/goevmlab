@@ -134,7 +134,7 @@ ENV ERIG_BIN=/erigon_vm
 
 COPY --from=debian-builder /evmone-eofparse /evmone-eofparse
 COPY --from=debian-builder /libevmone.so.* /lib/
-ENV EVMO_BIN=/evmone
+ENV EVMO_BIN=/evmone-eofparse
 
 COPY --from=dotnet-builder /out/neth_eof /neth_eof
 RUN ln -s /neth/neth_eof /neth_eof
@@ -146,20 +146,5 @@ ENV BESU_BIN=/evmtool/bin/evmtool
 
 COPY readme_docker.md  /README.md
 
-ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
- --nethbatch=$NETH_BIN \
- --erigonbatch=$ERIG_BIN \
- --besubatch=$BESU_BIN \
- --evmone=$EVMO_BIN \
- --eelsbatch=$EELS_BIN"
-
-ENV FUZZ_CLIENTS_PLAIN="--geth=$GETH_BIN \
- --neth=$NETH_BIN \
- --nimbus=$NIMB_BIN \
- --revme=$RETH_BIN \
- --erigon=$ERIG_BIN \
- --besu=$BESU_BIN \
- --evmone=$EVMO_BIN \
- --eels=$EELS_BIN"
 
 ENTRYPOINT ["/usr/bin/eof-cmp"]

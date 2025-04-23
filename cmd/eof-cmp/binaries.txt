@@ -1,5 +1,6 @@
 # These are bundled in the docker image
 /gethvm eofparse
+/erigon_vm eofparse
 /besu-vm code-validate
 /neth_eof/netheofparse --stdin
 /evmone-eofparse
