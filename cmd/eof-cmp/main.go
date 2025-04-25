@@ -25,6 +25,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -34,7 +35,11 @@ import (
 )
 
 var (
-	app = initApp()
+	app        = initApp()
+	sourceFlag = &cli.StringFlag{
+		Name:  "src",
+		Usage: "Unix-socket source to read inputs from",
+	}
 )
 
 func initApp() *cli.App {
@@ -48,6 +53,7 @@ func initApp() *cli.App {
 		common.LocationFlag,
 		common.VerbosityFlag,
 		common.NotifyFlag,
+		sourceFlag,
 	)
 	app.Action = startFuzzer
 	return app
@@ -65,35 +71,52 @@ func startFuzzer(ctx *cli.Context) (err error) {
 		_, _ = http.Post(fmt.Sprintf("https://ntfy.sh/%v", topic), "text/plain",
 			strings.NewReader("Fuzzer starting"))
 	}
+
 	loglevel := slog.Level(ctx.Int(common.VerbosityFlag.Name))
 	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
 	log.Root().Write(loglevel, "Set loglevel", "level", loglevel)
 
-	bins, err := setup()
+	bins, err := setup(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		slog.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 	var input = make(chan string)
-	go func() {
+	scan := func(source io.Reader) {
 		defer close(input)
-		scanner := bufio.NewScanner(os.Stdin)
+		scanner := bufio.NewScanner(source)
 		scanner.Buffer(make([]byte, 200_000), 1_000_000)
 		for scanner.Scan() {
 			input <- scanner.Text()
 		}
-	}()
+	}
+	if src := ctx.String(sourceFlag.Name); src != "" {
+		l, err := net.Listen("unix", src)
+		if err != nil {
+			return fmt.Errorf("error listening to %v: %v", src, err)
+		}
+		fmt.Printf("Waiting for source...")
+		c, err := l.Accept()
+		if err != nil {
+			fmt.Printf("Accept error: %v\n", err)
+			return err
+		}
+		go scan(c)
+		defer os.Remove(src)
+	} else {
+		go scan(os.Stdin)
+	}
 	return doCompare(bins, input, nil)
 }
 
-func setup() ([]string, error) {
+func setup(ctx *cli.Context) ([]string, error) {
 	var binaries []string
-	if len(os.Args) < 2 {
+	if ctx.NArg() < 1 {
 		fmt.Printf("Usage: comparer <file with binaries> \n")
 		fmt.Printf("Pipe input to process\n")
 		return nil, errors.New("insufficient arguments")
 	}
-	binFile, err := os.Open(os.Args[1])
+	binFile, err := os.Open(ctx.Args().First())
 	if err != nil {
 		return nil, err
 	}

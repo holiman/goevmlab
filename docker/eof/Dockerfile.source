@@ -1,0 +1,25 @@
+#
+# The EOF Dockerfile (source)
+#
+# This dockerfile contains an EOF-generator based on golang native fuzzing,
+# and it also sends the fuzz-vectors out to a socket, in the ENV
+# EOF_FUZZ_PIPE.
+# The idea is: start the listener (which creates the socket), and then start
+# the source, which connects to the socket and sends eof-payloads.
+#
+
+
+#---------------------------------------------------------------
+# golang-builder (debian-based)
+#---------------------------------------------------------------
+FROM golang:latest
+
+#
+# Go-evmlab
+#
+
+RUN git clone https://github.com/holiman/goevmlab --branch eofparse --depth 1
+RUN cd goevmlab && go build ./cmd/eof-cmp
+
+ENTRYPOINT ["/usr/bin/go", "test", "./cmd/eof-cmp", "-fuzz=FuzzFifo", "-v"]
+

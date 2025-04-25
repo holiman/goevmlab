@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"regexp"
 	"time"
+	"net"
 )
 
 func readCorpusFile(f *testing.F, path string) error {
@@ -66,7 +67,6 @@ func seedFuzzer(f *testing.F) {
 }
 
 func FuzzEofParsing(f *testing.F) {
-
 	// Seed with corpus from execution-spec-tests
 	seedFuzzer(f)
 	for i := 0; ; i++ {
@@ -156,6 +156,28 @@ func FuzzBinaries(f *testing.F) {
 		errStr := <-outputs
 		if len(errStr) != 0 {
 			t.Fatal(errStr)
+		}
+	})
+}
+
+// FuzzFifo fuzzes the set of for eof parsing, and also sends the fuzzing-inputs
+// to a fifo
+func FuzzFifo(f *testing.F) {
+	// Try to dial socket
+	socket := os.Getenv("EOF_FUZZ_PIPE")
+	if socket = "" {
+		f.Skip("env EOF_FUZZ_PIPE not set")
+		return
+	}
+	c, err := net.Dial("unix", "", socket)
+	if err != nil {
+		f.Fatal(err)
+	}
+	seedFuzzer(f)
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_ = testUnmarshal(data) // This is for coverage guidance
+		if _, err := c.Write([]byte(fmt.Sprintf("%x\n", data))); err != nil {
+			f.Fatal(err)
 		}
 	})
 }
