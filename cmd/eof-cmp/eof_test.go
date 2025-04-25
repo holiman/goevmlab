@@ -21,16 +21,16 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"regexp"
-	"time"
-	"net"
 )
 
 func readCorpusFile(f *testing.F, path string) error {
@@ -165,11 +165,11 @@ func FuzzBinaries(f *testing.F) {
 func FuzzFifo(f *testing.F) {
 	// Try to dial socket
 	socket := os.Getenv("EOF_FUZZ_PIPE")
-	if socket = "" {
+	if socket == "" {
 		f.Skip("env EOF_FUZZ_PIPE not set")
 		return
 	}
-	c, err := net.Dial("unix", "", socket)
+	c, err := net.Dial("unix", socket)
 	if err != nil {
 		f.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func FuzzFifo(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
 		_ = testUnmarshal(data) // This is for coverage guidance
 		if _, err := c.Write([]byte(fmt.Sprintf("%x\n", data))); err != nil {
-			f.Fatal(err)
+			t.Fatal(err)
 		}
 	})
 }

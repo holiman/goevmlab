@@ -21,5 +21,8 @@ FROM golang:latest
 RUN git clone https://github.com/holiman/goevmlab --branch eofparse --depth 1
 RUN cd goevmlab && go build ./cmd/eof-cmp
 
-ENTRYPOINT ["/usr/bin/go", "test", "./cmd/eof-cmp", "-fuzz=FuzzFifo", "-v"]
+ENV EOF_FUZZ_PIPE=/fuzztmp/tests.ipc
+
+WORKDIR="/go/goevmlab/"
+ENTRYPOINT ["/usr/local/go/bin/go", "test", "-fuzz=FuzzFifo", "-v", "./cmd/eof-cmp"]
 
