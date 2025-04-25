@@ -23,6 +23,6 @@ RUN cd goevmlab && go build ./cmd/eof-cmp
 
 ENV EOF_FUZZ_PIPE=/fuzztmp/tests.ipc
 
-WORKDIR="/go/goevmlab/"
+WORKDIR /go/goevmlab/
 ENTRYPOINT ["/usr/local/go/bin/go", "test", "-fuzz=FuzzFifo", "-v", "./cmd/eof-cmp"]
 
