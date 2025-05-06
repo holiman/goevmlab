@@ -113,6 +113,10 @@ RUN git clone https://github.com/NethermindEth/nethermind --depth 1 --recurse-su
 RUN cd nethermind/src/Nethermind/Nethermind.Test.Runner && dotnet publish --self-contained true -r linux-x64 -c Release
 RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Runner/release_linux-x64 /out/neth
 
+# also txparse
+RUN cd nethermind/tools/TxParser && dotnet publish --self-contained true -r linux-x64 -c Release
+RUN mv /nethermind/tools/artifacts/publish/TxParser/release_linux-x64/  /out/neth.txparse
+
 #---------------------------------------------------------------
 # java-builder
 #---------------------------------------------------------------
@@ -189,6 +193,8 @@ ENV RETH_BIN=/revme
 COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
 ENV NETH_BIN=/neth/nethtest
+
+COPY --from=dotnet-builder /out/neth.txparse /neth.txparse
 
 COPY --from=java-builder /out/evmtool /evmtool
 RUN ln -s /evmtool/bin/evmtool besu-vm
