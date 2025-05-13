@@ -11,7 +11,7 @@ func fillBlake(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0x0000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    RandCallBlake(),
-		Balance: new(big.Int),
+		Balance: big.NewInt(10_000_000),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction

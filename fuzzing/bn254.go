@@ -49,7 +49,7 @@ func fillBn254(gst *GstMaker, fork string) {
 	code := RandCallBn()
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    code,
-		Balance: new(big.Int),
+		Balance: big.NewInt(10_000_000),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction

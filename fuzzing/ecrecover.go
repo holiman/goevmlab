@@ -31,7 +31,7 @@ func fillEcRecover(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0x00ca11ec5ec04e5")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    randCallECRecover(),
-		Balance: new(big.Int),
+		Balance: big.NewInt(10_000_000),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction

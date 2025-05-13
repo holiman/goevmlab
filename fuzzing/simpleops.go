@@ -35,7 +35,7 @@ func fillSimple(gst *GstMaker, fork string) {
 	}
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateSimpleOpsProgram(forkDef),
-		Balance: new(big.Int),
+		Balance: big.NewInt(10_000_000),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction
@@ -56,7 +56,7 @@ func fillMemOps(gst *GstMaker, fork string) {
 	dest := common.HexToAddress("0xd0de")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    generateMemoryInteractingOpsProgram(fork),
-		Balance: new(big.Int),
+		Balance: big.NewInt(10_000_000),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction
