@@ -53,7 +53,6 @@ func fillPointEvaluation4844(gst *GstMaker, fork string) {
 
 func RandCallPointEval() []byte {
 	p := program.New()
-	offset := 0
 	data := makeData()
 	mutate(data) // don't always use valid data
 	p.Mstore(data, 0)
@@ -72,8 +71,7 @@ func RandCallPointEval() []byte {
 	// pop the ret value
 	p.Op(vm.POP)
 	// Store the output in some slot, to make sure the stateroot changes
-	p.MemToStorage(0, sizeOut, offset)
-	offset += sizeOut
+	p.MemToStorage(0, sizeOut, 0)
 	return p.Bytes()
 }
 
@@ -122,7 +120,7 @@ func kZGToVersionedHash(kzg kzg4844.Commitment) common.Hash {
 
 func randFieldElement() gokzg4844.Scalar {
 	var r fr.Element
-	r.SetRandom()
+	_, _ = r.SetRandom()
 	return gokzg4844.SerializeScalar(r)
 }
 
