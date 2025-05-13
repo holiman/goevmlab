@@ -52,7 +52,7 @@ func fillBls(gst *GstMaker, fork string) {
 	code := RandCallBLS()
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    code,
-		Balance: new(big.Int),
+		Balance: big.NewInt(10_000_000),
 		Storage: make(map[common.Hash]common.Hash),
 	})
 	// The transaction
@@ -76,7 +76,7 @@ func mutate(data []byte) {
 	}
 	for rand.Intn(2) == 0 {
 		bit := rand.Intn(len(data) * 8) // // 13
-		data[bit/8] = data[bit/8] ^ (1 << bit % 8)
+		data[bit/8] = data[bit/8] ^ (1 << (bit % 8))
 	}
 }
 
