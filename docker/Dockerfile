@@ -137,7 +137,6 @@ RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
 
 FROM debian:testing
 
-RUN apt-get update -q
 # nethtest requires libssl-dev
 # besu requires openjdk-21-jre
 # evmone requires GLIBC_2.38 (libstdc++-13-dev) (https://github.com/holiman/goevmlab/issues/144)
@@ -147,9 +146,10 @@ RUN apt-get update -q
 #   - gcc for building 'py-arkworks-bls12381', 
 #   - python3-dev for bulding 'lru-dict'
 #   - pkg-config (see https://github.com/ethereum/execution-specs/issues/1103)
-RUN apt-get install -qy --no-install-recommends \
+RUN apt-get update -q && \ 
+    apt-get install -qy --no-install-recommends \
 	libssl-dev  \
-	openjdk-21-jre \ 
+	openjdk-21-jre-headless \ 
 	libstdc++-13-dev \
 	pipx git curl gcc python3-dev pkg-config \
 	jq nano \
