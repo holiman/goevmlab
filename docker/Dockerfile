@@ -60,9 +60,6 @@ RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-s
  make -j8 evmstate && cp ./tools/evmstate/evmstate /evmstate
 
 
-
-
-
 #---------------------------------------------------------------
 # debian-builder
 #---------------------------------------------------------------
@@ -108,14 +105,15 @@ RUN cd revm && cargo build --release --package revme
 #
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS dotnet-builder
-RUN git clone https://github.com/NethermindEth/nethermind --depth 1 --recurse-submodules
+RUN git clone https://github.com/NethermindEth/nethermind --depth 1
 
 RUN cd nethermind/src/Nethermind/Nethermind.Test.Runner && dotnet publish --self-contained true -r linux-x64 -c Release
 RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Runner/release_linux-x64 /out/neth
 
 # also txparse
 RUN cd nethermind/tools/TxParser && dotnet publish --self-contained true -r linux-x64 -c Release
-RUN mv /nethermind/tools/artifacts/publish/TxParser/release_linux-x64/  /out/neth.txparse
+# winds up at /out/neth/TxParser
+RUN cp -rT /nethermind/tools/artifacts/publish/TxParser/release_linux-x64/ /out/neth/
 
 #---------------------------------------------------------------
 # java-builder
@@ -154,24 +152,26 @@ RUN apt-get install -qy --no-install-recommends \
 	openjdk-21-jre \ 
 	libstdc++-13-dev \
 	pipx git curl gcc python3-dev pkg-config \
-	jq nano
+	jq nano \
+  && apt-get clean
 
 # Install execution-specs (EELS)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s  -- -y  --profile=minimal
 RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/prague --depth 1
 RUN . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
 ENV EELS_BIN=/ethereum-spec-evm
 
 # Go-evmlab targets
-COPY --from=golang-builder /go/goevmlab/generic-fuzzer /usr/bin
-COPY --from=golang-builder /go/goevmlab/generic-generator /usr/bin
-COPY --from=golang-builder /go/goevmlab/checkslow  /usr/bin
-COPY --from=golang-builder /go/goevmlab/minimizer /usr/bin
-COPY --from=golang-builder /go/goevmlab/repro /usr/bin
-COPY --from=golang-builder /go/goevmlab/runtest /usr/bin
-COPY --from=golang-builder /go/goevmlab/tracediff /usr/bin
-COPY --from=golang-builder /go/goevmlab/traceview /usr/bin
-COPY --from=golang-builder /go/goevmlab/evms.test /usr/bin
+COPY --from=golang-builder /go/goevmlab/generic-fuzzer \
+  /go/goevmlab/generic-generator \
+  /go/goevmlab/checkslow \
+  /go/goevmlab/minimizer \
+  /go/goevmlab/repro \
+  /go/goevmlab/runtest \
+  /go/goevmlab/tracediff \
+  /go/goevmlab/traceview \
+  /go/goevmlab/evms.test \
+ /usr/bin/
 
 COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
@@ -193,8 +193,6 @@ ENV RETH_BIN=/revme
 COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
 ENV NETH_BIN=/neth/nethtest
-
-COPY --from=dotnet-builder /out/neth.txparse /neth.txparse
 
 COPY --from=java-builder /out/evmtool /evmtool
 RUN ln -s /evmtool/bin/evmtool besu-vm
