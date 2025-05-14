@@ -194,8 +194,6 @@ COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
 ENV NETH_BIN=/neth/nethtest
 
-COPY --from=dotnet-builder /out/neth.txparse /neth.txparse
-
 COPY --from=java-builder /out/evmtool /evmtool
 RUN ln -s /evmtool/bin/evmtool besu-vm
 ENV BESU_BIN=/evmtool/bin/evmtool
