@@ -59,7 +59,7 @@ RUN cd erigon && mkdir /erigon/ && make evm && \
 #RUN apt-get update -q && apt-get install -qy --no-install-recommends make
 #RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules && \
 # cd nimbus-eth1 && make -j8 update && \
-# make -j8 evmstate && cp ./tools/evmstate/evmstate /evmstate
+# make -j8 evmstate && cp ./tools/evmstate/evmstate /nimbvm
 
 
 #---------------------------------------------------------------
@@ -187,7 +187,7 @@ COPY --from=golang-builder /erigon_vm /erigon_vm
 COPY --from=golang-builder /libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
-COPY --from=holiman/nimbus:latest /evmstate /nimbvm
+COPY --from=holiman/nimbus:latest /nimbvm /nimbvm
 ENV NIMB_BIN=/nimbvm
 
 COPY --from=debian-builder /evmone-statetest /evmone
