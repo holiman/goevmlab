@@ -53,11 +53,13 @@ RUN cd erigon && mkdir /erigon/ && make evm && \
 #
 # NIMBUS-ETH1
 #
+# Nimbus-eth1 takes a humongous time to build, so it has been moved out to 
+# a standalone image, and built every once in a while. See Dockerfile.nimbus
 
-RUN apt-get update -q && apt-get install -qy --no-install-recommends make
-RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules && \
- cd nimbus-eth1 && make -j8 update && \
- make -j8 evmstate && cp ./tools/evmstate/evmstate /evmstate
+#RUN apt-get update -q && apt-get install -qy --no-install-recommends make
+#RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules && \
+# cd nimbus-eth1 && make -j8 update && \
+# make -j8 evmstate && cp ./tools/evmstate/evmstate /nimbvm
 
 
 #---------------------------------------------------------------
@@ -135,7 +137,7 @@ RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
 # Main non-builder
 #
 
-FROM debian:testing
+FROM debian:testing-slim
 
 # nethtest requires libssl-dev
 # besu requires openjdk-21-jre
@@ -156,9 +158,14 @@ RUN apt-get update -q && \
   && apt-get clean
 
 # Install execution-specs (EELS)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s  -- -y  --profile=minimal
 RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/prague --depth 1
-RUN . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]'
+
+#   To install EELS, we temporarily install rust, which is required for building parts of eels, 
+#   and after building, we delete it again
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s  -- -y  --profile=minimal && \
+  . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]' && \
+  rm -rf /root/.rustup && rm -rf /root/.cargo
+
 ENV EELS_BIN=/ethereum-spec-evm
 
 # Go-evmlab targets
@@ -180,7 +187,7 @@ COPY --from=golang-builder /erigon_vm /erigon_vm
 COPY --from=golang-builder /libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
-COPY --from=golang-builder /evmstate /nimbvm
+COPY --from=holiman/nimbus:latest /nimbvm /nimbvm
 ENV NIMB_BIN=/nimbvm
 
 COPY --from=debian-builder /evmone-statetest /evmone
