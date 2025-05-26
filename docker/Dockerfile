@@ -187,7 +187,7 @@ COPY --from=golang-builder /erigon_vm /erigon_vm
 COPY --from=golang-builder /libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
-COPY --from=holiman/nimbus:latest /nimbvm /nimbvm
+COPY --from=holiman/nimbus:latest /nimbvm /txparse.nimbus /
 ENV NIMB_BIN=/nimbvm
 
 COPY --from=debian-builder /evmone-statetest /evmone
