@@ -26,6 +26,10 @@ Building the main `holiman/omnifuzz` image:
 ```
 docker buildx build --progress=plain --load --push -t holiman/omnifuzz .
 ```
+or
+```
+docker buildx build --progress=plain --push --load  -t holiman/omnifuzz-l2  -f Dockerfile.L2.txt .
+```
 
 However, the `nimbus-eth1` client takes so long to build, so it's been moved into a separate container: `holiman/nimbus`:
 ```
