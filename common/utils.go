@@ -668,6 +668,8 @@ type cleanTask struct {
 
 func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
 	defer meta.wg.Done()
+	// delete files with a delay, so we keep the most recent one(s)
+	toRemove := ""
 	for task := range cleanCh {
 		if path := task.slow; path != "" {
 			newPath := filepath.Join(filepath.Dir(path), fmt.Sprintf("slowtest-%v", filepath.Base(path)))
@@ -675,10 +677,13 @@ func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
 				log.Error("Error copying file", "file", path, "err", err)
 			}
 		}
-		if path := task.remove; path != "" && meta.deleteFilesWhenDone {
+		if path := toRemove; path != "" {
 			if err := os.Remove(path); err != nil {
 				log.Error("Error deleting file", "file", path, "err", err)
 			}
+		}
+		if path := task.remove; path != "" && meta.deleteFilesWhenDone {
+			toRemove = path
 		}
 	}
 	log.Debug("CleanupLoop exiting")
@@ -777,8 +782,10 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 				execRs.hash = t.result
 				wantIdx = t.vmIdx
 			} else if !bytes.Equal(execRs.hash, t.result) {
-				log.Info("Consensus flaw", "file", t.file, "vm", t.vmIdx,
-					"have", fmt.Sprintf("%x", execRs.hash), "ref vm", wantIdx,
+				errVm := meta.vms[t.vmIdx].Name()
+				refVm := meta.vms[wantIdx].Name()
+				log.Info("Consensus flaw", "file", t.file, "vm", errVm,
+					"have", fmt.Sprintf("%x", execRs.hash), "ref vm", refVm,
 					"want", fmt.Sprintf("%x", t.result))
 				execRs.consensusFlaw = true
 			}
