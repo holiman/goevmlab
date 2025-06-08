@@ -116,6 +116,11 @@ var (
 		Usage: "Location to place artefacts",
 		Value: "/tmp",
 	}
+	RemoveFilesFlag = &cli.BoolFlag{
+		Name:  "cleanupFiles",
+		Usage: "Whether to remove generated testfiles after (successfull) execution",
+		Value: true,
+	}
 	NotifyFlag = &cli.StringFlag{
 		Name:  "ntfy",
 		Usage: "Topic to sent 'https://ntfy.sh/'-ping on exit (e.g. due to consensus issue)",
@@ -398,7 +403,7 @@ type GeneratorFn func() *fuzzing.GstMaker
 
 func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) error {
 	fn := testFnFromGenerator(generatorFn, name, c.String(LocationFlag.Name))
-	return ExecuteFuzzer(c, false, fn, true)
+	return ExecuteFuzzer(c, false, fn, c.Bool(RemoveFilesFlag.Name))
 }
 
 func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, cleanupFiles bool) error {
@@ -414,7 +419,7 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")
 	}
-	log.Info("Fuzzing started", "threads", numThreads)
+	log.Info("Fuzzing started", "threads", numThreads, "cleanup", cleanupFiles)
 	meta := &testMeta{
 		testCh:              make(chan string, 4), // channel where we'll deliver tests
 		consensusCh:         make(chan string, 4), // channel for signalling consensus errors
