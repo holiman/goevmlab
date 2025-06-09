@@ -125,6 +125,13 @@ var (
 		Name:  "ntfy",
 		Usage: "Topic to sent 'https://ntfy.sh/'-ping on exit (e.g. due to consensus issue)",
 	}
+	RawDebugFlag = &cli.BoolFlag{
+		Name:  "rawdebug",
+		Value: false,
+		Usage: "If true, keeps vm outputs around for deep comparison. " +
+			"This can be useful for very ephemeral flaws which do not reproduce on two runs, " +
+			"but only appears in very special conditions",
+	}
 	PrefixFlag = &cli.StringFlag{
 		Name:  "prefix",
 		Usage: "prefix of output files",
@@ -427,6 +434,7 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 		deleteFilesWhenDone: cleanupFiles,
 		outdir:              c.String(LocationFlag.Name),
 		notifyTopic:         c.String(NotifyFlag.Name),
+		rawDebug:            c.Bool(RawDebugFlag.Name),
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
@@ -554,6 +562,8 @@ type testMeta struct {
 	outdir      string
 	notifyTopic string
 
+	rawDebug bool
+
 	deleteFilesWhenDone bool
 }
 
@@ -621,11 +631,13 @@ type lineCountingHasher struct {
 }
 
 func newLineCountingHasher() *lineCountingHasher {
-	return &lineCountingHasher{md5.New(), 0, make([]byte, 0)}
+	return &lineCountingHasher{md5.New(), 0, nil}
 }
 
 func (l *lineCountingHasher) Write(p []byte) (n int, err error) {
-	l.rawData = append(l.rawData, p...)
+	if l.rawData != nil {
+		l.rawData = append(l.rawData, p...)
+	}
 	var count int
 	for _, c := range p {
 		if c == '\n' {
@@ -639,12 +651,17 @@ func (l *lineCountingHasher) Write(p []byte) (n int, err error) {
 func (l *lineCountingHasher) Reset() {
 	l.h.Reset()
 	l.lines = 0
-	l.rawData = l.rawData[:0]
+	if l.rawData != nil {
+		l.rawData = l.rawData[:0]
+	}
 }
 
 func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 	defer meta.wg.Done()
 	var hasher = newLineCountingHasher()
+	if meta.rawDebug {
+		hasher.rawData = make([]byte, 0)
+	}
 	for t := range taskCh {
 		hasher.Reset()
 		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
@@ -806,14 +823,14 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 				log.Info("Consensus flaw", "file", t.file, "vm", errVm,
 					"have", fmt.Sprintf("%x", execRs.hash), "ref vm", refVm,
 					"want", fmt.Sprintf("%x", t.result))
-
-				tstmp := time.Now().Unix()
-				f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVm))
-				os.WriteFile(f1, t.rawOutput, 0666)
-				f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, wantIdx, refVm))
-				os.WriteFile(f2, wantRawoutput, 0666)
-
-				log.Info("Stored consensus-breaking output into files", "f1", f1, "f2", f2)
+				if meta.rawDebug {
+					tstmp := time.Now().Unix()
+					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVm))
+					os.WriteFile(f1, t.rawOutput, 0666)
+					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, wantIdx, refVm))
+					os.WriteFile(f2, wantRawoutput, 0666)
+					log.Info("Stored consensus-breaking output into files", "f1", f1, "f2", f2)
+				}
 				execRs.consensusFlaw = true
 			}
 			if execRs.waiting > 0 {
