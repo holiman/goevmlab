@@ -686,6 +686,7 @@ func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
 			if err := os.Remove(path); err != nil {
 				log.Error("Error deleting file", "file", path, "err", err)
 			}
+			toRemove = ""
 		}
 		if path := task.remove; path != "" && meta.deleteFilesWhenDone {
 			toRemove = path
