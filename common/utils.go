@@ -826,9 +826,9 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 				if meta.rawDebug {
 					tstmp := time.Now().Unix()
 					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVm))
-					os.WriteFile(f1, t.rawOutput, 0666)
+					_ = os.WriteFile(f1, t.rawOutput, 0666)
 					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, wantIdx, refVm))
-					os.WriteFile(f2, wantRawoutput, 0666)
+					_ = os.WriteFile(f2, wantRawoutput, 0666)
 					log.Info("Stored consensus-breaking output into files", "f1", f1, "f2", f2)
 				}
 				execRs.consensusFlaw = true
