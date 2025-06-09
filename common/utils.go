@@ -125,6 +125,13 @@ var (
 		Name:  "ntfy",
 		Usage: "Topic to sent 'https://ntfy.sh/'-ping on exit (e.g. due to consensus issue)",
 	}
+	RawDebugFlag = &cli.BoolFlag{
+		Name:  "rawdebug",
+		Value: false,
+		Usage: "If true, keeps vm outputs around for deep comparison. " +
+			"This can be useful for very ephemeral flaws which do not reproduce on two runs, " +
+			"but only appears in very special conditions",
+	}
 	PrefixFlag = &cli.StringFlag{
 		Name:  "prefix",
 		Usage: "prefix of output files",
@@ -427,6 +434,7 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 		deleteFilesWhenDone: cleanupFiles,
 		outdir:              c.String(LocationFlag.Name),
 		notifyTopic:         c.String(NotifyFlag.Name),
+		rawDebug:            c.Bool(RawDebugFlag.Name),
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
@@ -554,6 +562,8 @@ type testMeta struct {
 	outdir      string
 	notifyTopic string
 
+	rawDebug bool
+
 	deleteFilesWhenDone bool
 }
 
@@ -606,18 +616,28 @@ type task struct {
 	nLines    int    // number of lines of output
 	command   string // command used to execute the test
 	err       error  // if error occurred
+
+	// Debug-field. Storing raw output allows for us to inspect the difference
+	// in cases where the error is temporary and is not reproduced by running
+	// it a second time.
+	// Using this field severely increases the memory usage of running the fuzzer.
+	rawOutput []byte
 }
 
 type lineCountingHasher struct {
-	h     hash.Hash
-	lines int
+	h       hash.Hash
+	lines   int
+	rawData []byte
 }
 
 func newLineCountingHasher() *lineCountingHasher {
-	return &lineCountingHasher{md5.New(), 0}
+	return &lineCountingHasher{md5.New(), 0, nil}
 }
 
 func (l *lineCountingHasher) Write(p []byte) (n int, err error) {
+	if l.rawData != nil {
+		l.rawData = append(l.rawData, p...)
+	}
 	var count int
 	for _, c := range p {
 		if c == '\n' {
@@ -631,11 +651,17 @@ func (l *lineCountingHasher) Write(p []byte) (n int, err error) {
 func (l *lineCountingHasher) Reset() {
 	l.h.Reset()
 	l.lines = 0
+	if l.rawData != nil {
+		l.rawData = l.rawData[:0]
+	}
 }
 
 func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 	defer meta.wg.Done()
 	var hasher = newLineCountingHasher()
+	if meta.rawDebug {
+		hasher.rawData = make([]byte, 0)
+	}
 	for t := range taskCh {
 		hasher.Reset()
 		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
@@ -658,6 +684,7 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 		t.slow = res.Slow
 		t.result = hasher.h.Sum(nil)
 		t.nLines = hasher.lines
+		t.rawOutput = common.CopyBytes(hasher.rawData)
 		t.command = res.Cmd
 		t.execSpeed = res.ExecTime
 		// Send back
@@ -686,6 +713,7 @@ func (meta *testMeta) cleanupLoop(cleanCh chan *cleanTask) {
 			if err := os.Remove(path); err != nil {
 				log.Error("Error deleting file", "file", path, "err", err)
 			}
+			toRemove = ""
 		}
 		if path := task.remove; path != "" && meta.deleteFilesWhenDone {
 			toRemove = path
@@ -768,6 +796,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	var executing = make(map[string]*execResult)
 	readResults := func(count int) {
 		wantIdx := 0
+		var wantRawoutput []byte
 		for i := 0; i < count; i++ {
 			t := <-resultCh                // result delivery
 			ready = append(ready, t.vmIdx) // add client to ready-set
@@ -786,12 +815,22 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 			if execRs.hash == nil { // first
 				execRs.hash = t.result
 				wantIdx = t.vmIdx
+				wantRawoutput = t.rawOutput
 			} else if !bytes.Equal(execRs.hash, t.result) {
 				errVm := meta.vms[t.vmIdx].Name()
 				refVm := meta.vms[wantIdx].Name()
+
 				log.Info("Consensus flaw", "file", t.file, "vm", errVm,
 					"have", fmt.Sprintf("%x", execRs.hash), "ref vm", refVm,
 					"want", fmt.Sprintf("%x", t.result))
+				if meta.rawDebug {
+					tstmp := time.Now().Unix()
+					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVm))
+					_ = os.WriteFile(f1, t.rawOutput, 0666)
+					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, wantIdx, refVm))
+					_ = os.WriteFile(f2, wantRawoutput, 0666)
+					log.Info("Stored consensus-breaking output into files", "f1", f1, "f2", f2)
+				}
 				execRs.consensusFlaw = true
 			}
 			if execRs.waiting > 0 {
