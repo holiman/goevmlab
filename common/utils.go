@@ -821,8 +821,8 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 				refVm := meta.vms[wantIdx].Name()
 
 				log.Info("Consensus flaw", "file", t.file, "vm", errVm,
-					"have", fmt.Sprintf("%x", execRs.hash), "ref vm", refVm,
-					"want", fmt.Sprintf("%x", t.result))
+					"have", fmt.Sprintf("%x", t.result), "ref vm", refVm,
+					"want", fmt.Sprintf("%x", execRs.hash))
 				if meta.rawDebug {
 					tstmp := time.Now().Unix()
 					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVm))
