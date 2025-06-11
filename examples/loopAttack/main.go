@@ -138,14 +138,17 @@ func evaluate(ctx *cli.Context) error {
 			pushpop.Op(vm.OpCode(a))
 			stack += a.Stackdelta()
 		}
-		for stack > 0 {
+		for stack > 1 {
 			pushpop.Op(vm.OpCode(b))
 			stack += b.Stackdelta()
+		}
+		for stack > 0 {
+			pushpop.Op(vm.POP)
+			stack -= 1
 		}
 	} else {
 		for i := 0; i < 1024; i++ {
 			pushpop.Op(vm.OpCode(a))
-
 		}
 		for i := 0; i < 1024; i++ {
 			pushpop.Op(vm.OpCode(b))
