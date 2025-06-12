@@ -106,6 +106,14 @@ var (
 		Name:  "revme",
 		Usage: "Location of reth 'revme' binary",
 	}
+	BorFlag = &cli.StringSliceFlag{
+		Name:  "bor",
+		Usage: "Location of reth bor evm binary",
+	}
+	BorBatchFlag = &cli.StringSliceFlag{
+		Name:  "borbatch",
+		Usage: "Location of reth bor evm binary",
+	}
 	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -173,6 +181,8 @@ var (
 		NimbusBatchFlag,
 		EvmoneFlag,
 		RethFlag,
+		BorFlag,
+		BorBatchFlag,
 	}
 	traceLengthSA = utils.NewSlidingAverage()
 )
@@ -193,6 +203,8 @@ func InitVMs(c *cli.Context) []evms.Evm {
 		nimBatchBins    = c.StringSlice(NimbusBatchFlag.Name)
 		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
 		revmBins        = c.StringSlice(RethFlag.Name)
+		borBins         = c.StringSlice(BorFlag.Name)
+		borBatchBins    = c.StringSlice(BorBatchFlag.Name)
 
 		vms []evms.Evm
 	)
@@ -238,6 +250,13 @@ func InitVMs(c *cli.Context) []evms.Evm {
 	for i, bin := range revmBins {
 		vms = append(vms, evms.NewRethVM(bin, fmt.Sprintf("%d", i)))
 	}
+	for i, bin := range borBins {
+		vms = append(vms, evms.NewBorEVM(bin, fmt.Sprintf("bor-%d", i)))
+	}
+	for i, bin := range borBatchBins {
+		vms = append(vms, evms.NewBorBatchVM(bin, fmt.Sprintf("borbatch-%d", i)))
+	}
+
 	return vms
 
 }
