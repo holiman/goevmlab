@@ -48,7 +48,7 @@ func (evm *EvmoneVM) Instance(int) Evm {
 }
 
 func (evm *EvmoneVM) Name() string {
-	return fmt.Sprintf("evmone-%s", evm.name)
+	return evm.name
 }
 
 func (evm *EvmoneVM) GetStateRoot(path string) (root, command string, err error) {
