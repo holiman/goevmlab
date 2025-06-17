@@ -788,15 +788,18 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	go meta.cleanupLoop(cleanCh)
 
 	type execResult struct {
-		hash          []byte // hash of the output
-		slow          bool   // whether it was considered slow
-		consensusFlaw bool   // whether it triggered a consensus flaw
-		waiting       int    // the number of clients we're waiting the results from
+		hash  []byte // hash of the output (set by whichever client finishes first)
+		vmIds []int  // which clients have reported in (and their order)
+
+		slow          bool // whether it was considered slow
+		consensusFlaw bool // whether it triggered a consensus flaw
+
+		waiting   int    // the number of clients we're waiting the go obtain results from
+		rawOutput []byte // debug field: set to the raw output of the first executing client, if enabled
 	}
+
 	var executing = make(map[string]*execResult)
 	readResults := func(count int) {
-		wantIdx := 0
-		var wantRawoutput []byte
 		for i := 0; i < count; i++ {
 			t := <-resultCh                // result delivery
 			ready = append(ready, t.vmIdx) // add client to ready-set
@@ -807,28 +810,28 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 			}
 			execRs := executing[t.file]
 			execRs.waiting--
-
+			execRs.vmIds = append(execRs.vmIds, t.vmIdx)
 			if t.slow {
 				execRs.slow = true
 			}
 			// check results
-			if execRs.hash == nil { // first
+			if len(execRs.vmIds) == 1 { // first result
 				execRs.hash = t.result
-				wantIdx = t.vmIdx
-				wantRawoutput = t.rawOutput
+				execRs.rawOutput = t.rawOutput
 			} else if !bytes.Equal(execRs.hash, t.result) {
-				errVm := meta.vms[t.vmIdx].Name()
-				refVm := meta.vms[wantIdx].Name()
+				refVmId := execRs.vmIds[0]
+				refVmName := meta.vms[refVmId].Name()
+				errVmName := meta.vms[t.vmIdx].Name()
 
-				log.Info("Consensus flaw", "file", t.file, "vm", errVm,
-					"have", fmt.Sprintf("%x", t.result), "ref vm", refVm,
+				log.Info("Consensus flaw", "file", t.file, "vm", errVmName,
+					"have", fmt.Sprintf("%x", t.result), "ref vm", refVmName,
 					"want", fmt.Sprintf("%x", execRs.hash))
 				if meta.rawDebug {
 					tstmp := time.Now().Unix()
-					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVm))
+					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVmName))
 					_ = os.WriteFile(f1, t.rawOutput, 0666)
-					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, wantIdx, refVm))
-					_ = os.WriteFile(f2, wantRawoutput, 0666)
+					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, refVmId, refVmName))
+					_ = os.WriteFile(f2, execRs.rawOutput, 0666)
 					log.Info("Stored consensus-breaking output into files", "f1", f1, "f2", f2)
 				}
 				execRs.consensusFlaw = true
