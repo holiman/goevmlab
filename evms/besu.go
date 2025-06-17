@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
+// Package evms contains various tooling for interacting with different evms.
 package evms
 
 import (
@@ -34,14 +35,14 @@ type BesuVM struct {
 	path string
 	name string // in case multiple instances are used
 	// Some metrics
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewBesuVM(path, name string) Evm {
 	return &BesuVM{
 		path:  path,
 		name:  name,
-		stats: new(VmStat),
+		stats: new(VMStat),
 	}
 }
 
@@ -86,26 +87,26 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 		err
 }
 
-func (vm *BesuVM) Close() {}
+func (evm *BesuVM) Close() {}
 
-func (vm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
+func (evm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	// Run without tracing
-	cmd := exec.Command(vm.path, "--nomemory", "--notime", "state-test", path)
+	cmd := exec.Command(evm.path, "--nomemory", "--notime", "state-test", path)
 
 	data, err := cmd.Output()
 	if err != nil {
 		return "", cmd.String(), err
 	}
-	root, err = vm.ParseStateRoot(data)
+	root, err = evm.ParseStateRoot(data)
 	if err != nil {
-		log.Error("Failed to find stateroot", "vm", vm.Name(), "cmd", cmd.String())
+		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
 		return "", cmd.String(), err
 	}
 	return root, cmd.String(), err
 }
 
 // ParseStateRoot reads the stateroot from the combined output.
-func (vm *BesuVM) ParseStateRoot(data []byte) (string, error) {
+func (evm *BesuVM) ParseStateRoot(data []byte) (string, error) {
 	start := strings.Index(string(data), `"postHash":"`)
 	if start > 0 {
 		start = start + len(`"postHash":"`)
@@ -121,7 +122,7 @@ func (vm *BesuVM) ParseStateRoot(data []byte) (string, error) {
 	return "", errors.New("besu: no stateroot/posthash found")
 }
 
-// feed reads from the reader, does some geth-specific filtering and
+// Copy feed reads from the reader, does some geth-specific filtering and
 // outputs items onto the channel
 func (evm *BesuVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input)

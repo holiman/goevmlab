@@ -258,7 +258,7 @@ func TestVMsFromEnv_tracing(t *testing.T) {
 	// We need to write the testcases from embedding to actual disk, so
 	// the vms can execute them
 	testfiles := writeReferenceTestsToDisk(t)
-	var readers []io.Reader = make([]io.Reader, len(vms))
+	var readers = make([]io.Reader, len(vms))
 	// Check the full-trace functionality
 	for _, testfile := range testfiles {
 		for i, vm := range vms {

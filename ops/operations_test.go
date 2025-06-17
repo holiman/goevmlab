@@ -111,8 +111,8 @@ func testForkOpcodes(t *testing.T, fork string) {
 			}
 		}
 		gotPops := len(ourOp.Pops())
-		geth_instr := jt[gethOp]
-		min, max := geth_instr.Stack()
+		gethInstr := jt[gethOp]
+		min, max := gethInstr.Stack()
 
 		if gotPops != min {
 			t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, min)

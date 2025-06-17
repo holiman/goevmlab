@@ -39,16 +39,16 @@ func NewBesuBatchVM(path, name string) Evm {
 		BesuVM: BesuVM{
 			path:  path,
 			name:  name,
-			stats: new(VmStat),
+			stats: new(VMStat),
 		},
 	}
 }
 
-func (evm *BesuBatchVM) Instance(threadId int) Evm {
+func (evm *BesuBatchVM) Instance(threadID int) Evm {
 	return &BesuBatchVM{
 		BesuVM: BesuVM{
 			path:  evm.path,
-			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			name:  fmt.Sprintf("%v-%d", evm.name, threadID),
 			stats: evm.stats,
 		},
 	}
@@ -84,7 +84,8 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
+
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
 	duration, slow := evm.stats.TraceDone(t0)
@@ -95,12 +96,12 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	}, nil
 }
 
-func (vm *BesuBatchVM) Close() {
-	if vm.stdin != nil {
-		vm.stdin.Close()
+func (evm *BesuBatchVM) Close() {
+	if evm.stdin != nil {
+		evm.stdin.Close()
 	}
-	if vm.cmd != nil {
-		_ = vm.cmd.Wait()
+	if evm.cmd != nil {
+		_ = evm.cmd.Wait()
 	}
 }
 
@@ -120,7 +121,7 @@ func (evm *BesuBatchVM) GetStateRoot(path string) (root, command string, err err
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }

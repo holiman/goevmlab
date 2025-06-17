@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
+// Package ops contain definitions of the ethereum opcodes and forks.
 package ops
 
 import (

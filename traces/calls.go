@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
+// Package traces contain some helper-utils to visualise/track traces.
 package traces
 
 import (

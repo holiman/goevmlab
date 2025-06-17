@@ -1,6 +1,22 @@
-run:
-  skip-dirs-use-default: false
+# Defines the configuration version.
+# The only possible value is "2".
+version: "2"
 
+linters:
+  # Default set of linters.
+  # The value can be:
+  # - `standard`: https://golangci-lint.run/usage/linters/#enabled-by-default
+  # - `all`: enables all linters by default.
+  # - `none`: disables all linters by default.
+  # - `fast`: enables only linters considered as "fast" (`golangci-lint help linters --json | jq '[ .[] | select(.fast==true) ] | map(.name)'`).
+  # Default: standard
+  default: standard
+  disable:
+    - errcheck
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - '-SA6002' # disable 'SA6002: argument should be pointer-like to avoid allocations'
 issues:
-  exclude:
-    - 'SA6002: argument should be pointer-like to avoid allocations'
+  exclude-dirs-use-default: false

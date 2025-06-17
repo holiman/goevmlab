@@ -2,7 +2,7 @@ package ops
 
 import "fmt"
 
-// Iterator for disassembled EVM instructions
+// instructionIterator is an iterator for disassembled EVM instructions.
 type instructionIterator struct {
 	code         []byte
 	pc           uint64
@@ -13,7 +13,7 @@ type instructionIterator struct {
 	stackBalance int
 }
 
-// Create a new instruction iterator.
+// NewInstructionIterator creates a new instruction iterator.
 func NewInstructionIterator(code []byte) *instructionIterator {
 	it := new(instructionIterator)
 	it.code = code
@@ -38,7 +38,7 @@ func (it *instructionIterator) Skip(num int) {
 	}
 }
 
-// Returns true if there is a next instruction and moves on.
+// Next returns true if there is a next instruction and moves on.
 func (it *instructionIterator) Next() bool {
 	if it.error != nil || uint64(len(it.code)) <= it.pc {
 		// We previously reached an error or the end.
@@ -103,22 +103,22 @@ func (it *instructionIterator) Next() bool {
 	return true
 }
 
-// Returns any error that may have been encountered.
+// Error returns any error that may have been encountered.
 func (it *instructionIterator) Error() error {
 	return it.error
 }
 
-// Returns the PC of the current instruction.
+// PC returns the PC of the current instruction.
 func (it *instructionIterator) PC() uint64 {
 	return it.pc
 }
 
-// Returns the opcode of the current instruction.
+// Op returns the opcode of the current instruction.
 func (it *instructionIterator) Op() OpCode {
 	return it.op
 }
 
-// Returns the argument of the current instruction.
+// Arg returns the argument of the current instruction.
 func (it *instructionIterator) Arg() []byte {
 	return it.arg
 }

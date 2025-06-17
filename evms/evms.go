@@ -46,7 +46,7 @@ type Evm interface {
 	// This method may deliver the same instance each time, but it may also
 	// deliver e.g. a unique version which has preallocated buffers. Such an instance
 	// is not concurrency-safe, but is fine to deliver in this method.
-	Instance(threadId int) Evm
+	Instance(threadID int) Evm
 }
 
 type stateRoot struct {

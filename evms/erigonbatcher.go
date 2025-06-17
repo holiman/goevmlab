@@ -35,15 +35,15 @@ type ErigonBatchVM struct {
 
 func NewErigonBatchVM(path, name string) Evm {
 	return &ErigonBatchVM{
-		ErigonVM: ErigonVM{path, name, &VmStat{}},
+		ErigonVM: ErigonVM{path, name, &VMStat{}},
 	}
 }
 
-func (evm *ErigonBatchVM) Instance(threadId int) Evm {
+func (evm *ErigonBatchVM) Instance(threadID int) Evm {
 	return &ErigonBatchVM{
 		ErigonVM: ErigonVM{
 			path:  evm.path,
-			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			name:  fmt.Sprintf("%v-%d", evm.name, threadID),
 			stats: evm.stats,
 		},
 	}
@@ -79,7 +79,7 @@ func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout, speedTest)
 	// release resources, handle error but ignore non-zero exit codes
@@ -91,12 +91,12 @@ func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 		nil
 }
 
-func (vm *ErigonBatchVM) Close() {
-	if vm.stdin != nil {
-		vm.stdin.Close()
+func (evm *ErigonBatchVM) Close() {
+	if evm.stdin != nil {
+		evm.stdin.Close()
 	}
-	if vm.cmd != nil {
-		_ = vm.cmd.Wait()
+	if evm.cmd != nil {
+		_ = evm.cmd.Wait()
 	}
 }
 
@@ -115,7 +115,7 @@ func (evm *ErigonBatchVM) GetStateRoot(path string) (root, command string, err e
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout, true)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }

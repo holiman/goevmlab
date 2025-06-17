@@ -36,7 +36,7 @@ func initApp() *cli.App {
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Test-case mutator. This app tries to mutate a testcase in order to trigger a differing stateroot. You probably " +
 		"should run the `minimizer` first."
-	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, common.VMFlags...)
 	app.Flags = append(app.Flags, common.VerbosityFlag)
 	app.Action = startMutator
 	return app
@@ -80,7 +80,7 @@ func startMutator(c *cli.Context) error {
 	if consensus, err := compareFn(testPath, c); err != nil {
 		return err
 	} else if !consensus {
-		return errors.New("Consensus failure -- the input statetest already produces a consensus error")
+		return errors.New("consensus failure -- the input statetest already produces a consensus error")
 	}
 
 	var (

@@ -35,14 +35,14 @@ type EelsEVM struct {
 	name string // in case multiple instances are used
 
 	// Some metrics
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewEelsEVM(path string, name string) Evm {
 	return &EelsEVM{
 		path:  path,
 		name:  name,
-		stats: &VmStat{},
+		stats: &VMStat{},
 	}
 }
 
@@ -116,7 +116,7 @@ func (evm *EelsEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 	}, err
 }
 
-func (vm *EelsEVM) Close() {
+func (evm *EelsEVM) Close() {
 }
 
 // Copy reads from the reader, does some geth-specific filtering and

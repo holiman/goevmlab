@@ -126,7 +126,7 @@ func evaluate(ctx *cli.Context) error {
 	}
 	a, b := ops.OpCode(byte(pusher)), ops.OpCode(byte(popper))
 	if a.Stackdelta()+b.Stackdelta() != 0 {
-		return fmt.Errorf("operations %v (stackdelta %d) and %v (stackdelta %d) do not balance push/pop.",
+		return fmt.Errorf("operations %v (stackdelta %d) and %v (stackdelta %d) do not balance push/pop",
 			a, a.Stackdelta(), b, b.Stackdelta())
 	}
 	pushpop := program.New()

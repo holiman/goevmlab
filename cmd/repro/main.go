@@ -35,7 +35,7 @@ func initApp() *cli.App {
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Test-case creator"
-	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, common.VMFlags...)
 	app.Action = startAnalysis
 	return app
 }

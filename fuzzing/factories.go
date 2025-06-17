@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
+// Package fuzzing contains various fuzzers and utilities for generating testcases.
 package fuzzing
 
 // fillers is a mapping of names to functions that can fill a statetest.

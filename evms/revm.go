@@ -32,14 +32,14 @@ type RethVM struct {
 	path string
 	name string
 
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewRethVM(path string, name string) Evm {
 	return &RethVM{
 		path:  path,
 		name:  name,
-		stats: &VmStat{},
+		stats: &VMStat{},
 	}
 }
 
@@ -121,7 +121,7 @@ func (evm *RethVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	}, err
 }
 
-func (vm *RethVM) Close() {
+func (evm *RethVM) Close() {
 }
 
 func (evm *RethVM) Copy(out io.Writer, input io.Reader) {
