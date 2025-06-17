@@ -48,7 +48,7 @@ func (evm *RethVM) Instance(int) Evm {
 }
 
 func (evm *RethVM) Name() string {
-	return fmt.Sprintf("revm-%s", evm.name)
+	return evm.name
 }
 
 func (evm *RethVM) GetStateRoot(path string) (root, command string, err error) {
