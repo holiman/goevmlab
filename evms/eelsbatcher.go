@@ -34,7 +34,7 @@ type EelsBatchVM struct {
 	mu     sync.Mutex
 }
 
-func NewEelsBatchVM(path, name string) *EelsBatchVM {
+func NewEelsBatchVM(path, name string) Evm {
 	return &EelsBatchVM{
 		EelsEVM: EelsEVM{path, name, &VmStat{}},
 	}

@@ -35,7 +35,7 @@ type RethVM struct {
 	stats *VmStat
 }
 
-func NewRethVM(path string, name string) *RethVM {
+func NewRethVM(path string, name string) Evm {
 	return &RethVM{
 		path:  path,
 		name:  name,

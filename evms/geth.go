@@ -37,7 +37,7 @@ type GethEVM struct {
 	stats *VmStat
 }
 
-func NewGethEVM(path string, name string) *GethEVM {
+func NewGethEVM(path string, name string) Evm {
 	return &GethEVM{
 		path:  path,
 		name:  name,

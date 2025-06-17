@@ -178,66 +178,30 @@ var (
 )
 
 func InitVMs(c *cli.Context) []evms.Evm {
-	var (
-		gethBins        = c.StringSlice(GethFlag.Name)
-		gethBatchBins   = c.StringSlice(GethBatchFlag.Name)
-		eelsBins        = c.StringSlice(EelsFlag.Name)
-		eelsBatchBins   = c.StringSlice(EelsBatchFlag.Name)
-		nethBins        = c.StringSlice(NethermindFlag.Name)
-		nethBatchBins   = c.StringSlice(NethBatchFlag.Name)
-		besuBins        = c.StringSlice(BesuFlag.Name)
-		besuBatchBins   = c.StringSlice(BesuBatchFlag.Name)
-		erigonBins      = c.StringSlice(ErigonFlag.Name)
-		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
-		nimBins         = c.StringSlice(NimbusFlag.Name)
-		nimBatchBins    = c.StringSlice(NimbusBatchFlag.Name)
-		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
-		revmBins        = c.StringSlice(RethFlag.Name)
+	var vms []evms.Evm
 
-		vms []evms.Evm
-	)
-	for i, bin := range gethBins {
-		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("geth-%d", i)))
+	addVm := func(flagName string, constructor func(string, string) evms.Evm) {
+		for i, bin := range c.StringSlice(flagName) {
+			name := fmt.Sprintf("%s-%d", flagName, i)
+			vms = append(vms, constructor(bin, name))
+		}
 	}
-	for i, bin := range gethBatchBins {
-		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("gethbatch-%d", i)))
-	}
-	for i, bin := range eelsBins {
-		vms = append(vms, evms.NewEelsEVM(bin, fmt.Sprintf("eels-%d", i)))
-	}
-	for i, bin := range eelsBatchBins {
-		vms = append(vms, evms.NewEelsBatchVM(bin, fmt.Sprintf("eelsbatch-%d", i)))
-	}
-	for i, bin := range nethBins {
-		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("nethermind-%d", i)))
-	}
-	for i, bin := range nethBatchBins {
-		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("nethbatch-%d", i)))
-	}
-	for i, bin := range besuBins {
-		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("besu-%d", i)))
-	}
-	for i, bin := range besuBatchBins {
-		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("besubatch-%d", i)))
-	}
-	for i, bin := range erigonBins {
-		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("erigon-%d", i)))
-	}
-	for i, bin := range erigonBatchBins {
-		vms = append(vms, evms.NewErigonBatchVM(bin, fmt.Sprintf("erigonbatch-%d", i)))
-	}
-	for i, bin := range nimBins {
-		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
-	}
-	for i, bin := range nimBatchBins {
-		vms = append(vms, evms.NewNimbusBatchVM(bin, fmt.Sprintf("nimbusbatch-%d", i)))
-	}
-	for i, bin := range evmoneBins {
-		vms = append(vms, evms.NewEvmoneVM(bin, fmt.Sprintf("%d", i)))
-	}
-	for i, bin := range revmBins {
-		vms = append(vms, evms.NewRethVM(bin, fmt.Sprintf("%d", i)))
-	}
+
+	addVm(GethFlag.Name, evms.NewGethEVM)
+	addVm(GethBatchFlag.Name, evms.NewGethBatchVM)
+	addVm(EelsFlag.Name, evms.NewEelsEVM)
+	addVm(EelsBatchFlag.Name, evms.NewEelsBatchVM)
+	addVm(NethermindFlag.Name, evms.NewNethermindVM)
+	addVm(NethBatchFlag.Name, evms.NewNethermindBatchVM)
+	addVm(BesuFlag.Name, evms.NewBesuVM)
+	addVm(BesuBatchFlag.Name, evms.NewBesuBatchVM)
+	addVm(ErigonFlag.Name, evms.NewErigonVM)
+	addVm(ErigonBatchFlag.Name, evms.NewErigonBatchVM)
+	addVm(NimbusFlag.Name, evms.NewNimbusEVM)
+	addVm(NimbusBatchFlag.Name, evms.NewNimbusBatchVM)
+	addVm(EvmoneFlag.Name, evms.NewEvmoneVM)
+	addVm(RethFlag.Name, evms.NewRethVM)
+
 	return vms
 }
 
@@ -366,12 +330,10 @@ func TestSpeed(dir string, c *cli.Context) error {
 		return fmt.Errorf("%v is not a directory", dir)
 	}
 
-	const (
-		infoThreshold = time.Second
-		warnThreshold = 5 * time.Second
-	)
+	infoThreshold := time.Second
+	warnThreshold := 5 * time.Second
 
-	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	speedTest := func(path string, info os.FileInfo, err error) error {
 		if err != nil || !strings.HasSuffix(path, ".json") {
 			return err
 		}
@@ -394,7 +356,8 @@ func TestSpeed(dir string, c *cli.Context) error {
 
 		}
 		return nil
-	})
+	}
+	return filepath.Walk(dir, speedTest)
 }
 
 type TestProviderFn func(index, threadId int) (string, error)

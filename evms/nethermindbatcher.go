@@ -35,9 +35,9 @@ type NethermindBatchVM struct {
 	mu      sync.Mutex
 }
 
-func NewNethermindBatchVM(path, name string) *NethermindBatchVM {
+func NewNethermindBatchVM(path, name string) Evm {
 	return &NethermindBatchVM{
-		NethermindVM: *NewNethermindVM(path, name),
+		NethermindVM: NethermindVM{path, name, &VmStat{}},
 	}
 }
 

@@ -35,9 +35,13 @@ type NimbusBatchVM struct {
 	mu      sync.Mutex
 }
 
-func NewNimbusBatchVM(path, name string) *NimbusBatchVM {
+func NewNimbusBatchVM(path, name string) Evm {
 	return &NimbusBatchVM{
-		NimbusEVM: *NewNimbusEVM(path, name),
+		NimbusEVM: NimbusEVM{
+			path:  path,
+			name:  name,
+			stats: &VmStat{},
+		},
 	}
 }
 

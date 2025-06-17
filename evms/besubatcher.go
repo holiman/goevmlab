@@ -34,7 +34,7 @@ type BesuBatchVM struct {
 	mu     sync.Mutex
 }
 
-func NewBesuBatchVM(path, name string) *BesuBatchVM {
+func NewBesuBatchVM(path, name string) Evm {
 	return &BesuBatchVM{
 		BesuVM: BesuVM{
 			path:  path,

@@ -37,7 +37,7 @@ type BesuVM struct {
 	stats *VmStat
 }
 
-func NewBesuVM(path, name string) *BesuVM {
+func NewBesuVM(path, name string) Evm {
 	return &BesuVM{
 		path:  path,
 		name:  name,

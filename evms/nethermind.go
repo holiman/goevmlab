@@ -36,7 +36,7 @@ type NethermindVM struct {
 	stats *VmStat
 }
 
-func NewNethermindVM(path, name string) *NethermindVM {
+func NewNethermindVM(path, name string) Evm {
 	return &NethermindVM{
 		path:  path,
 		name:  name,

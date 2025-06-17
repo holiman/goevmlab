@@ -35,7 +35,7 @@ type EvmoneVM struct {
 	stats *VmStat
 }
 
-func NewEvmoneVM(path string, name string) *EvmoneVM {
+func NewEvmoneVM(path string, name string) Evm {
 	return &EvmoneVM{
 		path:  path,
 		name:  name,

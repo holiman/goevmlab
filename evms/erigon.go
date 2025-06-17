@@ -36,7 +36,7 @@ type ErigonVM struct {
 	stats *VmStat
 }
 
-func NewErigonVM(path, name string) *ErigonVM {
+func NewErigonVM(path, name string) Evm {
 	return &ErigonVM{
 		path:  path,
 		name:  name,

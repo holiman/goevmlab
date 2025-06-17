@@ -33,7 +33,7 @@ type GethBatchVM struct {
 	mu     sync.Mutex
 }
 
-func NewGethBatchVM(path, name string) *GethBatchVM {
+func NewGethBatchVM(path, name string) Evm {
 	return &GethBatchVM{
 		GethEVM: GethEVM{path, name, &VmStat{}},
 	}

@@ -33,7 +33,7 @@ type ErigonBatchVM struct {
 	mu     sync.Mutex
 }
 
-func NewErigonBatchVM(path, name string) *ErigonBatchVM {
+func NewErigonBatchVM(path, name string) Evm {
 	return &ErigonBatchVM{
 		ErigonVM: ErigonVM{path, name, &VmStat{}},
 	}
