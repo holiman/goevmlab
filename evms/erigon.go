@@ -33,14 +33,14 @@ type ErigonVM struct {
 	path string
 	name string // in case multiple instances are used
 	// Some metrics
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewErigonVM(path, name string) Evm {
 	return &ErigonVM{
 		path:  path,
 		name:  name,
-		stats: new(VmStat),
+		stats: new(VMStat),
 	}
 }
 
@@ -111,7 +111,7 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		err
 }
 
-func (vm *ErigonVM) Close() {
+func (evm *ErigonVM) Close() {
 }
 
 // Copy reads from the reader, does some geth-specific filtering and
@@ -130,8 +130,8 @@ func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool
 			log.Warn("Error parsing erigonbatch output", "error", err)
 			return stateRoot{}
 		}
-		rootJson, _ := json.Marshal(r[0])
-		if _, err := out.Write(append(rootJson, '\n')); err != nil {
+		rootJSON, _ := json.Marshal(r[0])
+		if _, err := out.Write(append(rootJSON, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
 		return r[0]

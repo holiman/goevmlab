@@ -19,7 +19,7 @@ type authHelper struct {
 	keys    map[common.Address]*ecdsa.PrivateKey
 	addrs   []common.Address
 	nonces  map[common.Address]uint64
-	chainId *uint256.Int
+	chainID *uint256.Int
 }
 
 func newHelper() *authHelper {
@@ -27,7 +27,7 @@ func newHelper() *authHelper {
 		keys:   make(map[common.Address]*ecdsa.PrivateKey),
 		nonces: make(map[common.Address]uint64),
 	}
-	h.chainId = uint256.NewInt(0)
+	h.chainID = uint256.NewInt(0)
 	addKey := func(pKey string) {
 		key, err := crypto.HexToECDSA(pKey)
 		if err != nil {
@@ -106,15 +106,15 @@ func fill7702(gst *GstMaker, fork string) {
 
 		nonce := h.consumeNonce(source)
 		unsigned := types.SetCodeAuthorization{
-			ChainID: *h.chainId,
+			ChainID: *h.chainID,
 			Address: dest,
 			Nonce:   nonce,
 		}
-		rnd := rand.Intn(20)
-		if rnd == 0 {
+		switch rand.Intn(20) {
+		case 0:
 			// Random chain id
 			unsigned.ChainID = randU256()
-		} else if rnd == 1 {
+		case 1:
 			// Random nonce
 			unsigned.Nonce = rand.Uint64()
 		}

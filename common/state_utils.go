@@ -39,7 +39,7 @@ func StateDBWithAlloc(alloc types.GenesisAlloc) *state.StateDB {
 	return statedb
 }
 
-// StateDBWithAlloc creates an empty statedb, or panics on error
+// NewEmptyStateDB creates an empty statedb, or panics on error
 func NewEmptyStateDB() *state.StateDB {
 	statedb, err := state.New(types.EmptyRootHash, NewMemStateDB())
 	if err != nil {

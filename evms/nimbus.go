@@ -34,14 +34,14 @@ type NimbusEVM struct {
 	path string
 	name string
 	// Some metrics
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewNimbusEVM(path string, name string) Evm {
 	return &NimbusEVM{
 		path:  path,
 		name:  name,
-		stats: &VmStat{},
+		stats: &VMStat{},
 	}
 }
 
@@ -115,7 +115,7 @@ func (evm *NimbusEVM) RunStateTest(path string, out io.Writer, speedTest bool) (
 	}, nil
 }
 
-func (vm *NimbusEVM) Close() {
+func (evm *NimbusEVM) Close() {
 }
 
 func (evm *NimbusEVM) Copy(out io.Writer, input io.Reader) {
@@ -131,8 +131,8 @@ func (evm *NimbusEVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode boo
 			log.Warn("Error parsing nimbus output", "error", err)
 			return stateRoot{}
 		}
-		rootJson, _ := json.Marshal(r[0])
-		if _, err := out.Write(append(rootJson, '\n')); err != nil {
+		rootJSON, _ := json.Marshal(r[0])
+		if _, err := out.Write(append(rootJSON, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
 		return r[0]
@@ -189,8 +189,8 @@ func (evm *NimbusEVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode boo
 		yield(&elem)
 	}
 	yield(nil)
-	rootJson, _ := json.Marshal(root)
-	if _, err := out.Write(append(rootJson, '\n')); err != nil {
+	rootJSON, _ := json.Marshal(root)
+	if _, err := out.Write(append(rootJSON, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 	}
 	return root

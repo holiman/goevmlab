@@ -71,21 +71,21 @@ func (s *jsonlScanner) Next(elem any) (err error) {
 			fmt.Fprintf(s.out, "%v: %v\n", s.clientName, string(data))
 			continue
 		}
-		var nonJson []string
+		var nonJSON []string
 		err = json.Unmarshal(data, elem)
 		for ; err != nil; err = json.Unmarshal(data, elem) {
-			if len(nonJson) == 0 { // Add first error
+			if len(nonJSON) == 0 { // Add first error
 				title := fmt.Sprintf("%v error: %v", s.clientName, err.Error())
-				nonJson = append(nonJson, title)
+				nonJSON = append(nonJSON, title)
 			}
-			nonJson = append(nonJson, fmt.Sprintf("  | %v", string(data)))
+			nonJSON = append(nonJSON, fmt.Sprintf("  | %v", string(data)))
 			if !s.scanner.Scan() {
 				break
 			}
 			data = s.scanner.Bytes()
 		}
-		if len(nonJson) > 0 {
-			fmt.Fprintln(s.out, strings.Join(nonJson, "\n"))
+		if len(nonJSON) > 0 {
+			fmt.Fprintln(s.out, strings.Join(nonJSON, "\n"))
 		}
 		return err
 	}

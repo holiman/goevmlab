@@ -36,15 +36,15 @@ type EelsBatchVM struct {
 
 func NewEelsBatchVM(path, name string) Evm {
 	return &EelsBatchVM{
-		EelsEVM: EelsEVM{path, name, &VmStat{}},
+		EelsEVM: EelsEVM{path, name, &VMStat{}},
 	}
 }
 
-func (evm *EelsBatchVM) Instance(threadId int) Evm {
+func (evm *EelsBatchVM) Instance(threadID int) Evm {
 	return &EelsBatchVM{
 		EelsEVM: EelsEVM{
 			path:  evm.path,
-			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			name:  fmt.Sprintf("%v-%d", evm.name, threadID),
 			stats: evm.stats,
 		},
 	}
@@ -80,7 +80,7 @@ func (evm *EelsBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
@@ -92,12 +92,12 @@ func (evm *EelsBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 		nil
 }
 
-func (vm *EelsBatchVM) Close() {
-	if vm.stdin != nil {
-		vm.stdin.Close()
+func (evm *EelsBatchVM) Close() {
+	if evm.stdin != nil {
+		evm.stdin.Close()
 	}
-	if vm.cmd != nil {
-		_ = vm.cmd.Wait()
+	if evm.cmd != nil {
+		_ = evm.cmd.Wait()
 	}
 }
 
@@ -116,7 +116,7 @@ func (evm *EelsBatchVM) GetStateRoot(path string) (root, command string, err err
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 
 	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout)
 	return sRoot.StateRoot, evm.cmd.String(), nil

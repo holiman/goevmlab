@@ -34,14 +34,14 @@ type GethEVM struct {
 	name string // in case multiple instances are used
 
 	// Some metrics
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewGethEVM(path string, name string) Evm {
 	return &GethEVM{
 		path:  path,
 		name:  name,
-		stats: &VmStat{},
+		stats: &VMStat{},
 	}
 }
 
@@ -116,7 +116,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 	}, err
 }
 
-func (vm *GethEVM) Close() {
+func (evm *GethEVM) Close() {
 }
 
 // Copy reads from the reader, does some geth-specific filtering and

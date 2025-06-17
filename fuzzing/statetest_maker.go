@@ -178,7 +178,7 @@ func (g *GstMaker) EnableFork(fork string) {
 	g.forks = append(g.forks, fork)
 }
 
-// FillTest uses go-ethereum internally to determine the state root and logs, and optionally
+// Fill uses go-ethereum internally to determine the state root and logs, and optionally
 // outputs the trace to the given writer (if non-nil)
 func (g *GstMaker) Fill(traceOutput io.Writer) error {
 

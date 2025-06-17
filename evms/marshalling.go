@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 )
 
-func JsonMarshal(log *logger.StructLog) []byte {
+func JSONMarshal(log *logger.StructLog) []byte {
 	data, _ := json.Marshal(log)
 	return data
 }

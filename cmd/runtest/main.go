@@ -36,7 +36,7 @@ func initApp() *cli.App {
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Executes one test against several vms"
-	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, common.VMFlags...)
 	app.Flags = append(app.Flags, common.SkipTraceFlag)
 	app.Flags = append(app.Flags, common.ThreadFlag)
 	app.Flags = append(app.Flags, common.LocationFlag)

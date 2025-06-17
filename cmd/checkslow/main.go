@@ -32,7 +32,7 @@ func initApp() *cli.App {
 	app.Name = filepath.Base(os.Args[0])
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Tests execution speed on list of statetests"
-	app.Flags = append(app.Flags, common.VmFlags...)
+	app.Flags = append(app.Flags, common.VMFlags...)
 	app.Flags = append(app.Flags, common.VerbosityFlag)
 	app.Action = startTests
 	return app

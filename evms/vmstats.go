@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 )
 
-type VmStat struct {
+type VMStat struct {
 	// Some metrics
 	tracingSpeedWMA    utils.SlidingAverage
 	longestTracingTime time.Duration
@@ -16,7 +16,7 @@ type VmStat struct {
 
 // TraceDone marks the tracing speed metric, and returns 'true' if the test is
 // 'slow'.
-func (stat *VmStat) TraceDone(start time.Time) (time.Duration, bool) {
+func (stat *VMStat) TraceDone(start time.Time) (time.Duration, bool) {
 	numexecs := stat.numExecs.Add(1)
 	duration := time.Since(start)
 	stat.tracingSpeedWMA.Add(int(duration))
@@ -30,7 +30,7 @@ func (stat *VmStat) TraceDone(start time.Time) (time.Duration, bool) {
 	return duration, false
 }
 
-func (stat *VmStat) Stats() []any {
+func (stat *VMStat) Stats() []any {
 	return []interface{}{
 		"execSpeed", time.Duration(stat.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond),
 		"longest", stat.longestTracingTime,

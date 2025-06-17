@@ -40,16 +40,16 @@ func NewNimbusBatchVM(path, name string) Evm {
 		NimbusEVM: NimbusEVM{
 			path:  path,
 			name:  name,
-			stats: &VmStat{},
+			stats: &VMStat{},
 		},
 	}
 }
 
-func (evm *NimbusBatchVM) Instance(threadId int) Evm {
+func (evm *NimbusBatchVM) Instance(threadID int) Evm {
 	return &NimbusBatchVM{
 		NimbusEVM: NimbusEVM{
 			path:  evm.path,
-			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			name:  fmt.Sprintf("%v-%d", evm.name, threadID),
 			stats: evm.stats,
 		},
 	}
@@ -90,7 +90,7 @@ func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 		evm.procOut = procOut
 		evm.stdin = stdin
 	}
-	_, err = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, err = fmt.Fprintf(evm.stdin, "%v\n", path)
 	if err != nil {
 		log.Error("Error writing to nimbus", "path", path, "err", err)
 	}
@@ -104,12 +104,12 @@ func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 	}, nil
 }
 
-func (vm *NimbusBatchVM) Close() {
-	if vm.stdin != nil {
-		vm.stdin.Close()
+func (evm *NimbusBatchVM) Close() {
+	if evm.stdin != nil {
+		evm.stdin.Close()
 	}
-	if vm.cmd != nil {
-		_ = vm.cmd.Wait()
+	if evm.cmd != nil {
+		_ = evm.cmd.Wait()
 	}
 }
 
@@ -128,7 +128,7 @@ func (evm *NimbusBatchVM) GetStateRoot(path string) (root, command string, err e
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 	sRoot := evm.copyUntilEnd(io.Discard, evm.procOut, true)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }

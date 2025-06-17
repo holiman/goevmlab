@@ -1,3 +1,5 @@
+// Package program contains utilities to build small evm programs. It has since been
+// upstreamed into go-ethereum, only bits and pieces remain here.
 package program
 
 import (

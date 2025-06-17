@@ -32,14 +32,14 @@ type EvmoneVM struct {
 	path string
 	name string
 
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewEvmoneVM(path string, name string) Evm {
 	return &EvmoneVM{
 		path:  path,
 		name:  name,
-		stats: &VmStat{},
+		stats: &VMStat{},
 	}
 }
 
@@ -116,7 +116,7 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 	}, err
 }
 
-func (vm *EvmoneVM) Close() {
+func (evm *EvmoneVM) Close() {
 }
 
 func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {

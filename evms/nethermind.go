@@ -33,21 +33,21 @@ type NethermindVM struct {
 	path string
 	name string
 	// Some metrics
-	stats *VmStat
+	stats *VMStat
 }
 
 func NewNethermindVM(path, name string) Evm {
 	return &NethermindVM{
 		path:  path,
 		name:  name,
-		stats: &VmStat{},
+		stats: &VMStat{},
 	}
 }
 
-func (evm *NethermindVM) Instance(threadId int) Evm {
+func (evm *NethermindVM) Instance(threadID int) Evm {
 	return &NethermindVM{
 		path:  evm.path,
-		name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+		name:  fmt.Sprintf("%v-%d", evm.name, threadID),
 		stats: evm.stats,
 	}
 }
@@ -72,7 +72,7 @@ func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err er
 	return root, cmd.String(), err
 }
 
-// getStateRoot reads the stateroot from the combined output.
+// ParseStateRoot reads the stateroot from the combined output.
 func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
 	start := bytes.Index(data, []byte(`"stateRoot": "`))
 	end := start + 14 + 66
@@ -118,10 +118,10 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		Cmd:      cmd.String()}, nil
 }
 
-func (vm *NethermindVM) Close() {
+func (evm *NethermindVM) Close() {
 }
 
-// feed reads from the reader, does some vm-specific filtering and
+// Copy feed reads from the reader, does some vm-specific filtering and
 // outputs items onto the channel
 func (evm *NethermindVM) Copy(out io.Writer, input io.Reader) {
 	evm.copyUntilEnd(out, input, false)
@@ -135,8 +135,8 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode 
 			log.Warn("Error parsing nethermind output", "error", err)
 			return stateRoot{}
 		}
-		rootJson, _ := json.Marshal(r[0])
-		if _, err := out.Write(append(rootJson, '\n')); err != nil {
+		rootJSON, _ := json.Marshal(r[0])
+		if _, err := out.Write(append(rootJSON, '\n')); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to out: %v\n", err)
 		}
 		return r[0]

@@ -59,16 +59,16 @@ func runit() error {
 	callerAddr := common.HexToAddress("0x000000000000000000000000000000000000c411")
 	var sender = common.HexToAddress("a94f5374fce5edbc8e2a8697c15331677e6ebf0b")
 
-	var existingAddresses []common.Address = []common.Address{
+	var existingAddresses = []common.Address{
 		common.HexToAddress("0x00000000000000000000000000000000000000AA"),
 		common.HexToAddress("0x00000000000000000000000000000000000000CC"),
 	}
-	var warmAddresses []common.Address = []common.Address{
+	var warmAddresses = []common.Address{
 		common.HexToAddress("0x00000000000000000000000000000000000000CC"),
 		common.HexToAddress("0x00000000000000000000000000000000000000DD"),
 		common.HexToAddress("0x0000000000000000000000000000000000000003"),
 	}
-	var addresses []common.Address = []common.Address{
+	var addresses = []common.Address{
 		// This one is 'cold', but exists. Load it twice
 		common.HexToAddress("0x00000000000000000000000000000000000000AA"),
 		common.HexToAddress("0x00000000000000000000000000000000000000AA"),

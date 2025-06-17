@@ -47,7 +47,7 @@ type Traces struct {
 	Errs []string
 }
 
-// Global variable chunk size
+// ChunkSize is global variable
 var ChunkSize = uint64(31)
 
 func (traces *Traces) Get(index int) *TraceLine {
@@ -302,8 +302,8 @@ func parseMem(memStrings []interface{}) []byte {
 	return s
 }
 
-// readJson attempts to slurp the file as a JSON file
-func readJson(data []byte) (*Traces, error) {
+// readJSON attempts to slurp the file as a JSON file
+func readJSON(data []byte) (*Traces, error) {
 	var (
 		traceData traceTxRPCResponse
 		traces    Traces
@@ -350,9 +350,9 @@ func readJson(data []byte) (*Traces, error) {
 	return &traces, nil
 }
 
-// readJsonLines attempts to read the file as json-lines, line by line
+// readJSONLines attempts to read the file as json-lines, line by line
 // delimited json objects
-func readJsonLines(input io.Reader) (*Traces, error) {
+func readJSONLines(input io.Reader) (*Traces, error) {
 
 	var traces Traces
 	step := uint64(0)
@@ -408,7 +408,7 @@ func ReadFile(location string) (*Traces, error) {
 	}
 	if strings.HasSuffix(location, ".json") {
 		// read as json
-		t, err := readJson(data)
+		t, err := readJSON(data)
 		// Do a second pass to assign addresses, where applicable
 		if err == nil {
 			AnalyzeCalls(t)
@@ -417,11 +417,11 @@ func ReadFile(location string) (*Traces, error) {
 	}
 
 	// First attempt to read as JSON struct
-	t, err := readJson(data)
+	t, err := readJSON(data)
 	if err != nil {
 		// Second attempt, read as json lines.
 		// Need to reset the input
-		t, err = readJsonLines(bytes.NewReader(data))
+		t, err = readJSONLines(bytes.NewReader(data))
 	}
 	// Do a second pass to assign addresses, where applicable
 	if err == nil {

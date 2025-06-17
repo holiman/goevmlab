@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the goevmlab library. If not, see <http://www.gnu.org/licenses/>.
 
-// Most of the code in this file is written by @kevaundray
 package fuzzing
 
 import (
@@ -23,6 +22,8 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 )
+
+// Most of the code in this file is written by @kevaundray
 
 // specialElement returns an fp.Element which is possibly invalid,
 // covering some edgecases

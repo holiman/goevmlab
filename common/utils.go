@@ -158,7 +158,7 @@ var (
 		Value: 0,
 	}
 
-	VmFlags = []cli.Flag{
+	VMFlags = []cli.Flag{
 		GethFlag,
 		GethBatchFlag,
 		EelsFlag,
@@ -215,7 +215,7 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 		errs  = make([]error, len(vms))
 	)
 	if len(vms) < 1 {
-		return false, fmt.Errorf("No vms specified!")
+		return false, fmt.Errorf("no vms specified")
 	}
 	wg.Add(len(vms))
 	for i, vm := range vms {
@@ -243,7 +243,7 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 	return true, nil
 }
 
-// RunTests runs a test on all clients.
+// RunSingleTest runs a test on all clients.
 // Return values are :
 // - true, nil: no consensus issue
 // - true, err: test execution failed
@@ -252,7 +252,7 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 	var outputs []*os.File
 	if len(vms) == 0 {
-		return true, fmt.Errorf("No vms specified!")
+		return true, fmt.Errorf("no vms specified")
 	}
 	// Open/create outputs for writing
 	for i, evm := range vms {
@@ -309,7 +309,7 @@ func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 		}
 		fmt.Fprintf(out, "\nTo view the difference with tracediff:\n\ttracediff %v %v\n", outputs[0].Name(), outputs[0].Name())
 		fmt.Println(out)
-		return false, fmt.Errorf("Consensus error")
+		return false, fmt.Errorf("consensus error")
 	}
 
 	for _, f := range outputs {
@@ -322,7 +322,7 @@ func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 func TestSpeed(dir string, c *cli.Context) error {
 	vms := InitVMs(c)
 	if len(vms) < 1 {
-		return fmt.Errorf("No vms specified!")
+		return fmt.Errorf("no vms specified")
 	}
 	if finfo, err := os.Stat(dir); err != nil {
 		return err

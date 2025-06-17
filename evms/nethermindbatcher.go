@@ -37,15 +37,15 @@ type NethermindBatchVM struct {
 
 func NewNethermindBatchVM(path, name string) Evm {
 	return &NethermindBatchVM{
-		NethermindVM: NethermindVM{path, name, &VmStat{}},
+		NethermindVM: NethermindVM{path, name, &VMStat{}},
 	}
 }
 
-func (evm *NethermindBatchVM) Instance(threadId int) Evm {
+func (evm *NethermindBatchVM) Instance(threadID int) Evm {
 	return &NethermindBatchVM{
 		NethermindVM: NethermindVM{
 			path:  evm.path,
-			name:  fmt.Sprintf("%v-%d", evm.name, threadId),
+			name:  fmt.Sprintf("%v-%d", evm.name, threadID),
 			stats: evm.stats,
 		},
 	}
@@ -86,7 +86,7 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, err = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, err = fmt.Fprintf(evm.stdin, "%v\n", path)
 	if err != nil {
 		log.Error("Error writing to nethermind", "err", err)
 	}
@@ -100,12 +100,12 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 	}, nil
 }
 
-func (vm *NethermindBatchVM) Close() {
-	if vm.stdin != nil {
-		vm.stdin.Close()
+func (evm *NethermindBatchVM) Close() {
+	if evm.stdin != nil {
+		evm.stdin.Close()
 	}
-	if vm.cmd != nil {
-		_ = vm.cmd.Wait()
+	if evm.cmd != nil {
+		_ = evm.cmd.Wait()
 	}
 }
 
@@ -124,7 +124,7 @@ func (evm *NethermindBatchVM) GetStateRoot(path string) (root, command string, e
 	}
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
-	_, _ = evm.stdin.Write([]byte(fmt.Sprintf("%v\n", path)))
+	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
 	sRoot := evm.copyUntilEnd(io.Discard, evm.procOut, true)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }

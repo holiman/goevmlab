@@ -11,8 +11,12 @@ linters:
   # - `fast`: enables only linters considered as "fast" (`golangci-lint help linters --json | jq '[ .[] | select(.fast==true) ] | map(.name)'`).
   # Default: standard
   default: standard
-
+  disable:
+    - errcheck
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - '-SA6002' # disable 'SA6002: argument should be pointer-like to avoid allocations'
 issues:
   exclude-dirs-use-default: false
-  exclude:
-    - 'SA6002: argument should be pointer-like to avoid allocations'
