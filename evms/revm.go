@@ -35,7 +35,7 @@ type RethVM struct {
 	stats *VmStat
 }
 
-func NewRethVM(path string, name string) *RethVM {
+func NewRethVM(path string, name string) Evm {
 	return &RethVM{
 		path:  path,
 		name:  name,
@@ -48,7 +48,7 @@ func (evm *RethVM) Instance(int) Evm {
 }
 
 func (evm *RethVM) Name() string {
-	return fmt.Sprintf("revm-%s", evm.name)
+	return evm.name
 }
 
 func (evm *RethVM) GetStateRoot(path string) (root, command string, err error) {

@@ -38,7 +38,7 @@ type EelsEVM struct {
 	stats *VmStat
 }
 
-func NewEelsEVM(path string, name string) *EelsEVM {
+func NewEelsEVM(path string, name string) Evm {
 	return &EelsEVM{
 		path:  path,
 		name:  name,

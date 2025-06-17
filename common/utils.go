@@ -178,68 +178,31 @@ var (
 )
 
 func InitVMs(c *cli.Context) []evms.Evm {
-	var (
-		gethBins        = c.StringSlice(GethFlag.Name)
-		gethBatchBins   = c.StringSlice(GethBatchFlag.Name)
-		eelsBins        = c.StringSlice(EelsFlag.Name)
-		eelsBatchBins   = c.StringSlice(EelsBatchFlag.Name)
-		nethBins        = c.StringSlice(NethermindFlag.Name)
-		nethBatchBins   = c.StringSlice(NethBatchFlag.Name)
-		besuBins        = c.StringSlice(BesuFlag.Name)
-		besuBatchBins   = c.StringSlice(BesuBatchFlag.Name)
-		erigonBins      = c.StringSlice(ErigonFlag.Name)
-		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
-		nimBins         = c.StringSlice(NimbusFlag.Name)
-		nimBatchBins    = c.StringSlice(NimbusBatchFlag.Name)
-		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
-		revmBins        = c.StringSlice(RethFlag.Name)
+	var vms []evms.Evm
 
-		vms []evms.Evm
-	)
-	for i, bin := range gethBins {
-		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("geth-%d", i)))
+	addVm := func(flagName string, constructor func(string, string) evms.Evm) {
+		for i, bin := range c.StringSlice(flagName) {
+			name := fmt.Sprintf("%s-%d", flagName, i)
+			vms = append(vms, constructor(bin, name))
+		}
 	}
-	for i, bin := range gethBatchBins {
-		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("gethbatch-%d", i)))
-	}
-	for i, bin := range eelsBins {
-		vms = append(vms, evms.NewEelsEVM(bin, fmt.Sprintf("eels-%d", i)))
-	}
-	for i, bin := range eelsBatchBins {
-		vms = append(vms, evms.NewEelsBatchVM(bin, fmt.Sprintf("eelsbatch-%d", i)))
-	}
-	for i, bin := range nethBins {
-		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("nethermind-%d", i)))
-	}
-	for i, bin := range nethBatchBins {
-		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("nethbatch-%d", i)))
-	}
-	for i, bin := range besuBins {
-		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("besu-%d", i)))
-	}
-	for i, bin := range besuBatchBins {
-		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("besubatch-%d", i)))
-	}
-	for i, bin := range erigonBins {
-		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("erigon-%d", i)))
-	}
-	for i, bin := range erigonBatchBins {
-		vms = append(vms, evms.NewErigonBatchVM(bin, fmt.Sprintf("erigonbatch-%d", i)))
-	}
-	for i, bin := range nimBins {
-		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
-	}
-	for i, bin := range nimBatchBins {
-		vms = append(vms, evms.NewNimbusBatchVM(bin, fmt.Sprintf("nimbusbatch-%d", i)))
-	}
-	for i, bin := range evmoneBins {
-		vms = append(vms, evms.NewEvmoneVM(bin, fmt.Sprintf("%d", i)))
-	}
-	for i, bin := range revmBins {
-		vms = append(vms, evms.NewRethVM(bin, fmt.Sprintf("%d", i)))
-	}
+
+	addVm(GethFlag.Name, evms.NewGethEVM)
+	addVm(GethBatchFlag.Name, evms.NewGethBatchVM)
+	addVm(EelsFlag.Name, evms.NewEelsEVM)
+	addVm(EelsBatchFlag.Name, evms.NewEelsBatchVM)
+	addVm(NethermindFlag.Name, evms.NewNethermindVM)
+	addVm(NethBatchFlag.Name, evms.NewNethermindBatchVM)
+	addVm(BesuFlag.Name, evms.NewBesuVM)
+	addVm(BesuBatchFlag.Name, evms.NewBesuBatchVM)
+	addVm(ErigonFlag.Name, evms.NewErigonVM)
+	addVm(ErigonBatchFlag.Name, evms.NewErigonBatchVM)
+	addVm(NimbusFlag.Name, evms.NewNimbusEVM)
+	addVm(NimbusBatchFlag.Name, evms.NewNimbusBatchVM)
+	addVm(EvmoneFlag.Name, evms.NewEvmoneVM)
+	addVm(RethFlag.Name, evms.NewRethVM)
+
 	return vms
-
 }
 
 // RootsEqual executes the test on the given path on all vms, and returns true
@@ -288,13 +251,16 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 // - false, nil: a consensus issue found
 func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 	var outputs []*os.File
-	if len(vms) < 1 {
+	if len(vms) == 0 {
 		return true, fmt.Errorf("No vms specified!")
 	}
 	// Open/create outputs for writing
-	for _, evm := range vms {
+	for i, evm := range vms {
 		out, err := os.OpenFile(fmt.Sprintf("%v/%v-output.jsonl", outdir, evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
+			for _, f := range outputs[:i] {
+				f.Close()
+			}
 			return true, fmt.Errorf("failed opening file %v", err)
 		}
 		outputs = append(outputs, out)
@@ -363,8 +329,10 @@ func TestSpeed(dir string, c *cli.Context) error {
 	} else if !finfo.IsDir() {
 		return fmt.Errorf("%v is not a directory", dir)
 	}
+
 	infoThreshold := time.Second
 	warnThreshold := 5 * time.Second
+
 	speedTest := func(path string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(path, "json") {
 			return nil
@@ -638,13 +606,7 @@ func (l *lineCountingHasher) Write(p []byte) (n int, err error) {
 	if l.rawData != nil {
 		l.rawData = append(l.rawData, p...)
 	}
-	var count int
-	for _, c := range p {
-		if c == '\n' {
-			count++
-		}
-	}
-	l.lines += count
+	l.lines += bytes.Count(p, []byte{'\n'})
 	return l.h.Write(p)
 }
 

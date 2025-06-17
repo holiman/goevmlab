@@ -24,8 +24,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/ethereum/go-ethereum/log"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // NimbusEVM is s Evm-interface wrapper around the `evmstate` binary, based on nimbus-eth1.
@@ -36,7 +37,7 @@ type NimbusEVM struct {
 	stats *VmStat
 }
 
-func NewNimbusEVM(path string, name string) *NimbusEVM {
+func NewNimbusEVM(path string, name string) Evm {
 	return &NimbusEVM{
 		path:  path,
 		name:  name,
