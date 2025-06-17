@@ -178,33 +178,65 @@ var (
 )
 
 func InitVMs(c *cli.Context) []evms.Evm {
-	vms := make([]evms.Evm, 0, 16)
+	var (
+		gethBins        = c.StringSlice(GethFlag.Name)
+		gethBatchBins   = c.StringSlice(GethBatchFlag.Name)
+		eelsBins        = c.StringSlice(EelsFlag.Name)
+		eelsBatchBins   = c.StringSlice(EelsBatchFlag.Name)
+		nethBins        = c.StringSlice(NethermindFlag.Name)
+		nethBatchBins   = c.StringSlice(NethBatchFlag.Name)
+		besuBins        = c.StringSlice(BesuFlag.Name)
+		besuBatchBins   = c.StringSlice(BesuBatchFlag.Name)
+		erigonBins      = c.StringSlice(ErigonFlag.Name)
+		erigonBatchBins = c.StringSlice(ErigonBatchFlag.Name)
+		nimBins         = c.StringSlice(NimbusFlag.Name)
+		nimBatchBins    = c.StringSlice(NimbusBatchFlag.Name)
+		evmoneBins      = c.StringSlice(EvmoneFlag.Name)
+		revmBins        = c.StringSlice(RethFlag.Name)
 
-	binaries := []struct {
-		flag    *cli.StringSliceFlag
-		nameFmt string
-		newVM   func(string, string) evms.Evm
-	}{
-		{GethFlag, "geth-%d", func(p, n string) evms.Evm { return evms.NewGethEVM(p, n) }},
-		{GethBatchFlag, "gethbatch-%d", func(p, n string) evms.Evm { return evms.NewGethBatchVM(p, n) }},
-		{EelsFlag, "eels-%d", func(p, n string) evms.Evm { return evms.NewEelsEVM(p, n) }},
-		{EelsBatchFlag, "eelsbatch-%d", func(p, n string) evms.Evm { return evms.NewEelsBatchVM(p, n) }},
-		{NethermindFlag, "nethermind-%d", func(p, n string) evms.Evm { return evms.NewNethermindVM(p, n) }},
-		{NethBatchFlag, "nethbatch-%d", func(p, n string) evms.Evm { return evms.NewNethermindBatchVM(p, n) }},
-		{BesuFlag, "besu-%d", func(p, n string) evms.Evm { return evms.NewBesuVM(p, n) }},
-		{BesuBatchFlag, "besubatch-%d", func(p, n string) evms.Evm { return evms.NewBesuBatchVM(p, n) }},
-		{ErigonFlag, "erigon-%d", func(p, n string) evms.Evm { return evms.NewErigonVM(p, n) }},
-		{ErigonBatchFlag, "erigonbatch-%d", func(p, n string) evms.Evm { return evms.NewErigonBatchVM(p, n) }},
-		{NimbusFlag, "nimbus-%d", func(p, n string) evms.Evm { return evms.NewNimbusEVM(p, n) }},
-		{NimbusBatchFlag, "nimbusbatch-%d", func(p, n string) evms.Evm { return evms.NewNimbusBatchVM(p, n) }},
-		{EvmoneFlag, "evmone-%d", func(p, n string) evms.Evm { return evms.NewEvmoneVM(p, n) }},
-		{RethFlag, "revme-%d", func(p, n string) evms.Evm { return evms.NewRethVM(p, n) }},
+		vms []evms.Evm
+	)
+	for i, bin := range gethBins {
+		vms = append(vms, evms.NewGethEVM(bin, fmt.Sprintf("geth-%d", i)))
 	}
-
-	for _, bin := range binaries {
-		for i, path := range c.StringSlice(bin.flag.Name) {
-			vms = append(vms, bin.newVM(path, fmt.Sprintf(bin.nameFmt, i)))
-		}
+	for i, bin := range gethBatchBins {
+		vms = append(vms, evms.NewGethBatchVM(bin, fmt.Sprintf("gethbatch-%d", i)))
+	}
+	for i, bin := range eelsBins {
+		vms = append(vms, evms.NewEelsEVM(bin, fmt.Sprintf("eels-%d", i)))
+	}
+	for i, bin := range eelsBatchBins {
+		vms = append(vms, evms.NewEelsBatchVM(bin, fmt.Sprintf("eelsbatch-%d", i)))
+	}
+	for i, bin := range nethBins {
+		vms = append(vms, evms.NewNethermindVM(bin, fmt.Sprintf("nethermind-%d", i)))
+	}
+	for i, bin := range nethBatchBins {
+		vms = append(vms, evms.NewNethermindBatchVM(bin, fmt.Sprintf("nethbatch-%d", i)))
+	}
+	for i, bin := range besuBins {
+		vms = append(vms, evms.NewBesuVM(bin, fmt.Sprintf("besu-%d", i)))
+	}
+	for i, bin := range besuBatchBins {
+		vms = append(vms, evms.NewBesuBatchVM(bin, fmt.Sprintf("besubatch-%d", i)))
+	}
+	for i, bin := range erigonBins {
+		vms = append(vms, evms.NewErigonVM(bin, fmt.Sprintf("erigon-%d", i)))
+	}
+	for i, bin := range erigonBatchBins {
+		vms = append(vms, evms.NewErigonBatchVM(bin, fmt.Sprintf("erigonbatch-%d", i)))
+	}
+	for i, bin := range nimBins {
+		vms = append(vms, evms.NewNimbusEVM(bin, fmt.Sprintf("nimbus-%d", i)))
+	}
+	for i, bin := range nimBatchBins {
+		vms = append(vms, evms.NewNimbusBatchVM(bin, fmt.Sprintf("nimbusbatch-%d", i)))
+	}
+	for i, bin := range evmoneBins {
+		vms = append(vms, evms.NewEvmoneVM(bin, fmt.Sprintf("%d", i)))
+	}
+	for i, bin := range revmBins {
+		vms = append(vms, evms.NewRethVM(bin, fmt.Sprintf("%d", i)))
 	}
 	return vms
 }
@@ -254,11 +286,11 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 // - false, err: a consensus issue found
 // - false, nil: a consensus issue found
 func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
+	var outputs []*os.File
 	if len(vms) == 0 {
 		return true, fmt.Errorf("No vms specified!")
 	}
 	// Open/create outputs for writing
-	outputs := make([]*os.File, len(vms))
 	for i, evm := range vms {
 		out, err := os.OpenFile(fmt.Sprintf("%v/%v-output.jsonl", outdir, evm.Name()), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
@@ -267,7 +299,7 @@ func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 			}
 			return true, fmt.Errorf("failed opening file %v", err)
 		}
-		outputs[i] = out
+		outputs = append(outputs, out)
 	}
 	// Zero out the output files and reset offset
 	for _, f := range outputs {
@@ -296,10 +328,10 @@ func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 	}
 	wg.Wait()
 	// Seek to beginning
-	readers := make([]io.Reader, len(vms))
-	for i, f := range outputs {
+	var readers []io.Reader
+	for _, f := range outputs {
 		_, _ = f.Seek(0, 0)
-		readers[i] = f
+		readers = append(readers, f)
 	}
 	// Compare outputs
 	if eq, _, diff := evms.CompareFiles(vms, readers); !eq {
@@ -731,20 +763,21 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 
 func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	var (
-		ready        = make([]int, len(meta.vms))
+		ready        []int
 		testIndex    = 0
-		taskChannels = make([]chan *task, len(meta.vms))
-		resultCh     = make(chan *task, len(meta.vms))
+		taskChannels []chan *task
+		resultCh     = make(chan *task)
 		cleanCh      = make(chan *cleanTask)
 	)
 	defer meta.wg.Done()
 	defer close(cleanCh)
 	// Start n vmLoops.
 	for i, vm := range meta.vms {
-		taskChannels[i] = make(chan *task, 4)
+		var taskCh = make(chan *task)
+		taskChannels = append(taskChannels, taskCh)
 		meta.wg.Add(1)
-		go meta.vmLoop(vm, taskChannels[i], resultCh)
-		ready[i] = i
+		go meta.vmLoop(vm, taskCh, resultCh)
+		ready = append(ready, i)
 	}
 
 	meta.wg.Add(1)
@@ -860,7 +893,7 @@ func ConvertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit ui
 
 	mkr := fuzzing.BasicStateTest(fork)
 	// convert the genesisAlloc
-	fuzzGenesisAlloc := make(fuzzing.GenesisAlloc, len(alloc)+1)
+	var fuzzGenesisAlloc = make(fuzzing.GenesisAlloc)
 	for k, v := range alloc {
 		fuzzAcc := fuzzing.GenesisAccount{
 			Code:       v.Code,
