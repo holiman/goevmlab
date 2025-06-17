@@ -180,27 +180,27 @@ var (
 func InitVMs(c *cli.Context) []evms.Evm {
 	var vms []evms.Evm
 
-	addVm := func(flagName string, constructor func(string, string) evms.Evm) {
+	addVM := func(flagName string, constructor func(string, string) evms.Evm) {
 		for i, bin := range c.StringSlice(flagName) {
 			name := fmt.Sprintf("%s-%d", flagName, i)
 			vms = append(vms, constructor(bin, name))
 		}
 	}
 
-	addVm(GethFlag.Name, evms.NewGethEVM)
-	addVm(GethBatchFlag.Name, evms.NewGethBatchVM)
-	addVm(EelsFlag.Name, evms.NewEelsEVM)
-	addVm(EelsBatchFlag.Name, evms.NewEelsBatchVM)
-	addVm(NethermindFlag.Name, evms.NewNethermindVM)
-	addVm(NethBatchFlag.Name, evms.NewNethermindBatchVM)
-	addVm(BesuFlag.Name, evms.NewBesuVM)
-	addVm(BesuBatchFlag.Name, evms.NewBesuBatchVM)
-	addVm(ErigonFlag.Name, evms.NewErigonVM)
-	addVm(ErigonBatchFlag.Name, evms.NewErigonBatchVM)
-	addVm(NimbusFlag.Name, evms.NewNimbusEVM)
-	addVm(NimbusBatchFlag.Name, evms.NewNimbusBatchVM)
-	addVm(EvmoneFlag.Name, evms.NewEvmoneVM)
-	addVm(RethFlag.Name, evms.NewRethVM)
+	addVM(GethFlag.Name, evms.NewGethEVM)
+	addVM(GethBatchFlag.Name, evms.NewGethBatchVM)
+	addVM(EelsFlag.Name, evms.NewEelsEVM)
+	addVM(EelsBatchFlag.Name, evms.NewEelsBatchVM)
+	addVM(NethermindFlag.Name, evms.NewNethermindVM)
+	addVM(NethBatchFlag.Name, evms.NewNethermindBatchVM)
+	addVM(BesuFlag.Name, evms.NewBesuVM)
+	addVM(BesuBatchFlag.Name, evms.NewBesuBatchVM)
+	addVM(ErigonFlag.Name, evms.NewErigonVM)
+	addVM(ErigonBatchFlag.Name, evms.NewErigonBatchVM)
+	addVM(NimbusFlag.Name, evms.NewNimbusEVM)
+	addVM(NimbusBatchFlag.Name, evms.NewNimbusBatchVM)
+	addVM(EvmoneFlag.Name, evms.NewEvmoneVM)
+	addVM(RethFlag.Name, evms.NewRethVM)
 
 	return vms
 }
@@ -781,18 +781,18 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 				execRs.hash = t.result
 				execRs.rawOutput = t.rawOutput
 			} else if !bytes.Equal(execRs.hash, t.result) {
-				refVmId := execRs.vmIds[0]
-				refVmName := meta.vms[refVmId].Name()
-				errVmName := meta.vms[t.vmIdx].Name()
+				refVMID := execRs.vmIds[0]
+				refVMName := meta.vms[refVMID].Name()
+				errVMName := meta.vms[t.vmIdx].Name()
 
-				log.Info("Consensus flaw", "file", t.file, "vm", errVmName,
-					"have", fmt.Sprintf("%x", t.result), "ref vm", refVmName,
+				log.Info("Consensus flaw", "file", t.file, "vm", errVMName,
+					"have", fmt.Sprintf("%x", t.result), "ref vm", refVMName,
 					"want", fmt.Sprintf("%x", execRs.hash))
 				if meta.rawDebug {
 					tstmp := time.Now().Unix()
-					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVmName))
+					f1 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, t.vmIdx, errVMName))
 					_ = os.WriteFile(f1, t.rawOutput, 0666)
-					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, refVmId, refVmName))
+					f2 := filepath.Join(meta.outdir, fmt.Sprintf("raw-%d-vm-%d-%v-flaw.output", tstmp, refVMID, refVMName))
 					_ = os.WriteFile(f2, execRs.rawOutput, 0666)
 					log.Info("Stored consensus-breaking output into files", "f1", f1, "f2", f2)
 				}
