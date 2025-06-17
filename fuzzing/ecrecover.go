@@ -65,12 +65,15 @@ func randCallECRecover() []byte {
 			return
 		}
 		addrGen := func() interface{} {
-			return 7
+			return 1
 		}
 		gasRand := func() interface{} {
 			return big.NewInt(rand.Int63n(100000))
 		}
-		p2 := RandCall(gasRand, addrGen, ValueRandomizer(), memInFn, memOutFn)
+		oneOrZero := func() interface{} {
+			return rand.Int() & 0x1
+		}
+		p2 := RandCall(gasRand, addrGen, oneOrZero, memInFn, memOutFn)
 		p.Append(p2)
 		// pop the ret value
 		p.Op(vm.POP)
