@@ -334,7 +334,10 @@ func TestSpeed(dir string, c *cli.Context) error {
 	warnThreshold := 5 * time.Second
 
 	speedTest := func(path string, info os.FileInfo, err error) error {
-		if err != nil || !strings.HasSuffix(path, ".json") {
+		if !strings.HasSuffix(path, "json") {
+			return nil
+		}
+		if err != nil {
 			return err
 		}
 		// Run the binaries sequentially
