@@ -58,7 +58,7 @@ func (traces *Traces) Get(index int) *TraceLine {
 }
 
 func (traces *Traces) Search(op string, from int) (*TraceLine, int) {
-	if from >= len(traces.Ops) {
+	if from < 0 || from >= len(traces.Ops) {
 		return nil, 0
 	}
 	for i := from; i < len(traces.Ops); i++ {
@@ -172,7 +172,7 @@ func convertToStructLog(op map[string]interface{}) (*logger.StructLog, error) {
 
 		// Maybe a hexvalue?
 		if strVal, ok := value.(string); ok {
-			if len(strVal) > 1 && strVal[0:2] == "0x" {
+			if len(strVal) > 1 && strings.HasPrefix(strVal, "0x") {
 				retval, err = strconv.ParseInt(strVal[2:], 16, 64)
 			} else {
 				retval, err = strconv.ParseInt(strVal, 10, 64)
@@ -273,9 +273,7 @@ func ParseHex(s string) (uint256.Int, error) {
 
 // parseStack takes a list of strings and returns a stack of *big.Ints
 func parseStack(stackStrings []interface{}) ([]uint256.Int, error) {
-	var (
-		s []uint256.Int
-	)
+	s := make([]uint256.Int, 0, len(stackStrings))
 	for _, item := range stackStrings {
 		n, err := ParseHex(item.(string))
 		if err != nil {
@@ -313,9 +311,8 @@ func readJSON(data []byte) (*Traces, error) {
 	// 'result', but not the full RPC response
 	err := json.Unmarshal(data, &traceData.Result)
 	if err != nil {
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+
 	}
 	if traceData.Result.Logs == nil {
 		// Attempt two: read into traceTxRPCResponse, in case
