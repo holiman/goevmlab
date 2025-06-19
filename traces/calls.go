@@ -57,8 +57,8 @@ func newStack() *stack {
 }
 
 func (st *stack) copy() *stack {
-	cpy := &stack{data: make([]*callInfo, len(st.data))}
-	copy(cpy.data, st.data)
+	cpy := &stack{data: make([]*callInfo, 0, len(st.data))}
+	cpy.data = append(cpy.data, st.data...)
 	return cpy
 }
 
@@ -94,10 +94,9 @@ func AnalyzeCalls(trace *Traces) {
 				callStack = callStack.copy()
 				if cDepth > pDepth {
 					// A call or create was made here
-					newAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
-					currentAddress = newAddress
+					currentAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
 					callStack.push(&callInfo{
-						Ctx:  newAddress,
+						Ctx:  currentAddress,
 						Dest: callDest,
 						Kind: callName,
 					})
@@ -125,37 +124,30 @@ func AnalyzeCalls(trace *Traces) {
 // callDest    -- the call destination
 // name        -- type of call
 func determineDestination(log *logger.StructLog, current *common.Address) (contextAddr, callDest *common.Address, name string) {
+	var addr *common.Address
+	if len(log.Stack) > 1 {
+		a := common.Address(log.Stack[1].Bytes20())
+		addr = &a
+	}
 	switch log.Op {
 	case vm.CALL:
 		name = "CALL"
-		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
-			callDest = &a
-			contextAddr = &a
-		}
+		contextAddr = addr
+		callDest = addr
 	case vm.STATICCALL:
 		name = "SCALL"
-		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
-			callDest = &a
-			contextAddr = &a
-		}
+		contextAddr = addr
+		callDest = addr
 	case vm.DELEGATECALL:
 		// The stack index is 1, but the actual execution context remains the same
 		name = "DCALL"
-		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
-			callDest = &a
-			contextAddr = current
-		}
+		contextAddr = current
+		callDest = addr
 	case vm.CALLCODE:
 		// The stack index is 1, but the actual execution context remains the same
 		name = "CCALL"
-		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
-			callDest = &a
-			contextAddr = current
-		}
+		contextAddr = current
+		callDest = addr
 	case vm.CREATE:
 		// In order to figure this out, we would need both nonce and current address
 		// while we _may_ have the address, we don't have the nonce
