@@ -19,6 +19,7 @@ package traces
 
 import (
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
@@ -94,9 +95,10 @@ func AnalyzeCalls(trace *Traces) {
 				callStack = callStack.copy()
 				if cDepth > pDepth {
 					// A call or create was made here
-					currentAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
+					newAddress, callDest, callName := determineDestination(prevLine.log, currentAddress)
+					currentAddress = newAddress
 					callStack.push(&callInfo{
-						Ctx:  currentAddress,
+						Ctx:  newAddress,
 						Dest: callDest,
 						Kind: callName,
 					})
