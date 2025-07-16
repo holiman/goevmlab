@@ -63,7 +63,7 @@ func randCallPrecompile() []byte {
 		return
 	}
 	addrGen := func() interface{} {
-		return rand.Uint32() % 18
+		return vm.PrecompiledAddressesOsaka[rand.Int()%len(vm.PrecompiledAddressesOsaka)]
 	}
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
 	p.Append(p2)
