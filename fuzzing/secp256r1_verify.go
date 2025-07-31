@@ -52,31 +52,29 @@ func fillSecp256R(gst *GstMaker, fork string) {
 
 func randCallSecp256R() []byte {
 	p := program.New()
+	// Cramming in 100 makes the size of p roughly 20k
+	offset := 0
+	for i := int32(0); i < 100; i++ {
+		hash := make([]byte, 32)
+		_, _ = rand.Read(hash)
+		privKey, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
+		r, s, _ := ecdsa.Sign(crand.Reader, privKey, hash)
+		data := append([]byte{}, hash...)
 
-	hash := make([]byte, 32)
-	_, _ = rand.Read(hash)
+		data = append(data, uint256.MustFromBig(r).PaddedBytes(32)...)
+		data = append(data, uint256.MustFromBig(s).PaddedBytes(32)...)
 
-	privKey, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
+		data = append(data, uint256.MustFromBig(privKey.PublicKey.X).PaddedBytes(32)...)
+		data = append(data, uint256.MustFromBig(privKey.PublicKey.Y).PaddedBytes(32)...)
 
-	r, s, _ := ecdsa.Sign(crand.Reader, privKey, hash)
-	data := append([]byte{}, hash...)
-
-	data = append(data, uint256.MustFromBig(r).PaddedBytes(32)...)
-	data = append(data, uint256.MustFromBig(s).PaddedBytes(32)...)
-
-	data = append(data, uint256.MustFromBig(privKey.PublicKey.X).PaddedBytes(32)...)
-	data = append(data, uint256.MustFromBig(privKey.PublicKey.Y).PaddedBytes(32)...)
-
-	// Mutate it randomly a bit
-	mutate(data)
-
-	p.Mstore(data, 0)
-
-	p.Call(nil, 0x100, 0, 0, len(data), 0, 64)
-
-	// pop the ret value
-	p.Op(vm.POP)
-	// Store the output in some slot, to make sure the stateroot changes
-	p.MemToStorage(0, 32, 0)
+		// Mutate it randomly a bit
+		mutate(data)
+		p.Mstore(data, 0)
+		p.Call(nil, 0x100, 0, 0, len(data), 0, 32)
+		p.Op(vm.POP) // pop the ret value
+		// Store the output in some slot, to make sure the stateroot changes
+		p.MemToStorage(0, 32, offset)
+		offset += 32
+	}
 	return p.Bytes()
 }
