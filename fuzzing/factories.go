@@ -29,6 +29,7 @@ var fillers = map[string]func(*GstMaker, string){
 	"simpleops":    fillSimple,
 	"memops":       fillMemOps,
 	"sstore_sload": fillSstore,
+	"secp256r":     fillSecp256R,
 	"tstore_tload": fillTstore,
 	"auth":         fill7702,
 	"kzg":          fillPointEvaluation4844,
