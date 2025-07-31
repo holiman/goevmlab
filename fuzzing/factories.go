@@ -25,6 +25,7 @@ var fillers = map[string]func(*GstMaker, string){
 	"bls":          fillBls,
 	"bn254":        fillBn254,
 	"precompiles":  fillPrecompileTest,
+	"modexp":       fillModexp,
 	"simpleops":    fillSimple,
 	"memops":       fillMemOps,
 	"sstore_sload": fillSstore,
