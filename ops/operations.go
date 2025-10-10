@@ -82,6 +82,8 @@ const (
 	SHR    = OpCode(0x1C)
 	SAR    = OpCode(0x1D)
 
+	CLZ = OpCode(0x1E) // Osaka/Fusaka, https://eips.ethereum.org/EIPS/eip-7939
+
 	KECCAK256 = OpCode(0x20)
 )
 
@@ -327,13 +329,16 @@ var opCodeInfo = map[OpCode]opInfo{
 	ISZERO:     {"ISZERO", 0, []string{"a"}, []string{"a == 0"}},
 	SIGNEXTEND: {"SIGNEXTEND", 0, []string{"bitlen", "a"}, []string{"signextend(a, bitlen)"}},
 
-	AND:    {"AND", 0, []string{"a", "b"}, []string{"a && b"}},
-	OR:     {"OR", 0, []string{"a", "b"}, []string{"a || b"}},
-	XOR:    {"XOR", 0, []string{"a", "b"}, []string{"a xor b"}},
-	BYTE:   {"BYTE", 0, []string{"index", "val"}, []string{"byte at val[index]"}},
-	SHL:    {"SHL", 0, []string{"shift", "x"}, []string{"x << shift"}},
-	SHR:    {"SHR", 0, []string{"shift", "x"}, []string{"x >> shift"}},
-	SAR:    {"SAR", 0, []string{"shift", "x"}, []string{"x >>> shift"}},
+	AND:  {"AND", 0, []string{"a", "b"}, []string{"a && b"}},
+	OR:   {"OR", 0, []string{"a", "b"}, []string{"a || b"}},
+	XOR:  {"XOR", 0, []string{"a", "b"}, []string{"a xor b"}},
+	BYTE: {"BYTE", 0, []string{"index", "val"}, []string{"byte at val[index]"}},
+	SHL:  {"SHL", 0, []string{"shift", "x"}, []string{"x << shift"}},
+	SHR:  {"SHR", 0, []string{"shift", "x"}, []string{"x >> shift"}},
+	SAR:  {"SAR", 0, []string{"shift", "x"}, []string{"x >>> shift"}},
+
+	CLZ: {"CLZ", 0, []string{"x"}, []string{"lz of x"}},
+
 	ADDMOD: {"ADDMOD", 0, []string{"a", "b", "x"}, []string{"(a + b) mod x"}},
 	MULMOD: {"MULMOD", 0, []string{"a", "b", "x"}, []string{"(a * b) mod x"}},
 

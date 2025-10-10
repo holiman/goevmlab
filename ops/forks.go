@@ -176,6 +176,7 @@ var (
 		ValidOpcodes: []OpCode{
 			STOP, ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND,
 			LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR,
+			CLZ, // New for osaka
 			KECCAK256,
 			ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CALLDATACOPY, CODESIZE, CODECOPY, GASPRICE, EXTCODESIZE, EXTCODECOPY, RETURNDATASIZE, RETURNDATACOPY, EXTCODEHASH, BLOCKHASH,
 			COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE, BLOBHASH, BLOBBASEFEE,
@@ -185,10 +186,8 @@ var (
 			DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16,
 			SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16,
 			LOG0, LOG1, LOG2, LOG3, LOG4,
-			DATALOAD, DATALOADN, DATASIZE, DATACOPY, // New for Osaka
-			RJUMP, RJUMPI, RJUMPV, CALLF, RETF, JUMPF, DUPN, SWAPN, EXCHANGE, EOFCREATE, RETURNCONTRACT, // New for Osaka
 			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
-			RETURNDATACOPY, EXTCALL, EXTDELEGATECALL, EXTSTATICCALL, // New for Osaka
+			RETURNDATACOPY,
 			SELFDESTRUCT},
 	}
 	forks = []Fork{
@@ -347,8 +346,7 @@ func LookupRules(fork string) params.Rules {
 			IsShanghai:       true,
 			IsCancun:         true,
 			IsPrague:         true,
-			// Depends on Geth EOF support
-			// IsOsaka:          true,
+			IsOsaka:          true,
 		}
 	default:
 		panic(fmt.Sprintf("Unsupported: %v", fork))
@@ -380,8 +378,7 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 	var shanghai = cpy(merge, func(p *params.ChainConfig) { p.ShanghaiTime = new(uint64) })
 	var cancun = cpy(shanghai, func(p *params.ChainConfig) { p.CancunTime = new(uint64) })
 	var prague = cpy(cancun, func(p *params.ChainConfig) { p.PragueTime = new(uint64) })
-	// Depends on Geth EOF support
-	//var osaka = cpy(prague, func(p *params.ChainConfig) { p.OsakaTime = new(uint64) })
+	var osaka = cpy(prague, func(p *params.ChainConfig) { p.OsakaTime = new(uint64) })
 
 	switch fork {
 	case "Frontier":
@@ -410,9 +407,8 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 		return shanghai, nil
 	case "Prague":
 		return prague, nil
-		// Depends on Geth EOF support
-		//case "Osaka":
-		//	return osaka, nil
+	case "Osaka":
+		return osaka, nil
 	}
 	return nil, fmt.Errorf("unknown fork %v", fork)
 }
