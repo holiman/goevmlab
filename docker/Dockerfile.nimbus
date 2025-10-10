@@ -9,5 +9,5 @@ RUN cd nimbus-eth1 && make -j8 init
 RUN cd nimbus-eth1 && make -j8 evmstate && cp ./tools/evmstate/evmstate /nimbvm
 RUN cd nimbus-eth1 && make -j8 txparse  && cp ./tools/txparse/txparse /txparse.nimbus
 
-FROM debian:testing
+FROM debian:testing-slim
 COPY --from=builder /nimbvm /txparse.nimbus /
