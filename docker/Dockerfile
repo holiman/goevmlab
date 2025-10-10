@@ -53,36 +53,12 @@ RUN cd erigon && mkdir /erigon/ && make evm && \
 #
 # NIMBUS-ETH1
 #
-# Nimbus-eth1 takes a humongous time to build, so it has been moved out to 
-# a standalone image, and built every once in a while. See Dockerfile.nimbus
+# Nimbus-eth1  has been moved out to a standalone image. See Dockerfile.nimbus
 
-#RUN apt-get update -q && apt-get install -qy --no-install-recommends make
-#RUN git clone https://github.com/status-im/nimbus-eth1.git --depth 1 --recurse-submodules && \
-# cd nimbus-eth1 && make -j8 update && \
-# make -j8 evmstate && cp ./tools/evmstate/evmstate /nimbvm
-
-
-#---------------------------------------------------------------
-# debian-builder
-#---------------------------------------------------------------
-
-#
 # EVMONE 
 #
-#
-# evmone requires g++ v13, which is _not_ available in debian bookworm (the golang image)
-# but it works with debian:testing (at the time of writing this) 
+# Evmone has been moved to a standalone docker image. See Dockerfile.evmone
 
-FROM debian:testing as debian-builder
-RUN apt-get update -q && apt-get install -qy --no-install-recommends git make \
-    ca-certificates g++ cmake ninja-build libgmp-dev
-
-RUN git clone https://github.com/ethereum/evmone.git --depth 1 --recurse-submodules
-RUN cd evmone && cmake -S . -B build -DEVMONE_TESTING=ON -DEVMONE_PRECOMPILES_SILKPRE=1
-RUN cd evmone && cmake --build build --parallel
-RUN cp /evmone/build/bin/evmone-statetest /evmone-statetest
-RUN ls -la /evmone/build/lib/libevmone.so.* 
-RUN cp /evmone/build/lib/libevmone.so.* /
 #---------------------------------------------------------------
 # rust-builder
 #---------------------------------------------------------------
@@ -190,8 +166,8 @@ ENV ERIG_BIN=/erigon_vm
 COPY --from=holiman/nimbus:latest /nimbvm /txparse.nimbus /
 ENV NIMB_BIN=/nimbvm
 
-COPY --from=debian-builder /evmone-statetest /evmone
-COPY --from=debian-builder /libevmone.so.* /lib/
+COPY --from=holiman/evmone /evmone-statetest /evmone
+COPY --from=holiman/evmone /libevmone.so.* /lib/
 ENV EVMO_BIN=/evmone
 
 COPY --from=rust-builder /revm/target/release/revme /revme
