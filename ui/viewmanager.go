@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/holiman/goevmlab/evms"
 	"github.com/holiman/goevmlab/ops"
 	"github.com/holiman/goevmlab/traces"
 	"github.com/rivo/tview"
@@ -206,12 +205,7 @@ func (mgr *viewManager) onStepSelected(line *traces.TraceLine) {
 			mgr.opView.AddFormItem(field)
 		}
 
-		var headers []string
-		if evms.IgnoreEOF {
-			headers = []string{"pc", "section", "opcode", "opName", "gasCost", "gas", "memSize", "addr", "functionDepth"}
-		} else {
-			headers = []string{"pc", "opcode", "opName", "gasCost", "gas", "memSize", "addr"}
-		}
+		var headers = []string{"pc", "opcode", "opName", "gasCost", "gas", "memSize", "addr"}
 		for _, l := range headers {
 			add(l, line.Get(l))
 		}
@@ -260,8 +254,9 @@ func (mgr *viewManager) init(trace *traces.Traces) {
 
 	{ // The operations table
 		table := mgr.traceView
-		headings := []string{"step", "pc", "section", "opName", "opCode",
-			"gas", "gasCost", "depth", "functionDepth", "refund"}
+
+		headings := []string{"step", "pc", "opName", "opCode",
+			"gas", "gasCost", "depth", "refund"}
 
 		if mgr.config != nil && mgr.config.HasChunking {
 			headings = append(headings, "chunk")
