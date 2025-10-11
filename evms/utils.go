@@ -27,9 +27,6 @@ const (
 
 	// Besu sometimes reports GasCost of 0x7fffffffffffffff, along with ,"error":"Out of gas"
 	ClearGascost = true
-
-	// EOF is not universally ready
-	IgnoreEOF = false //FIXME
 )
 
 // StdErrOutput runs the command and returns its standard error.
