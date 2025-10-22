@@ -126,7 +126,17 @@ func (g *GstMaker) SetTx(tx *StTransaction) {
 }
 
 func (g *GstMaker) ToSubTest() *stJSON {
-	st := &stJSON{}
+	st := &stJSON{
+		Config: stConfig{
+			BlobSchedule: map[string]stBlobSchedule{
+				"Osaka": {
+					Target:                6,
+					Max:                   9,
+					BaseFeeUpdateFraction: 0x4c6964,
+				},
+			},
+		},
+	}
 	st.Pre = *g.pre
 	st.Env = *g.env
 	st.Tx = g.tx

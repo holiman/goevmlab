@@ -107,11 +107,12 @@ func (t *StateTest) UnmarshalJSON(in []byte) error {
 }
 
 type stJSON struct {
-	Env  stEnv                    `json:"env"`
-	Pre  GenesisAlloc             `json:"pre"`
-	Tx   StTransaction            `json:"transaction"`
-	Out  hexutil.Bytes            `json:"out"`
-	Post map[string][]stPostState `json:"post"`
+	Env    stEnv                    `json:"env"`
+	Pre    GenesisAlloc             `json:"pre"`
+	Config stConfig                 `json:"config"`
+	Tx     StTransaction            `json:"transaction"`
+	Out    hexutil.Bytes            `json:"out"`
+	Post   map[string][]stPostState `json:"post"`
 }
 
 type stPostState struct {
@@ -124,6 +125,15 @@ type stIndex struct {
 	Data  int `json:"data"`
 	Gas   int `json:"gas"`
 	Value int `json:"value"`
+}
+
+type stBlobSchedule struct {
+	Target                math.HexOrDecimal64 `json:"target"`
+	Max                   math.HexOrDecimal64 `json:"max"`
+	BaseFeeUpdateFraction math.HexOrDecimal64 `json:"baseFeeUpdateFraction"`
+}
+type stConfig struct {
+	BlobSchedule map[string]stBlobSchedule `json:"blobSchedule,omitempty" gencodec:"optional"`
 }
 
 //go:generate gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go
