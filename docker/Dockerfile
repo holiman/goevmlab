@@ -47,7 +47,7 @@ RUN cd go-ethereum && go run build/ci.go install -static ./cmd/evm
 RUN git clone https://github.com/ledgerwatch/erigon --depth 1
 RUN cd erigon && mkdir /erigon/ && make evm && \
 	cp ./build/bin/evm /erigon_vm && \
-        cp $(bash ./turbo/silkworm/silkworm_lib_path.sh) /libsilkworm_capi.so
+        cp $(bash ./node/silkworm/silkworm_lib_path.sh) /libsilkworm_capi.so
 
 
 #
