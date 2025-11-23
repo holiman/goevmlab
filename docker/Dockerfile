@@ -82,10 +82,10 @@ RUN cd revm && cargo build --release --package revme
 # NETHERMIND
 #
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS dotnet-builder
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS dotnet-builder
 RUN git clone https://github.com/NethermindEth/nethermind --depth 1
 
-RUN cd nethermind/src/Nethermind/Nethermind.Test.Runner && dotnet publish --self-contained true -r linux-x64 -c Release
+RUN cd nethermind && dotnet publish src/Nethermind/Nethermind.Test.Runner --self-contained true -r linux-x64 -c Release -o /publish -p:ErrorOnDuplicatePublishOutputFiles=false
 RUN mkdir /out && mv nethermind/src/Nethermind/artifacts/bin/Nethermind.Test.Runner/release_linux-x64 /out/neth
 
 # also txparse
