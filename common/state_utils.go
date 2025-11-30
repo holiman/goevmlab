@@ -30,7 +30,7 @@ func StateDBWithAlloc(alloc types.GenesisAlloc) *state.StateDB {
 	statedb := NewEmptyStateDB()
 	for addr, acc := range alloc {
 		statedb.CreateAccount(addr)
-		statedb.SetCode(addr, acc.Code)
+		statedb.SetCode(addr, acc.Code, tracing.CodeChangeUnspecified)
 		statedb.SetNonce(addr, acc.Nonce, 0)
 		if acc.Balance != nil {
 			statedb.SetBalance(addr, uint256.MustFromBig(acc.Balance), tracing.BalanceChangeUnspecified)
