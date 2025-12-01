@@ -29,9 +29,13 @@ func TestSanity(t *testing.T) {
 
 	for i := 0; i < 256; i++ {
 
-		// We have the EOF opcodes defined, geth doesn't yet.
+		// EOF opcodes definedin geth
 		switch i {
-		case 0x5c, 0x5d, 0x5e, 0xb0, 0xb1, 0xb3, 0xb4:
+		case 0xd0, 0xd1, 0xd2, 0xd3:
+			continue
+		case 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xec, 0xee:
+			continue
+		case 0xf7, 0xf8, 0xf9, 0xfb:
 			continue
 
 		}
@@ -66,6 +70,8 @@ func TestSanity(t *testing.T) {
 //	func (op *operation) Valid() bool
 
 func TestForkOpcodes(t *testing.T) {
+	testForkOpcodes(t, "Osaka")
+	testForkOpcodes(t, "Prague")
 	testForkOpcodes(t, "Cancun")
 	testForkOpcodes(t, "Shanghai")
 	testForkOpcodes(t, "Merge")
@@ -107,7 +113,7 @@ func testForkOpcodes(t *testing.T, fork string) {
 		{
 			exp, got := gethOp.String(), ourOp.String()
 			if exp != got {
-				t.Errorf("op got %v expected %v", got, exp)
+				t.Errorf("fork %v: op got %v expected %v", fork, got, exp)
 			}
 		}
 		gotPops := len(ourOp.Pops())

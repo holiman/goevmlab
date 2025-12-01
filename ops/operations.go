@@ -491,7 +491,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	//RETURNDATALOAD:  {"RETURNDATALOAD", 0, []string{"offset"}, []string{"data"}},
 	//EXTCALL:         {"EXTCALL", 0, []string{"target_address", "input_offset", "input_size", "value"}, []string{"status"}},
 	//EXTDELEGATECALL: {"EXTDELEGATECALL", 0, []string{"target_address", "input_offset", "input_size"}, []string{"status"}},
-	//STATICCALL:      {"STATICCALL", 0, []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
+	STATICCALL: {"STATICCALL", 0, []string{"gas", "address", "in offset", "in size", "out offset", "out size"}, []string{"exitcode (1 for success)"}},
 	//EXTSTATICCALL:   {"EXTSTATICCALL", 0, []string{"target_address", "input_offset", "input_size"}, []string{"status"}},
 	REVERT:       {"REVERT", 0, []string{"offset", "size"}, nil},
 	INVALID:      {"INVALID", 0, nil, nil},
