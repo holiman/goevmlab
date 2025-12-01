@@ -134,7 +134,7 @@ RUN apt-get update -q && \
   && apt-get clean
 
 # Install execution-specs (EELS)
-RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/prague --depth 1
+RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/osaka --depth 1
 
 #   To install EELS, we temporarily install rust, which is required for building parts of eels, 
 #   and after building, we delete it again
