@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/consensys/gnark-crypto v0.19.2
 	github.com/crate-crypto/go-kzg-4844 v1.1.0
-	github.com/ethereum/go-ethereum v1.16.7
+	github.com/ethereum/go-ethereum v1.16.8
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/golang/snappy v1.0.0
 	github.com/holiman/uint256 v1.3.2
