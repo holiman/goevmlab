@@ -25,7 +25,7 @@ func TestGenerateStatetests(t *testing.T) {
 	for _, name := range FactoryNames() {
 		factory := Factory(name, "Cancun")
 		t0 := time.Now()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			if res := factory(); res == nil {
 				t.Fatalf("factory %v failed generating test (attempt %d)", name, i)
 			}

@@ -29,8 +29,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm/program"
 )
 
-type memFunc func() (offset, size interface{})
-type valFunc func() interface{}
+type memFunc func() (offset, size any)
+type valFunc func() any
 
 // randHex produces some random hex data
 func randHex(maxSize int) string {
@@ -44,7 +44,7 @@ func randHex(maxSize int) string {
 // - Chance of zero, expressed as N out of 255.
 // - Chance of small value (< 255 ), expressed as N out of 255.
 func randInt(chanceOfZero, chanceOfSmall byte) valFunc {
-	return func() interface{} {
+	return func() any {
 		b := make([]byte, 4)
 		_, _ = crand.Read(b)
 		// Zero or not?
@@ -62,7 +62,7 @@ func randInt(chanceOfZero, chanceOfSmall byte) valFunc {
 
 // addressRandomizer randomizes from the given addresses
 func addressRandomizer(addrs []common.Address) valFunc {
-	return func() interface{} {
+	return func() any {
 		return addrs[rand.Intn(len(addrs))]
 	}
 }
@@ -77,7 +77,7 @@ func MemRandomizer() memFunc {
 	// half are zero
 	// most are small
 	v := randInt(0x70, 0xef)
-	memFn := func() (offset, size interface{}) {
+	memFn := func() (offset, size any) {
 		return v(), v()
 	}
 	return memFn
@@ -160,17 +160,17 @@ func RandCallBlake() []byte {
 	p := program.New()
 	data := randomBlakeArgs()
 	p.Mstore(data, 0)
-	memInFn := func() (offset, size interface{}) {
+	memInFn := func() (offset, size any) {
 		// todo:make mem generator which mostly outputs 0:213
 		offset, size = 0, 213
 		return
 	}
 	// blake outputs 64 bytes
-	memOutFn := func() (offset, size interface{}) {
+	memOutFn := func() (offset, size any) {
 		offset, size = 0, 64
 		return
 	}
-	addrGen := func() interface{} {
+	addrGen := func() any {
 		return 9
 	}
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)

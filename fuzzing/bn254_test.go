@@ -22,7 +22,7 @@ func TestBn254(t *testing.T) {
 
 func TestBn254ErrorTypes(t *testing.T) {
 	var ok = 0
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		err := decodeBn254G1(makeBadBn254G1())
 		if err == nil {
 			ok++
@@ -34,7 +34,7 @@ func TestBn254ErrorTypes(t *testing.T) {
 	t.Logf("G1 Ok : %d", ok)
 
 	ok = 0
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		err := decodeBn254G2(makeBadBn254G2())
 		if err == nil {
 			ok++

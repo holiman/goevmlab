@@ -27,7 +27,7 @@ import (
 // go-ethereum codebase
 func TestSanity(t *testing.T) {
 
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 
 		// EOF opcodes definedin geth
 		switch i {

@@ -65,10 +65,7 @@ func CustomMarshal(log *opLog) []byte {
 	// Stack
 	// At most 6 stack items, top item last
 	b = append(b, []byte(`,"stack":[`)...)
-	start := len(log.Stack) - 6
-	if start < 0 {
-		start = 0
-	}
+	start := max(len(log.Stack)-6, 0)
 	for i := start; i < len(log.Stack); i++ {
 		if i != start {
 			b = append(b, ',')

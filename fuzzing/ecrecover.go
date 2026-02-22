@@ -51,26 +51,26 @@ func fillEcRecover(gst *GstMaker, fork string) {
 func randCallECRecover() []byte {
 	p := program.New()
 	offset := 0
-	for i := int32(0); i < 100; i++ {
+	for range int32(100) {
 		data := make([]byte, 128)
 		_, _ = crand.Read(data)
 		p.Mstore(data, 0)
-		memInFn := func() (offset, size interface{}) {
+		memInFn := func() (offset, size any) {
 			offset, size = 0, 128
 			return
 		}
 		// ecrecover outputs 32 bytes
-		memOutFn := func() (offset, size interface{}) {
+		memOutFn := func() (offset, size any) {
 			offset, size = 0, 32
 			return
 		}
-		addrGen := func() interface{} {
+		addrGen := func() any {
 			return 1
 		}
-		gasRand := func() interface{} {
+		gasRand := func() any {
 			return big.NewInt(rand.Int63n(100000))
 		}
-		oneOrZero := func() interface{} {
+		oneOrZero := func() any {
 			return rand.Int() & 0x1
 		}
 		p2 := RandCall(gasRand, addrGen, oneOrZero, memInFn, memOutFn)

@@ -159,8 +159,8 @@ func (t *TraceLine) Equals(other *TraceLine) bool {
 	//t.Get("depth") == other.Get("pc")
 }
 
-func convertToStructLog(op map[string]interface{}) (*logger.StructLog, error) {
-	intify := func(value interface{}) int {
+func convertToStructLog(op map[string]any) (*logger.StructLog, error) {
+	intify := func(value any) int {
 		// Try to convert it
 		if floatVal, ok := value.(float64); ok {
 			return int(floatVal)
@@ -213,7 +213,7 @@ func convertToStructLog(op map[string]interface{}) (*logger.StructLog, error) {
 			log.RefundCounter = uint64(intify(v))
 		case "stack":
 			// v is a list of strings
-			stack, err := parseStack(v.([]interface{}))
+			stack, err := parseStack(v.([]any))
 			if err != nil {
 				return nil, err
 			}
@@ -231,12 +231,12 @@ func convertToStructLog(op map[string]interface{}) (*logger.StructLog, error) {
 type traceTxLog struct {
 	Pc      uint64
 	GasCost uint64
-	Stack   []interface{}
+	Stack   []any
 	// Note, traceTransaction uses 'op' for the human-readable name
 	Op     string
 	Depth  uint64
 	Gas    uint64
-	Memory []interface{}
+	Memory []any
 }
 
 type traceTxResult struct {
@@ -272,7 +272,7 @@ func ParseHex(s string) (uint256.Int, error) {
 }
 
 // parseStack takes a list of strings and returns a stack of *big.Ints
-func parseStack(stackStrings []interface{}) ([]uint256.Int, error) {
+func parseStack(stackStrings []any) ([]uint256.Int, error) {
 	var (
 		s []uint256.Int
 	)
@@ -292,7 +292,7 @@ func parseStack(stackStrings []interface{}) ([]uint256.Int, error) {
 
 // parseMem takes a list of strings bundles them together into one nice
 // byte array
-func parseMem(memStrings []interface{}) []byte {
+func parseMem(memStrings []any) []byte {
 	s := make([]byte, 0, len(memStrings)*32)
 
 	for _, item := range memStrings {
@@ -360,7 +360,7 @@ func readJSONLines(input io.Reader) (*Traces, error) {
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		l := scanner.Text()
-		obj := make(map[string]interface{})
+		obj := make(map[string]any)
 
 		if err := json.Unmarshal([]byte(l), &obj); err != nil {
 			// An error here means it's not valid jsonl

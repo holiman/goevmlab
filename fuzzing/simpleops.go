@@ -108,7 +108,7 @@ func generateSimpleOpsProgram(forkDef *ops.Fork) []byte {
 	var p = program.New()
 	var stackdepth = 0
 
-	for nCases := 0; nCases < 10000; nCases++ {
+	for range 10000 {
 		op := ops.OpCode(operations[rand.Intn(len(operations))])
 
 		if stackdepth < len(op.Pops()) {
@@ -171,7 +171,7 @@ func generateMemoryInteractingOpsProgram(fork string) []byte {
 		}
 	}
 
-	for nCases := 0; nCases < 1000; nCases++ {
+	for range 1000 {
 		op := ops.OpCode(usedOps[rand.Intn(len(usedOps))])
 
 		if stackdepth < len(op.Pops()) {

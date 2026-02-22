@@ -47,7 +47,7 @@ func staticCallAttack() []byte {
 	//  9            112185165 ns/op // 112 ms
 	a, dest := program.New().Jumpdest()
 	reps := 800
-	for i := 0; i < reps; i++ {
+	for range reps {
 		a.Push(0)
 		a.Op(vm.DUP1, vm.DUP1, vm.DUP1, vm.GAS, vm.GAS, vm.STATICCALL, vm.POP)
 	}
@@ -60,7 +60,7 @@ func extCodeSizeAttack() []byte {
 
 	a, dest := program.New().Jumpdest()
 	reps := 800
-	for i := 0; i < reps; i++ {
+	for range reps {
 		a.Op(vm.GAS, vm.EXTCODESIZE, vm.POP)
 	}
 	return a.Jump(dest).Bytes()

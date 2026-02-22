@@ -143,11 +143,11 @@ func evaluate(ctx *cli.Context) error {
 			stack += b.Stackdelta()
 		}
 	} else {
-		for i := 0; i < 1024; i++ {
+		for range 1024 {
 			pushpop.Op(vm.OpCode(a))
 
 		}
-		for i := 0; i < 1024; i++ {
+		for range 1024 {
 			pushpop.Op(vm.OpCode(b))
 		}
 	}

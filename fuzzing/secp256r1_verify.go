@@ -54,7 +54,7 @@ func randCallSecp256R() []byte {
 	p := program.New()
 	// Cramming in 100 makes the size of p roughly 20k
 	offset := 0
-	for i := int32(0); i < 100; i++ {
+	for range int32(100) {
 		hash := make([]byte, 32)
 		_, _ = rand.Read(hash)
 		privKey, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)

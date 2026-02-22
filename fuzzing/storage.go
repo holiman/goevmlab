@@ -31,7 +31,7 @@ import (
 func RandStorage(maxSlots, maxVal int) map[common.Hash]common.Hash {
 	storage := make(map[common.Hash]common.Hash)
 	numSlots := rand.Intn(maxSlots)
-	for i := 0; i < numSlots; i++ {
+	for range numSlots {
 		v, slot := byte(rand.Intn(maxVal)), byte(rand.Intn(numSlots))
 		storage[common.BytesToHash([]byte{slot})] = common.BytesToHash([]byte{v})
 	}
@@ -87,7 +87,7 @@ func randCall2200(addresses []common.Address, depth int) []byte {
 		case r < 50: // 30% chance of well-formed opcode
 			b := make([]byte, 10)
 			_, _ = crand.Read(b)
-			for i := 0; i < len(b); i++ {
+			for i := range b {
 				if op := ops.OpCode(b[i]); ops.IsDefined(op) {
 					p.Op(vm.OpCode(op))
 				}

@@ -210,7 +210,7 @@ type stAuthorizationMarshaling struct {
 	S       *math.HexOrDecimal256
 }
 
-func rlpHash(x interface{}) (h common.Hash) {
+func rlpHash(x any) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, x)
 	hw.Sum(h[:0])

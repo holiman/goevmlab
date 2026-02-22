@@ -56,16 +56,16 @@ func RandCallPointEval() []byte {
 	data := makeData()
 	mutate(data) // don't always use valid data
 	p.Mstore(data, 0)
-	memInFn := func() (offset, size interface{}) {
+	memInFn := func() (offset, size any) {
 		offset, size = 0, len(data)
 		return
 	}
 	sizeOut := 64
-	memOutFn := func() (offset, size interface{}) {
+	memOutFn := func() (offset, size any) {
 		offset, size = 0, sizeOut
 		return
 	}
-	addrGen := func() interface{} { return []byte{0x0a} }
+	addrGen := func() any { return []byte{0x0a} }
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
 	p.Append(p2)
 	// pop the ret value

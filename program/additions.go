@@ -48,7 +48,7 @@ func RJump(p *program.Program, relOffset uint16) {
 }
 
 // RJumpI implements RJUMPI (0x5d) - conditional relative jump
-func RJumpI(p *program.Program, relOffset uint16, condition interface{}) {
+func RJumpI(p *program.Program, relOffset uint16, condition any) {
 	panic("Need RJUMPI defined") // unclear what op it is
 	//p.Push(condition)
 	//p.Op(ops.RJUMPI)

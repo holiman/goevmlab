@@ -176,7 +176,7 @@ func (m *codeRandomMutator) proceed() bool {
 				continue
 			}
 			delta := it.Op().Stackdelta()
-			for i := 0; i < delta; i++ {
+			for range delta {
 				log.Info("Swapped op", "prev", it.Op().String(), "to", "PUSH0", "index", cutPoint)
 				next = append(next, byte(ops.PUSH0))
 			}
