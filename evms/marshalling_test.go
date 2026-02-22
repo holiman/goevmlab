@@ -10,7 +10,7 @@ import (
 // Test that marshalling is valid json
 func TestMarshalling(t *testing.T) {
 	log := new(opLog)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		el := uint256.NewInt(uint64(i))
 		log.Stack = append(log.Stack, *el)
 	}
@@ -22,7 +22,7 @@ func TestMarshalling(t *testing.T) {
 func BenchmarkMarshalling(b *testing.B) {
 
 	log := new(opLog)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		el := uint256.NewInt(uint64(i))
 		log.Stack = append(log.Stack, *el)
 	}

@@ -31,7 +31,7 @@ func (stat *VMStat) TraceDone(start time.Time) (time.Duration, bool) {
 }
 
 func (stat *VMStat) Stats() []any {
-	return []interface{}{
+	return []any{
 		"execSpeed", time.Duration(stat.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond),
 		"longest", stat.longestTracingTime,
 		"count", stat.numExecs.Load(),

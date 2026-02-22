@@ -439,7 +439,7 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 					}
 				}
 				globalCount += testsSinceLastUpdate
-				if err := os.WriteFile(".fuzzcounter", []byte(fmt.Sprintf("%d", globalCount)), 0755); err != nil {
+				if err := os.WriteFile(".fuzzcounter", fmt.Appendf(nil, "%d", globalCount), 0755); err != nil {
 					log.Error("Error saving progress", "err", err)
 				}
 				log.Info("Executing",
@@ -565,7 +565,7 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 			meta.testCh <- fileName
 		}
 	}
-	for i := 0; i < numFactories; i++ {
+	for i := range numFactories {
 		go factory(i)
 	}
 }
@@ -762,7 +762,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 
 	var executing = make(map[string]*execResult)
 	readResults := func(count int) {
-		for i := 0; i < count; i++ {
+		for range count {
 			t := <-resultCh                // result delivery
 			ready = append(ready, t.vmIdx) // add client to ready-set
 			if t.err != nil {
@@ -829,7 +829,7 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 		// Dispatch the testfile to the ready clients
 		log.Trace("Dispatching test to clients", "count", clientCount)
 		executing[testfile] = &execResult{waiting: clientCount}
-		for i := 0; i < clientCount; i++ {
+		for range clientCount {
 			id := ready[0]
 			taskChannels[id] <- &task{
 				file:      testfile,

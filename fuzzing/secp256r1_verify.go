@@ -20,13 +20,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	crand "crypto/rand"
-	"github.com/holiman/uint256"
-	"golang.org/x/exp/rand"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/program"
+	"github.com/holiman/uint256"
 )
 
 func fillSecp256R(gst *GstMaker, fork string) {
@@ -54,9 +53,9 @@ func randCallSecp256R() []byte {
 	p := program.New()
 	// Cramming in 100 makes the size of p roughly 20k
 	offset := 0
-	for i := int32(0); i < 100; i++ {
+	for range int32(100) {
 		hash := make([]byte, 32)
-		_, _ = rand.Read(hash)
+		_, _ = crand.Read(hash)
 		privKey, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
 		r, s, _ := ecdsa.Sign(crand.Reader, privKey, hash)
 		data := append([]byte{}, hash...)

@@ -87,16 +87,16 @@ func RandCallBLS() []byte {
 		data := precompile.newData()
 		mutate(data) // don't always use valid data
 		p.Mstore(data, 0)
-		memInFn := func() (offset, size interface{}) {
+		memInFn := func() (offset, size any) {
 			offset, size = 0, len(data)
 			return
 		}
 		sizeOut := precompile.outsize
-		memOutFn := func() (offset, size interface{}) {
+		memOutFn := func() (offset, size any) {
 			offset, size = 0, sizeOut
 			return
 		}
-		addrGen := func() interface{} {
+		addrGen := func() any {
 			return precompile.addr
 		}
 		p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)
@@ -271,7 +271,7 @@ func makeBadG1() []byte {
 		retval = make([]byte, 128)
 		_, _ = crand.Read(retval)
 		//zero out x and y top portions
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			retval[i] = 0
 			retval[i+64] = 0
 		}
@@ -312,7 +312,7 @@ func makeBadG2() []byte {
 		retval = make([]byte, 256)
 		_, _ = crand.Read(retval)
 		//zero out x and y top portions
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			retval[i] = 0
 			retval[i+64] = 0
 			retval[i+128] = 0

@@ -55,14 +55,14 @@ func randCallPrecompile() []byte {
 	data := make([]byte, size)
 	_, _ = crand.Read(data)
 	p.Mstore(data, 0)
-	memInFn := func() (offset, size interface{}) {
+	memInFn := func() (offset, size any) {
 		return 0, len(data)
 	}
-	memOutFn := func() (offset, size interface{}) {
+	memOutFn := func() (offset, size any) {
 		offset, size = 0, 64
 		return
 	}
-	addrGen := func() interface{} {
+	addrGen := func() any {
 		return vm.PrecompiledAddressesOsaka[rand.Int()%len(vm.PrecompiledAddressesOsaka)]
 	}
 	p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)

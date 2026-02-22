@@ -46,7 +46,7 @@ func decodeBLS12381FieldElement(in []byte) (fp.Element, error) {
 		return fp.Element{}, errors.New("invalid field element length")
 	}
 	// check top bytes
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		if in[i] != byte(0x00) {
 			return fp.Element{}, errors.New("bad top bytes")
 		}
@@ -110,14 +110,14 @@ func decodePointG2(in []byte) (*bls12381.G2Affine, error) {
 }
 
 func TestErrorTypes(t *testing.T) {
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		input := makeBadG1()
 		_, err := decodePointG1(input)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 		}
 	}
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		input := makeBadG2()
 		_, err := decodePointG2(input)
 		if err != nil {

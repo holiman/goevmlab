@@ -73,16 +73,16 @@ func RandCallBn() []byte {
 		data := precompile.newData()
 		mutate(data) // don't always use valid data
 		p.Mstore(data, 0)
-		memInFn := func() (offset, size interface{}) {
+		memInFn := func() (offset, size any) {
 			offset, size = 0, len(data)
 			return
 		}
 		sizeOut := precompile.outsize
-		memOutFn := func() (offset, size interface{}) {
+		memOutFn := func() (offset, size any) {
 			offset, size = 0, sizeOut
 			return
 		}
-		addrGen := func() interface{} {
+		addrGen := func() any {
 			return precompile.addr
 		}
 		p2 := RandCall(GasRandomizer(), addrGen, ValueRandomizer(), memInFn, memOutFn)

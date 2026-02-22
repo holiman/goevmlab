@@ -83,7 +83,7 @@ func randCallTStore(addresses []common.Address, depth int) []byte {
 		case r.between(50, 60): // 10% chance of some well-formed opcodes
 			b := make([]byte, 10)
 			_, _ = crand.Read(b)
-			for i := 0; i < len(b); i++ {
+			for i := range b {
 				if op := ops.OpCode(b[i]); ops.IsDefined(op) {
 					p.Op(vm.OpCode(op))
 				}
