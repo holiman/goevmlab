@@ -46,9 +46,7 @@ RUN cd go-ethereum && go run build/ci.go install -static ./cmd/evm
 #
 RUN git clone https://github.com/ledgerwatch/erigon --depth 1
 RUN cd erigon && mkdir /erigon/ && make evm && \
-	cp ./build/bin/evm /erigon_vm && \
-        cp $(bash ./node/silkworm/silkworm_lib_path.sh) /libsilkworm_capi.so
-
+	cp ./build/bin/evm /erigon_vm
 
 #
 # NIMBUS-ETH1
@@ -160,7 +158,6 @@ COPY --from=golang-builder /go/go-ethereum/build/bin/evm /gethvm
 ENV GETH_BIN=/gethvm
 
 COPY --from=golang-builder /erigon_vm /erigon_vm
-COPY --from=golang-builder /libsilkworm_capi.so /lib/libsilkworm_capi.so
 ENV ERIG_BIN=/erigon_vm
 
 COPY --from=holiman/nimbus:latest /nimbvm /txparse.nimbus /
