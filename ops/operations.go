@@ -116,6 +116,7 @@ const (
 	BASEFEE     = OpCode(0x48)
 	BLOBHASH    = OpCode(0x49)
 	BLOBBASEFEE = OpCode(0x4a)
+	SLOTNUM     = OpCode(0x4b) // Amsterdam
 )
 
 // 0x50 range - 'storage' and execution.
@@ -372,6 +373,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	BASEFEE:     {"BASEFEE", 0, nil, []string{"basefee in current block"}},
 	BLOBHASH:    {"BLOBHASH", 0, []string{"index"}, []string{"blobhash at index"}},
 	BLOBBASEFEE: {"BLOBBASEFEE", 0, nil, []string{"blob basefee in current block"}},
+	SLOTNUM:     {"SLOTNUM", 0, nil, []string{"current slot number"}},
 
 	POP:      {"POP", 0, []string{"value to pop"}, nil},
 	MLOAD:    {"MLOAD", 0, []string{"offset"}, []string{"value"}},
