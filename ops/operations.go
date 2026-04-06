@@ -226,28 +226,12 @@ const (
 	LOG4 = OpCode(0xa4)
 )
 
-// 0xd0 range - EOF data operations
-//const (
-//	DATALOAD  = OpCode(0xd0) // osaka
-//	DATALOADN = OpCode(0xd1) // osaka
-//	DATASIZE  = OpCode(0xd2) // osaka
-//	DATACOPY  = OpCode(0xd3) // osaka
-//)
-
-// 0xe0 range - EOF opcodes with immediates
-//const (
-//	RJUMP          = OpCode(0xe0) // osaka
-//	RJUMPI         = OpCode(0xe1) // osaka
-//	RJUMPV         = OpCode(0xe2) // osaka
-//	CALLF          = OpCode(0xe3) // osaka
-//	RETF           = OpCode(0xe4) // osaka
-//	JUMPF          = OpCode(0xe5) // osaka
-//	DUPN           = OpCode(0xe6) // osaka
-//	SWAPN          = OpCode(0xe7) // osaka
-//	EXCHANGE       = OpCode(0xe8) // osaka
-//	EOFCREATE      = OpCode(0xec) // osaka
-//	RETURNCONTRACT = OpCode(0xee) // osaka
-//)
+// 0xe0 range
+const (
+	DUPN     = OpCode(0xe6) // Amsterdam
+	SWAPN    = OpCode(0xe7) // Amsterdam
+	EXCHANGE = OpCode(0xe8) // Amsterdam
+)
 
 // 0xf0 range - closures.
 const (
@@ -258,11 +242,7 @@ const (
 	DELEGATECALL = OpCode(0xf4)
 	CREATE2      = OpCode(0xf5)
 
-	//RETURNDATALOAD  = OpCode(0xf7) // osaka
-	//EXTCALL         = OpCode(0xf8) // osaka
-	//EXTDELEGATECALL = OpCode(0xf9) // osaka
 	STATICCALL = OpCode(0xfa)
-	//EXTSTATICCALL   = OpCode(0xfb) // osaka
 
 	REVERT       = OpCode(0xfd)
 	INVALID      = OpCode(0xfe)
@@ -467,21 +447,9 @@ var opCodeInfo = map[OpCode]opInfo{
 	LOG3: {"LOG3", 0, []string{"mStart", "mSize", "topic", "topic", "topic"}, nil},
 	LOG4: {"LOG4", 0, []string{"mStart", "mSize", "topic", "topic", "topic", "topic"}, nil},
 
-	//DATALOAD:       {"DATALOAD", 0, []string{"offset"}, []string{"data"}},
-	//DATALOADN:      {"DATALOADN", 1, nil, []string{"data"}},
-	//DATASIZE:       {"DATASIZE", 0, nil, []string{"data"}},
-	//DATACOPY:       {"DATACOPY", 0, []string{"mem_offset", "offset", "size"}, nil},
-	//RJUMP:          {"RJUMP", 2, nil, nil},
-	//RJUMPI:         {"RJUMPI", 2, []string{"condition"}, nil},
-	//RJUMPV:         {"RJUMPV", 3, []string{"case"}, nil},
-	//CALLF:          {"CALLF", 2, nil, []string{"0 or more items, depends on type headers"}},
-	//RETF:           {"RETF", 0, nil, nil},
-	//JUMPF:          {"JUMPF", 2, nil, nil},
-	//DUPN:           {"DUPN", 1, nil, nil},
-	//SWAPN:          {"SWAPN", 1, nil, nil},
-	//EXCHANGE:       {"EXCHANGE", 1, nil, nil},
-	//EOFCREATE:      {"EOFCREATE", 2, []string{"value", "salt", "input_offset", "input_size"}, []string{"address"}},
-	//RETURNCONTRACT: {"RETURNCONTRACT", 2, []string{"aux_data_offset", "aux_data_size"}, nil},
+	DUPN:     {"DUPN", 1, []string{"-"}, []string{"-", "-"}},
+	SWAPN:    {"SWAPN", 1, []string{"-", "-"}, []string{"-", "-"}},
+	EXCHANGE: {"EXCHANGE", 1, []string{"-", "-"}, []string{"-", "-"}},
 
 	// 0xf0 range.
 	CREATE:       {"CREATE", 0, []string{"value", "mem offset", "mem size"}, []string{"address or zero"}},

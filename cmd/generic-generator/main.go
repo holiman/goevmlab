@@ -41,7 +41,7 @@ var (
 	forkFlag = &cli.StringFlag{
 		Name:  "fork",
 		Usage: fmt.Sprintf("Fork to use %v", ops.ForkNames()),
-		Value: "Prague",
+		Value: ops.ForkNames()[len(ops.ForkNames())-1],
 	}
 	app = initApp()
 )

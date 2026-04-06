@@ -207,13 +207,14 @@ var (
 			DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16,
 			SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16,
 			LOG0, LOG1, LOG2, LOG3, LOG4,
+			DUPN, SWAPN, EXCHANGE, // New for Amsterdam
 			CREATE, CALL, CALLCODE, RETURN, DELEGATECALL, CREATE2, STATICCALL, REVERT, INVALID,
 			RETURNDATACOPY,
 			SELFDESTRUCT},
 	}
 
 	forks = []Fork{
-		istanbul, berlin, london, merged, shanghai, cancun, prague, osaka, amsterdam
+		istanbul, berlin, london, merged, shanghai, cancun, prague, osaka, amsterdam,
 	}
 )
 
@@ -369,6 +370,25 @@ func LookupRules(fork string) params.Rules {
 			IsCancun:         true,
 			IsPrague:         true,
 			IsOsaka:          true,
+		}
+	case "Amsterdam":
+		return params.Rules{
+			IsHomestead:      true,
+			IsEIP150:         true,
+			IsEIP155:         true,
+			IsEIP158:         true,
+			IsByzantium:      true,
+			IsConstantinople: true,
+			IsPetersburg:     true,
+			IsIstanbul:       true,
+			IsBerlin:         true,
+			IsLondon:         true,
+			IsMerge:          true,
+			IsShanghai:       true,
+			IsCancun:         true,
+			IsPrague:         true,
+			IsOsaka:          true,
+			IsAmsterdam:      true,
 		}
 	default:
 		panic(fmt.Sprintf("Unsupported: %v", fork))
