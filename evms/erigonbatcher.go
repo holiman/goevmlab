@@ -60,9 +60,9 @@ func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 	)
 	if evm.cmd == nil {
 		if speedTest {
-			cmd = exec.Command(evm.path, "statetest", "--nomemory", "--noreturndata", "--nostack")
+			cmd = exec.Command(evm.path, "statetest", "--jsonout", "--nomemory", "--noreturndata", "--nostack")
 		} else {
-			cmd = exec.Command(evm.path, "statetest", "--json", "--noreturndata", "--nomemory")
+			cmd = exec.Command(evm.path, "statetest", "--json", "--jsonout", "--noreturndata", "--nomemory")
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
 			return &tracingResult{Cmd: cmd.String()}, err
