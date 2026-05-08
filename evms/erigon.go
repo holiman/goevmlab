@@ -87,10 +87,10 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		t0     = time.Now()
 		stderr io.ReadCloser
 		err    error
-		cmd    = exec.Command(evm.path, "--json", "--noreturndata", "--nomemory", "statetest", path)
+		cmd    = exec.Command(evm.path, "statetest", "--json", "--noreturndata", "--nomemory", path)
 	)
 	if speedTest {
-		cmd = exec.Command(evm.path, "--nomemory", "--noreturndata", "--nostack", "statetest", path)
+		cmd = exec.Command(evm.path, "statetest", "--nomemory", "--noreturndata", "--nostack", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
 		return &tracingResult{Cmd: cmd.String()}, err
