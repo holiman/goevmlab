@@ -74,12 +74,12 @@ if [[ -n "$erigonvm" ]]; then
     echo "erigon"
     cd ./cases
     for i in *.json; do
-        $erigonvm  --json --nomemory --noreturndata statetest $i \
+        $erigonvm  statetest --json --jsonout --nomemory --noreturndata $i \
          2>../traces/$i.erigon.stderr.txt \
          1>../traces/$i.erigon.stdout.txt
     done
     for i in *.json; do
-        $erigonvm statetest $i \
+        $erigonvm statetest --jsonout $i \
          2>../roots/$i.erigon.stderr.txt \
          1>../roots/$i.erigon.stdout.txt
     done

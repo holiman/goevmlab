@@ -1,0 +1,23 @@
+[
+  {
+    "name": "00161676-mixed-1",
+    "pass": false,
+    "stateRoot": "0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f",
+    "fork": "Cancun",
+    "error": "unexpected error: intrinsic gas too low: have 0, want 21016",
+    "state": {
+      "root": "53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f",
+      "accounts": {
+        "0x00000000000000000000000000000000000000F4": {
+          "balance": "0",
+          "nonce": 0,
+          "root": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+          "codeHash": "0x9dbf3648db8210552e9c4f75c6a1c3057c0ca432043bd648be15fe7be05646f5",
+          "code": "0xef00",
+          "address": "0x00000000000000000000000000000000000000f4",
+          "key": "0x34562e3ace608bdd75a10eb153cbc2c00e69b935d42f57c193c38ef6d674abac"
+        }
+      }
+    }
+  }
+]
