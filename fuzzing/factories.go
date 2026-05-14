@@ -31,9 +31,12 @@ var fillers = map[string]func(*GstMaker, string){
 	"sstore_sload": fillSstore,
 	"secp256r":     fillSecp256R,
 	"tstore_tload": fillTstore,
-	"auth":         fill7702,
-	"kzg":          fillPointEvaluation4844,
-	"eip8037":      fill8037,
+	"auth":                       fill7702,
+	"kzg":                        fillPointEvaluation4844,
+	"eip8037":                    fill8037,
+	"eip8037_sstore_restoration": fillSstoreRestoration,
+	"eip8037_deep_calls":         fillDeepCalls,
+	"eip8037_create_sd_same_tx":  fillCreateSdSameTx,
 }
 
 func Factory(name, fork string) func() *GstMaker {
