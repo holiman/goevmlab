@@ -63,6 +63,7 @@ func initApp() *cli.App {
 		common.NotifyFlag,
 		common.RemoveFilesFlag,
 		common.RawDebugFlag,
+		common.BailFlag,
 	)
 	app.Action = startFuzzer
 	return app
