@@ -1,6 +1,7 @@
 package evms
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -42,8 +43,36 @@ func TestVMStatTracksDurations(t *testing.T) {
 	if longest < shortest {
 		t.Fatalf("longest duration %v below shortest duration %v", longest, shortest)
 	}
-	if fields["slowLimit"].(time.Duration) < slowTestMinDuration {
-		t.Fatalf("slow limit below minimum: %v", fields["slowLimit"])
+}
+
+func TestVMStatTracksConcurrentDurations(t *testing.T) {
+	stat := new(VMStat)
+	const workers = 8
+	const runs = 100
+
+	var wg sync.WaitGroup
+	for worker := range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for run := range runs {
+				markTraceDone(stat, time.Duration(worker+run+1)*time.Millisecond)
+			}
+		}()
+	}
+	wg.Wait()
+
+	fields := statFields(stat)
+	if have, want := fields["count"], uint64(workers*runs); have != want {
+		t.Fatalf("wrong execution count: have %v, want %v", have, want)
+	}
+	shortest := fields["shortest"].(time.Duration)
+	longest := fields["longest"].(time.Duration)
+	if shortest <= 0 {
+		t.Fatalf("expected non-zero shortest duration, got %v", shortest)
+	}
+	if longest < shortest {
+		t.Fatalf("longest duration %v below shortest duration %v", longest, shortest)
 	}
 }
 
@@ -57,16 +86,16 @@ func TestVMStatSlowDetectionNeedsWarmup(t *testing.T) {
 	}
 }
 
-func TestVMStatSlowDetectionUsesMovingAverage(t *testing.T) {
+func TestVMStatSlowDetectionTracksNewLongestAfterWarmup(t *testing.T) {
 	stat := new(VMStat)
 
 	for range slowTestWarmupRuns {
-		markTraceDone(stat, 10*time.Millisecond)
+		markTraceDone(stat, 100*time.Millisecond)
 	}
-	if _, slow := markTraceDone(stat, 200*time.Millisecond); slow {
-		t.Fatalf("duration below the minimum slow threshold was marked slow")
+	if _, slow := markTraceDone(stat, 50*time.Millisecond); slow {
+		t.Fatalf("duration below the previous longest was marked slow")
 	}
-	if _, slow := markTraceDone(stat, 2*time.Second); !slow {
-		t.Fatalf("large outlier was not marked slow")
+	if _, slow := markTraceDone(stat, 200*time.Millisecond); !slow {
+		t.Fatalf("new longest duration after warmup was not marked slow")
 	}
 }
