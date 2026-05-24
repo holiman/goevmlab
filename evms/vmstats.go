@@ -10,7 +10,7 @@ import (
 type VMStat struct {
 	// Some metrics
 	tracingSpeedWMA    utils.SlidingAverage
-	longestTracingTime time.Duration
+	longestTracingTime atomic.Int64
 	numExecs           atomic.Uint64
 }
 
@@ -20,8 +20,10 @@ func (stat *VMStat) TraceDone(start time.Time) (time.Duration, bool) {
 	numexecs := stat.numExecs.Add(1)
 	duration := time.Since(start)
 	stat.tracingSpeedWMA.Add(int(duration))
-	if duration > stat.longestTracingTime {
-		stat.longestTracingTime = duration
+	// This is not strictly correct - two racing updates may interleave and
+	// one may overwrite the other. That's fine, it's just a bit of stats.
+	if duration > time.Duration(stat.longestTracingTime.Load()) {
+		stat.longestTracingTime.Store(int64(duration))
 		// Don't count the first 500 runs, let it accumulate.
 		if numexecs > 500 {
 			return duration, true
@@ -33,7 +35,7 @@ func (stat *VMStat) TraceDone(start time.Time) (time.Duration, bool) {
 func (stat *VMStat) Stats() []any {
 	return []any{
 		"execSpeed", time.Duration(stat.tracingSpeedWMA.Avg()).Round(100 * time.Microsecond),
-		"longest", stat.longestTracingTime,
+		"longest", time.Duration(stat.longestTracingTime.Load()),
 		"count", stat.numExecs.Load(),
 	}
 }
