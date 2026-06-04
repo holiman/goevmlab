@@ -102,7 +102,7 @@ RUN cp -rT /nethermind/tools/artifacts/publish/TxParser/release_linux-x64/ /out/
 FROM ubuntu:24.04 as java-builder
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates \
-  openjdk-21-jdk-headless=21* libjemalloc-dev=5.* 
+  openjdk-25-jdk-headless=25* libjemalloc-dev=5.* 
 RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
 RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
 RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
@@ -114,7 +114,7 @@ RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
 FROM debian:testing-slim
 
 # nethtest requires libssl-dev
-# besu requires openjdk-21-jre
+# besu requires openjdk-25-jre
 # evmone requires GLIBC_2.38 (libstdc++-13-dev) (https://github.com/holiman/goevmlab/issues/144)
 # EELS requires (see https://github.com/ethereum/execution-specs/issues/976)
 #   - pipx, git, 
@@ -125,14 +125,14 @@ FROM debian:testing-slim
 RUN apt-get update -q && \ 
     apt-get install -qy --no-install-recommends \
 	libssl-dev  \
-	openjdk-21-jre-headless \ 
+	openjdk-25-jre-headless \ 
 	libstdc++-13-dev \
 	pipx git curl gcc python3-dev pkg-config \
 	jq nano \
   && apt-get clean
 
 # Install execution-specs (EELS)
-RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/osaka --depth 1
+RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/amsterdam --depth 1
 
 #   To install EELS, we temporarily install rust, which is required for building parts of eels, 
 #   and after building, we delete it again
