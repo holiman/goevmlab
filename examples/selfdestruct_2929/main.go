@@ -209,7 +209,7 @@ func runit() error {
 	mkr.SetTx(tx)
 
 	mkr.SetPre(&fuzzGenesisAlloc)
-	if err := mkr.Fill(os.Stdout); err != nil {
+	if err := mkr.Fill(os.Stdout, 0); err != nil {
 		return err
 	}
 

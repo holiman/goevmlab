@@ -900,7 +900,7 @@ func ConvertToStateTest(name, fork string, alloc types.GenesisAlloc, gasLimit ui
 	}
 	mkr.SetTx(tx)
 	mkr.SetPre(&fuzzGenesisAlloc)
-	if err := mkr.Fill(nil); err != nil {
+	if err := mkr.Fill(nil, 0); err != nil {
 		return err
 	}
 	gst := mkr.ToGeneralStateTest(name)

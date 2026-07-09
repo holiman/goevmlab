@@ -87,7 +87,7 @@ func makeTest() error {
 		return err
 	}
 	defer traceOut.Close()
-	if err := gst.Fill(traceOut); err != nil {
+	if err := gst.Fill(traceOut, 0); err != nil {
 		return err
 	}
 	t := gst.ToGeneralStateTest("tstore_test-1")
