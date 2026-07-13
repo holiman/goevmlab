@@ -189,8 +189,9 @@ func (g *GstMaker) EnableFork(fork string) {
 }
 
 // Fill uses go-ethereum internally to determine the state root and logs, and optionally
-// outputs the trace to the given writer (if non-nil)
-func (g *GstMaker) Fill(traceOutput io.Writer) error {
+// outputs the trace to the given writer (if non-nil). The limit caps the size of the
+// trace output; zero means unlimited.
+func (g *GstMaker) Fill(traceOutput io.Writer, limit int) error {
 
 	test, err := g.ToStateTest()
 	if err != nil {
@@ -199,7 +200,7 @@ func (g *GstMaker) Fill(traceOutput io.Writer) error {
 	subtest := test.Subtests()[0]
 	cfg := vm.Config{}
 	if traceOutput != nil {
-		cfg.Tracer = logger.NewJSONLogger(&logger.Config{}, traceOutput)
+		cfg.Tracer = logger.NewJSONLogger(&logger.Config{Limit: limit}, traceOutput)
 	}
 	state, root, _, err := test.RunNoVerify(subtest, cfg, false, rawdb.HashScheme)
 	if err != nil {

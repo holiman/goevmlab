@@ -171,7 +171,7 @@ func createTests(conf *config) error {
 		// Generate new code
 		base := conf.factory()
 		// Get new state root and logs hash
-		if err := base.Fill(traceOutput); err != nil {
+		if err := base.Fill(traceOutput, 0); err != nil {
 			close()
 			return err
 		}
