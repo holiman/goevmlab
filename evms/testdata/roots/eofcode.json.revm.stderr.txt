@@ -1,3 +1,17 @@
-{"stateRoot":"0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f","logsRoot":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","output":"0x","gasUsed":0,"pass":false,"errorMsg":"unexpected exception: got Some(\"transaction validation error: call gas cost exceeds the gas limit\"), expected None","evmResult":"transaction validation error: call gas cost exceeds the gas limit","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","fork":"CANCUN","test":"00161676-mixed-1","d":0,"g":0,"v":0}
-Statetest(TestError { name: "00161676-mixed-1", path: "eofcode.json", kind: UnexpectedException { expected_exception: None, got_exception: Some("transaction validation error: call gas cost exceeds the gas limit") } })
-Error: Statetest(TestError { name: "00161676-mixed-1", path: "eofcode.json", kind: UnexpectedException { expected_exception: None, got_exception: Some("transaction validation error: call gas cost exceeds the gas limit") } })
+{"stateRoot":"0x53f6733a696cb3bbf77b635d96ace97f25ffee2d08d3e3d4ae1e566bfc060d6f","logsRoot":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","output":"0x","gasUsed":0,"pass":false,"errorMsg":"unexpected exception: got Some(\"transaction validation error: call gas cost (21016) exceeds the gas limit (0)\"), expected None","evmResult":"transaction validation error: call gas cost (21016) exceeds the gas limit (0)","postLogsHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","fork":"CANCUN","test":"00161676-mixed-1","d":0,"g":0,"v":0}
+error:
+- Path: eofcode.json
+Name: 00161676-mixed-1
+Error: unexpected exception: got Some("transaction validation error: call gas cost (21016) exceeds the gas limit (0)"), expected None
+- Statetest(
+    TestError {
+        name: "00161676-mixed-1",
+        path: "eofcode.json",
+        kind: UnexpectedException {
+            expected_exception: None,
+            got_exception: Some(
+                "transaction validation error: call gas cost (21016) exceeds the gas limit (0)",
+            ),
+        },
+    },
+)
