@@ -59,7 +59,7 @@ func (evm *NethermindVM) Name() string {
 // GetStateRoot runs the test and returns the stateroot
 func (evm *NethermindVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
-	cmd := exec.Command(evm.path, "--neverTrace", "-m", "-s", "-i", path)
+	cmd := exec.Command(evm.path, "--neverTrace", "-m", "-s", "--stateTest", "-i", path)
 	data, err := cmd.Output()
 	if err != nil {
 		return "", cmd.String(), err
@@ -88,7 +88,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 		t0      = time.Now()
 		procOut io.ReadCloser
 		err     error
-		cmd     = exec.Command(evm.path, "--trace", "-m", "--input", path)
+		cmd     = exec.Command(evm.path, "--trace", "-m", "--stateTest", "--input", path)
 	)
 	if !speedTest {
 		// in normal execution, we read traces from standard error
@@ -98,7 +98,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	} else {
 		// In speedtest-mode, we don't want the actual traces, but we do
 		// need to read the stateroot. The stateroot can be found on stdout
-		cmd = exec.Command(evm.path, "-m", "--neverTrace", "--input", path)
+		cmd = exec.Command(evm.path, "-m", "--neverTrace", "--stateTest", "--input", path)
 		if procOut, err = cmd.StdoutPipe(); err != nil {
 			return &tracingResult{Cmd: cmd.String()}, err
 		}

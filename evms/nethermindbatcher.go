@@ -58,7 +58,7 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 		err     error
 		procOut io.ReadCloser
 		stdin   io.WriteCloser
-		cmd     = exec.Command(evm.path, "-x", "--trace", "-m")
+		cmd     = exec.Command(evm.path, "-x", "--trace", "-m", "--stateTest")
 	)
 	if evm.cmd == nil {
 		if !speedTest {
@@ -69,7 +69,7 @@ func (evm *NethermindBatchVM) RunStateTest(path string, out io.Writer, speedTest
 		} else {
 			// In speedtest-mode, we don't want the actual traces, but we do
 			// need to read the stateroot. The stateroot can be found on stdout
-			cmd = exec.Command(evm.path, "-x", "-m", "--neverTrace")
+			cmd = exec.Command(evm.path, "-x", "-m", "--stateTest", "--neverTrace")
 			if procOut, err = cmd.StdoutPipe(); err != nil {
 				return &tracingResult{Cmd: cmd.String()}, err
 			}
@@ -111,7 +111,7 @@ func (evm *NethermindBatchVM) Close() {
 
 func (evm *NethermindBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
-		evm.cmd = exec.Command(evm.path, "--neverTrace", "-m", "-s", "-x")
+		evm.cmd = exec.Command(evm.path, "--neverTrace", "-m", "-s", "--stateTest", "-x")
 		if evm.procOut, err = evm.cmd.StdoutPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
