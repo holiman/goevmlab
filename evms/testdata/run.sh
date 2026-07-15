@@ -15,6 +15,7 @@ if [[ -n "$evm" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
+	echo " tracing $i"
       #	$evm statetest --trace --trace.format=json --trace.nomemory  $i \
         $evm statetest --trace --trace.format=json --trace.nomemory=true --trace.noreturndata=true $i  \
          2>../traces/$i.geth.stderr.txt \
@@ -23,6 +24,7 @@ if [[ -n "$evm" ]]; then
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
+	echo " testing $i"
         $evm statetest $i \
          2>../roots/$i.geth.stderr.txt \
          1>../roots/$i.geth.stdout.txt
@@ -37,12 +39,14 @@ if [[ -n "$nethtest" ]]; then
     echo "nethermind"
     cd ./cases
     for i in *.json; do
-        $nethtest --memory --trace --input $i \
+	echo " tracing $i"
+        $nethtest --memory --trace --stateTest --input $i \
          2>../traces/$i.nethermind.stderr.txt \
          1>../traces/$i.nethermind.stdout.txt
     done
     for i in *.json; do
-        $nethtest --memory --neverTrace -s --input $i \
+	echo " testing $i"
+        $nethtest --memory --neverTrace -s --stateTest --input $i \
          2>../roots/$i.nethermind.stderr.txt \
          1>../roots/$i.nethermind.stdout.txt
     done
@@ -56,11 +60,13 @@ if [[ -n "$besuvm" ]]; then
     echo "besu"
     cd ./cases
     for i in *.json; do
+	echo " tracing $i"
         $besuvm --json --nomemory --notime state-test $i \
           2>../traces/$i.besu.stderr.txt \
           1>../traces/$i.besu.stdout.txt
     done
     for i in *.json; do
+	echo " testing $i"
         $besuvm --nomemory --notime state-test $i \
          2>../roots/$i.besu.stderr.txt \
          1>../roots/$i.besu.stdout.txt
@@ -74,11 +80,13 @@ if [[ -n "$erigonvm" ]]; then
     echo "erigon"
     cd ./cases
     for i in *.json; do
+	echo " tracing $i"
         $erigonvm  statetest --json --jsonout --nomemory --noreturndata $i \
          2>../traces/$i.erigon.stderr.txt \
          1>../traces/$i.erigon.stdout.txt
     done
     for i in *.json; do
+	echo " testing $i"
         $erigonvm statetest --jsonout $i \
          2>../roots/$i.erigon.stderr.txt \
          1>../roots/$i.erigon.stdout.txt
@@ -92,6 +100,7 @@ if [[ -n "$nimbus" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
+	echo " tracing $i"
         $nimbus --json --nomemory --noreturndata --nostorage $i \
          2>../traces/$i.nimbus.stderr.txt \
          1>../traces/$i.nimbus.stdout.txt
@@ -99,6 +108,7 @@ if [[ -n "$nimbus" ]]; then
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
+	echo " testing $i"
         $nimbus  $i \
          2>../roots/$i.nimbus.stderr.txt \
          1>../roots/$i.nimbus.stdout.txt
@@ -112,12 +122,14 @@ if [[ -n "$evmone" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
+	echo " tracing $i"
         $evmone --trace $i \
          2>../traces/$i.evmone.stderr.txt
     done
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
+	echo " testing $i"
         $evmone --trace-summary $i \
          2>../roots/$i.evmone.stderr.txt
     done
@@ -130,6 +142,7 @@ if [[ -n "$revm" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
+	echo " tracing $i"
         $revm statetest --json  $i \
          2>../traces/$i.revm.stderr.txt \
          1>/dev/null
@@ -137,6 +150,7 @@ if [[ -n "$revm" ]]; then
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
+	echo " testing $i"
         $revm statetest --json-outcome $i \
          2>../roots/$i.revm.stderr.txt \
          1>/dev/null
@@ -150,6 +164,7 @@ if [[ -n "$eels" ]]; then
     cd ./cases
     # The traces
     for i in *.json; do
+	echo " tracing $i"
         $eels statetest --json --nomemory --noreturndata $i \
          2>../traces/$i.eels.stderr.txt \
          1>../traces/$i.eels.stdout.txt
@@ -157,6 +172,7 @@ if [[ -n "$eels" ]]; then
     # And the stateroots, where we invoke the evm the same way that
     # GetStateRoot does
     for i in *.json; do
+	echo " testing $i"
         $eels statetest $i \
          2>../roots/$i.eels.stderr.txt \
          1>../roots/$i.eels.stdout.txt

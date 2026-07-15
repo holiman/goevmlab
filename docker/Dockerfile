@@ -22,7 +22,7 @@ FROM golang:latest as golang-builder
 #
 # Go-evmlab
 #
-
+#RUN git clone https://github.com/spencer-tb/goevmlab.git --branch bal-devnet-7 --depth 1
 RUN git clone https://github.com/holiman/goevmlab --depth 1
 RUN cd goevmlab && \
   go build ./cmd/generic-fuzzer && \
@@ -122,6 +122,7 @@ FROM debian:testing-slim
 #   - gcc for building 'py-arkworks-bls12381', 
 #   - python3-dev for bulding 'lru-dict'
 #   - pkg-config (see https://github.com/ethereum/execution-specs/issues/1103)
+#   - libsecp256k1-dev
 RUN apt-get update -q && \ 
     apt-get install -qy --no-install-recommends \
 	libssl-dev  \
@@ -129,15 +130,15 @@ RUN apt-get update -q && \
 	libstdc++-13-dev \
 	pipx git curl gcc python3-dev pkg-config \
 	jq nano \
+	libsecp256k1-dev \
   && apt-get clean
-
 # Install execution-specs (EELS)
 RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/amsterdam --depth 1
 
 #   To install EELS, we temporarily install rust, which is required for building parts of eels, 
 #   and after building, we delete it again
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s  -- -y  --profile=minimal && \
-  . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install './execution-specs/[test]' && \
+  . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install ./execution-specs && \
   rm -rf /root/.rustup && rm -rf /root/.cargo
 
 ENV EELS_BIN=/ethereum-spec-evm
