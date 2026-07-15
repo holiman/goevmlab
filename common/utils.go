@@ -132,6 +132,13 @@ var (
 			"This can be useful for very ephemeral flaws which do not reproduce on two runs, " +
 			"but only appears in very special conditions",
 	}
+	BailFlag = &cli.BoolFlag{
+		Name:  "bail",
+		Value: false,
+		Usage: "If true, exit the process immediately after the first consensus flaw " +
+			"is handled (i.e. one bug → exit). Without this, abort is set but the " +
+			"fuzzer keeps draining queued tests for some time before fully exiting.",
+	}
 	PrefixFlag = &cli.StringFlag{
 		Name:  "prefix",
 		Usage: "prefix of output files",
@@ -403,6 +410,7 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 		outdir:              c.String(LocationFlag.Name),
 		notifyTopic:         c.String(NotifyFlag.Name),
 		rawDebug:            c.Bool(RawDebugFlag.Name),
+		bail:                c.Bool(BailFlag.Name),
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
@@ -531,6 +539,7 @@ type testMeta struct {
 	notifyTopic string
 
 	rawDebug bool
+	bail     bool
 
 	deleteFilesWhenDone bool
 }
@@ -853,6 +862,10 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 	select {
 	case testfile := <-meta.consensusCh:
 		meta.handleConsensusFlaw(testfile)
+		if meta.bail {
+			log.Info("--bail set: exiting after first consensus flaw")
+			os.Exit(0)
+		}
 	default:
 	}
 }

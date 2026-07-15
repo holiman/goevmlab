@@ -147,6 +147,11 @@ type stEnv struct {
 	Timestamp    uint64         `json:"currentTimestamp"  gencodec:"required"`
 	PreviousHash common.Hash    `json:"previousHash"`
 	BaseFee      *big.Int       `json:"currentBaseFee"`
+	// SlotNumber is the consensus-layer slot number for the SLOTNUM
+	// opcode (EIP-7843), introduced in Amsterdam. Default 0 so
+	// generators don't need to populate it explicitly. EELS reads
+	// `slotNumber` (no `current` prefix) from env JSON.
+	SlotNumber uint64 `json:"slotNumber"`
 }
 
 type stEnvMarshaling struct {
@@ -157,6 +162,7 @@ type stEnvMarshaling struct {
 	Number     math.HexOrDecimal64
 	Timestamp  math.HexOrDecimal64
 	BaseFee    *math.HexOrDecimal256
+	SlotNumber math.HexOrDecimal64
 }
 
 //go:generate gencodec -type StTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
