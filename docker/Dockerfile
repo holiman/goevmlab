@@ -8,7 +8,8 @@
 # - [x] Go-ethereum binary 'evm'
 # - [x] Erigon binary 'evm'
 # - [x] EvmOne vm binary 'evmone'
-# - [x] Reth VM binary 'revme' 
+# - [x] Reth VM binary 'revme'
+# - [x] evm2 binary 'evm2'
 # - [x] Besu
 # - [x] Nethermind
 # - [x] Nimbus-eth1
@@ -67,8 +68,14 @@ RUN cd erigon && mkdir /erigon/ && make evm && \
 
 FROM lukemathwalker/cargo-chef:latest-rust-1 AS rust-builder
 RUN apt-get update -q && apt-get install -qy --no-install-recommends libclang-dev pkg-config
-RUN git clone https://github.com/bluealloy/revm.git --depth 1 
+RUN git clone https://github.com/bluealloy/revm.git --depth 1
 RUN cd revm && cargo build --release --package revme
+
+#
+# evm2
+#
+RUN git clone https://github.com/alloy-rs/evm2.git --depth 1
+RUN cd evm2 && cargo build --release --bin evm2
 
 
 #---------------------------------------------------------------
@@ -171,6 +178,9 @@ ENV EVMO_BIN=/evmone
 COPY --from=rust-builder /revm/target/release/revme /revme
 ENV RETH_BIN=/revme
 
+COPY --from=rust-builder /evm2/target/release/evm2 /evm2
+ENV EVM2_BIN=/evm2
+
 COPY --from=dotnet-builder /out/neth /neth
 RUN ln -s /neth/nethtest /nethtest
 ENV NETH_BIN=/neth/nethtest
@@ -185,6 +195,7 @@ ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
  --nethbatch=$NETH_BIN \
  --nimbusbatch=$NIMB_BIN \
  --revme=$RETH_BIN \
+ --evm2=$EVM2_BIN \
  --erigonbatch=$ERIG_BIN \
  --besubatch=$BESU_BIN \
  --evmone=$EVMO_BIN \
@@ -194,6 +205,7 @@ ENV FUZZ_CLIENTS_PLAIN="--geth=$GETH_BIN \
  --neth=$NETH_BIN \
  --nimbus=$NIMB_BIN \
  --revme=$RETH_BIN \
+ --evm2=$EVM2_BIN \
  --erigon=$ERIG_BIN \
  --besu=$BESU_BIN \
  --evmone=$EVMO_BIN \
