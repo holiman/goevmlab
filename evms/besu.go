@@ -91,7 +91,7 @@ func (evm *BesuVM) Close() {}
 
 func (evm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	// Run without tracing
-	cmd := exec.Command(evm.path, "--nomemory", "--notime", "state-test", path)
+	cmd := exec.Command(evm.path, "--nomemory", "--notime", "state-test", "json-array", path)
 
 	data, err := cmd.Output()
 	if err != nil {
@@ -107,14 +107,7 @@ func (evm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 
 // ParseStateRoot reads the stateroot from the combined output.
 func (evm *BesuVM) ParseStateRoot(data []byte) (string, error) {
-	start := strings.Index(string(data), `"postHash":"`)
-	if start > 0 {
-		start = start + len(`"postHash":"`)
-		root := string(data[start : start+2+64])
-		return root, nil
-	}
-	start = strings.Index(string(data), `"stateRoot":"`)
-	if start > 0 {
+	if start := strings.Index(string(data), `"stateRoot":"`); start > 0 {
 		start = start + len(`"stateRoot":"`)
 		root := string(data[start : start+2+64])
 		return root, nil

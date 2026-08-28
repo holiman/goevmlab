@@ -265,7 +265,7 @@ func TestVMsFromEnv_tracing(t *testing.T) {
 			output := bytes.NewBuffer(nil)
 			res, err := vm.RunStateTest(testfile, output, false)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatal("Execution (%q) failed: %v", res.Cmd, err)
 			}
 			readers[i] = output
 			t.Logf("Executed test, cmd: %q", res.Cmd)
