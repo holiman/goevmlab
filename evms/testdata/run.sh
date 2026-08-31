@@ -67,7 +67,7 @@ if [[ -n "$besuvm" ]]; then
     done
     for i in *.json; do
 	echo " testing $i"
-        $besuvm --nomemory --notime state-test $i \
+        $besuvm --nomemory --notime state-test --json-array $i \
          2>../roots/$i.besu.stderr.txt \
          1>../roots/$i.besu.stdout.txt
     done

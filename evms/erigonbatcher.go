@@ -103,7 +103,7 @@ func (evm *ErigonBatchVM) Close() {
 func (evm *ErigonBatchVM) GetStateRoot(path string) (root, command string, err error) {
 	if evm.cmd == nil {
 		evm.cmd = exec.Command(evm.path, "statetest")
-		if evm.stdout, err = evm.cmd.StdoutPipe(); err != nil {
+		if evm.stdout, err = evm.cmd.StderrPipe(); err != nil {
 			return "", evm.cmd.String(), err
 		}
 		if evm.stdin, err = evm.cmd.StdinPipe(); err != nil {
@@ -116,6 +116,6 @@ func (evm *ErigonBatchVM) GetStateRoot(path string) (root, command string, err e
 	evm.mu.Lock()
 	defer evm.mu.Unlock()
 	_, _ = fmt.Fprintf(evm.stdin, "%v\n", path)
-	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout, true)
+	sRoot := evm.copyUntilEnd(io.Discard, evm.stdout, false)
 	return sRoot.StateRoot, evm.cmd.String(), nil
 }
