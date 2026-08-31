@@ -26,8 +26,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/ethereum/go-ethereum/log"
+	"log/slog"
 )
 
 // BesuVM is s Evm-interface wrapper around the `evmtool` binary, based on Besu.
@@ -76,7 +75,7 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	// copy everything to the given writer
 	evm.Copy(out, stdout)
 	_, _ = io.ReadAll(stdout)
-	err = cmd.Wait()
+	_ = cmd.Wait() // besu exits with 1 on stateroot failure :(
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
 
@@ -91,15 +90,17 @@ func (evm *BesuVM) Close() {}
 
 func (evm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 	// Run without tracing
-	cmd := exec.Command(evm.path, "--nomemory", "--notime", "state-test", path)
+	cmd := exec.Command(evm.path, "--nomemory", "--notime", "state-test", "--json-array", path)
 
+	// Unfortunately, besu exits with a '1' if the state-test fails, so we need to
+	// check if we obtain a stateroot or not before caring about the error
 	data, err := cmd.Output()
-	if err != nil {
+	if len(data) == 0 && err != nil {
 		return "", cmd.String(), err
 	}
 	root, err = evm.ParseStateRoot(data)
-	if err != nil {
-		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+	if root == "" && err != nil {
+		slog.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
 		return "", cmd.String(), err
 	}
 	return root, cmd.String(), err
@@ -107,19 +108,13 @@ func (evm *BesuVM) GetStateRoot(path string) (root, command string, err error) {
 
 // ParseStateRoot reads the stateroot from the combined output.
 func (evm *BesuVM) ParseStateRoot(data []byte) (string, error) {
-	start := strings.Index(string(data), `"postHash":"`)
-	if start > 0 {
-		start = start + len(`"postHash":"`)
-		root := string(data[start : start+2+64])
-		return root, nil
-	}
-	start = strings.Index(string(data), `"stateRoot":"`)
-	if start > 0 {
+	slog.Debug("Parsing besu stateroot", "data", string(data))
+	if start := strings.Index(string(data), `"stateRoot":"`); start > 0 {
 		start = start + len(`"stateRoot":"`)
 		root := string(data[start : start+2+64])
 		return root, nil
 	}
-	return "", errors.New("besu: no stateroot/posthash found")
+	return "", errors.New("besu: no stateroot found")
 }
 
 // Copy feed reads from the reader, does some geth-specific filtering and

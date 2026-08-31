@@ -24,8 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
-	"github.com/ethereum/go-ethereum/log"
+	"log/slog"
 )
 
 // ErigonVM is s Evm-interface wrapper around the eroigon `evm` binary
@@ -59,13 +58,17 @@ func (evm *ErigonVM) Name() string {
 func (evm *ErigonVM) GetStateRoot(path string) (root, command string, err error) {
 	// In this mode, we can run it without tracing
 	cmd := exec.Command(evm.path, "statetest", path)
-	data, err := cmd.CombinedOutput()
+	//data, err := cmd.Output()
+	var out bytes.Buffer
+	cmd.Stderr = &out
+	err = cmd.Run()
 	if err != nil {
 		return "", cmd.String(), err
 	}
+	data := out.Bytes()
 	root, err = evm.ParseStateRoot(data)
 	if err != nil {
-		log.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
+		slog.Error("Failed to find stateroot", "vm", evm.Name(), "cmd", cmd.String())
 		return "", cmd.String(), err
 	}
 	return root, cmd.String(), err
@@ -124,10 +127,10 @@ func (evm *ErigonVM) Copy(out io.Writer, input io.Reader) {
 // outputs items onto the channel
 func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool) stateRoot {
 	if speedMode {
-		// In speednode, there's no jsonl output, just the json stateroot
+		// In speed mode, there's no jsonl output, just the json stateroot
 		var r []stateRoot
 		if err := json.NewDecoder(input).Decode(&r); err != nil {
-			log.Warn("Error parsing erigonbatch output", "error", err)
+			slog.Warn("Error parsing erigonbatch output", "error", err)
 			return stateRoot{}
 		}
 		rootJSON, _ := json.Marshal(r[0])

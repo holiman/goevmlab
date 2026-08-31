@@ -263,12 +263,12 @@ func TestVMsFromEnv_tracing(t *testing.T) {
 	for _, testfile := range testfiles {
 		for i, vm := range vms {
 			output := bytes.NewBuffer(nil)
+			t.Logf("Executing test %v on %v", testfile, vm.Name())
 			res, err := vm.RunStateTest(testfile, output, false)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("Execution (%q) failed: %v", res.Cmd, err)
 			}
 			readers[i] = output
-			t.Logf("Executed test, cmd: %q", res.Cmd)
 		}
 		equal, _, diff := CompareFiles(vms, readers)
 		if !equal {
@@ -315,15 +315,16 @@ func TestVMsFromEnv_stateroot(t *testing.T) {
 	for _, testfile := range testfiles {
 		for _, vm := range vms {
 			root, cmd, err := vm.GetStateRoot(testfile)
-			if err != nil {
-				t.Fatal(err)
-			}
 			fname := filepath.Base(testfile)
 			want := wants[fname]
+			t.Logf("Executing test %v on %v, cmd %q", fname, vm.Name(), cmd)
 			if want != root {
 				t.Errorf("Wrong root, have %v, want %v, file %v, cmd %q", root, want, fname, cmd)
+				if err != nil {
+					t.Errorf("Execution failure: %v", err)
+				}
+				break
 			}
-			t.Logf("Executed test %v, root %v, cmd %q", fname, root, cmd)
 		}
 	}
 }
