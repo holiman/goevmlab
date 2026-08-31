@@ -22,8 +22,7 @@ FROM golang:latest as golang-builder
 #
 # Go-evmlab
 #
-#RUN git clone https://github.com/spencer-tb/goevmlab.git --branch bal-devnet-7 --depth 1
-RUN git clone https://github.com/holiman/goevmlab --depth 1
+RUN git clone https://github.com/holiman/goevmlab --depth   1
 RUN cd goevmlab && \
   go build ./cmd/generic-fuzzer && \
   go build ./cmd/generic-generator && \
@@ -103,7 +102,7 @@ FROM ubuntu:24.04 as java-builder
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends git ca-certificates \
   openjdk-25-jdk-headless=25* libjemalloc-dev=5.* 
-RUN git clone https://github.com/hyperledger/besu.git --depth 1 #--recurse-submodules
+RUN git clone https://github.com/besu-eth/besu.git  --depth 1 #--recurse-submodules
 RUN cd besu && ./gradlew --parallel ethereum:evmtool:installDist
 RUN mkdir /out && mv besu/ethereum/evmtool/build/install/evmtool /out/evmtool
 
@@ -133,12 +132,13 @@ RUN apt-get update -q && \
 	libsecp256k1-dev \
   && apt-get clean
 # Install execution-specs (EELS)
-RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/amsterdam --depth 1
+RUN git clone https://github.com/ethereum/execution-specs.git --branch forks/amsterdam  --depth 1
 
 #   To install EELS, we temporarily install rust, which is required for building parts of eels, 
 #   and after building, we delete it again
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s  -- -y  --profile=minimal && \
   . "$HOME/.cargo/env"; PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx install ./execution-specs && \
+  PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/ pipx inject --include-apps ethereum-execution ./execution-specs/packages/testing && \
   rm -rf /root/.rustup && rm -rf /root/.cargo
 
 ENV EELS_BIN=/ethereum-spec-evm
