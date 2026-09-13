@@ -37,7 +37,11 @@ func randHex(maxSize int) string {
 	size := rand.Intn(maxSize)
 	b := make([]byte, size)
 	_, _ = crand.Read(b)
-	return hexutil.Encode(b)
+	v := hexutil.Encode(b)
+	if v == "0x" {
+		return "0x00"
+	}
+	return v
 }
 
 // randInt returns a valFunc which spits out bigints,

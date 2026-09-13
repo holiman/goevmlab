@@ -119,6 +119,7 @@ func generate(ctx *cli.Context) error {
 		}
 		index := 0
 		factory = func() *fuzzing.GstMaker {
+			//fmt.Printf("Using factory %v\n", fNames[index%len(factories)])
 			fn := factories[index%len(factories)]
 			index++
 			return fn()
