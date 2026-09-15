@@ -106,6 +106,10 @@ var (
 		Name:  "revme",
 		Usage: "Location of reth 'revme' binary",
 	}
+	Evm2Flag = &cli.StringSliceFlag{
+		Name:  "evm2",
+		Usage: "Location of 'evm2' binary",
+	}
 	ThreadFlag = &cli.IntFlag{
 		Name:  "parallel",
 		Usage: "Number of parallel executions to use.",
@@ -173,6 +177,7 @@ var (
 		NimbusBatchFlag,
 		EvmoneFlag,
 		RethFlag,
+		Evm2Flag,
 	}
 	traceLengthSA = utils.NewSlidingAverage()
 )
@@ -201,6 +206,7 @@ func InitVMs(c *cli.Context) []evms.Evm {
 	addVM(NimbusBatchFlag.Name, evms.NewNimbusBatchVM)
 	addVM(EvmoneFlag.Name, evms.NewEvmoneVM)
 	addVM(RethFlag.Name, evms.NewRethVM)
+	addVM(Evm2Flag.Name, evms.NewEvm2VM)
 
 	return vms
 }
