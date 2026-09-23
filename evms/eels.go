@@ -84,7 +84,7 @@ func (evm *EelsEVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *EelsEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *EelsEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -97,10 +97,10 @@ func (evm *EelsEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 		cmd = exec.Command(evm.path, "statetest", "--json", "--noreturndata", "--nomemory", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -109,7 +109,7 @@ func (evm *EelsEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
 
-	return &tracingResult{
+	return &TracingResult{
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      cmd.String(),
@@ -162,4 +162,11 @@ func (evm *EelsEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 
 func (evm *EelsEVM) Stats() []any {
 	return evm.stats.Stats()
+}
+
+// RunBlockTest implements the Evm interface.
+// The binary may have a `blocktest` subcommand; its output format has not been
+// integrated yet.
+func (evm *EelsEVM) RunBlockTest(string, io.Writer, BlockTestMode) (*TracingResult, error) {
+	return &TracingResult{}, ErrBlockTestUnsupported
 }

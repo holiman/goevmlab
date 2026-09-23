@@ -50,7 +50,7 @@ func (evm *ErigonBatchVM) Instance(threadID int) Evm {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		err    error
@@ -65,13 +65,13 @@ func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 			cmd = exec.Command(evm.path, "statetest", "--json", "--jsonout", "--noreturndata", "--nomemory")
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -84,7 +84,7 @@ func (evm *ErigonBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 	evm.copyUntilEnd(out, evm.stdout, speedTest)
 	// release resources, handle error but ignore non-zero exit codes
 	duration, slow := evm.stats.TraceDone(t0)
-	return &tracingResult{
+	return &TracingResult{
 			Slow:     slow,
 			ExecTime: duration,
 			Cmd:      evm.cmd.String()},

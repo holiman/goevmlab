@@ -30,6 +30,22 @@ if [[ -n "$evm" ]]; then
          1>../roots/$i.geth.stdout.txt
     done
     cd ..
+
+    # Blocktests: the trace (with end marker) and the plain run, as invoked
+    # by RunBlockTest. Engine fixtures are always run without tracing.
+    cd ./blockcases
+    for i in *.json; do
+	echo " blocktest $i"
+        if [[ "$i" != *.engine.json ]]; then
+            $evm blocktest --fuzz --trace --trace.format=json --trace.nomemory=true --trace.noreturndata=true $i \
+             2>../blocktraces/$i.geth.stderr.txt \
+             1>../blocktraces/$i.geth.stdout.txt
+        fi
+        $evm blocktest --fuzz $i \
+         2>../blocktraces/$i.geth.notrace.stderr.txt \
+         1>../blocktraces/$i.geth.notrace.stdout.txt
+    done
+    cd ..
 fi
 
 
@@ -49,6 +65,23 @@ if [[ -n "$nethtest" ]]; then
         $nethtest --memory --neverTrace -s --stateTest --input $i \
          2>../roots/$i.nethermind.stderr.txt \
          1>../roots/$i.nethermind.stdout.txt
+    done
+    cd ..
+    cd ./blockcases
+    for i in *.json; do
+	echo " blocktest $i"
+        if [[ "$i" == *.engine.json ]]; then
+            $nethtest -m --engineTest --parallelExecution true --input $i \
+             2>../blocktraces/$i.nethermind.notrace.stderr.txt \
+             1>../blocktraces/$i.nethermind.notrace.stdout.txt
+        else
+            $nethtest -m --blockTest --trace --input $i \
+             2>../blocktraces/$i.nethermind.stderr.txt \
+             1>../blocktraces/$i.nethermind.stdout.txt
+            $nethtest -m --blockTest --input $i \
+             2>../blocktraces/$i.nethermind.notrace.stderr.txt \
+             1>../blocktraces/$i.nethermind.notrace.stdout.txt
+        fi
     done
     cd ..
 fi

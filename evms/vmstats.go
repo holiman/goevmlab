@@ -40,7 +40,7 @@ func (stat *VMStat) Stats() []any {
 	}
 }
 
-type tracingResult struct {
+type TracingResult struct {
 	Slow     bool
 	ExecTime time.Duration
 	Cmd      string

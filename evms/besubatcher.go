@@ -55,7 +55,7 @@ func (evm *BesuBatchVM) Instance(threadID int) Evm {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		err    error
@@ -70,13 +70,13 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 			cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test")
 		}
 		if stdout, err = cmd.StdoutPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -89,7 +89,7 @@ func (evm *BesuBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.stdout)
 	duration, slow := evm.stats.TraceDone(t0)
-	return &tracingResult{
+	return &TracingResult{
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      evm.cmd.String(),

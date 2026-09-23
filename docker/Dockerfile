@@ -191,12 +191,16 @@ ENV FUZZ_CLIENTS="--gethbatch=$GETH_BIN \
  --eelsbatch=$EELS_BIN"
 
 ENV FUZZ_CLIENTS_PLAIN="--geth=$GETH_BIN \
- --neth=$NETH_BIN \
+ --nethermind=$NETH_BIN \
  --nimbus=$NIMB_BIN \
  --revme=$RETH_BIN \
  --erigon=$ERIG_BIN \
  --besu=$BESU_BIN \
  --evmone=$EVMO_BIN \
  --eels=$EELS_BIN"
+
+# The clients which can execute blocktests (see --blocktest)
+ENV FUZZ_BLOCK_CLIENTS="--gethbatch=$GETH_BIN \
+ --nethbatch=$NETH_BIN"
 
 ENTRYPOINT ["/bin/bash"]
