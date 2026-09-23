@@ -416,11 +416,40 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 	var istanbul = cpy(constantinopleFix, func(p *params.ChainConfig) { p.IstanbulBlock = big.NewInt(0) })
 	var berlin = cpy(istanbul, func(p *params.ChainConfig) { p.BerlinBlock = big.NewInt(0) })
 	var london = cpy(berlin, func(p *params.ChainConfig) { p.LondonBlock = big.NewInt(0) })
-	var merge = cpy(london, func(p *params.ChainConfig) { p.MergeNetsplitBlock = big.NewInt(0) })
+	var merge = cpy(london, func(p *params.ChainConfig) {
+		p.MergeNetsplitBlock = big.NewInt(0)
+		p.TerminalTotalDifficulty = big.NewInt(0)
+	})
 	var shanghai = cpy(merge, func(p *params.ChainConfig) { p.ShanghaiTime = new(uint64) })
-	var cancun = cpy(shanghai, func(p *params.ChainConfig) { p.CancunTime = new(uint64) })
-	var prague = cpy(cancun, func(p *params.ChainConfig) { p.PragueTime = new(uint64) })
-	var osaka = cpy(prague, func(p *params.ChainConfig) { p.OsakaTime = new(uint64) })
+	var cancun = cpy(shanghai, func(p *params.ChainConfig) {
+		p.CancunTime = new(uint64)
+		p.BlobScheduleConfig = &params.BlobScheduleConfig{Cancun: params.DefaultCancunBlobConfig}
+	})
+	var prague = cpy(cancun, func(p *params.ChainConfig) {
+		p.PragueTime = new(uint64)
+		p.BlobScheduleConfig = &params.BlobScheduleConfig{
+			Cancun: params.DefaultCancunBlobConfig,
+			Prague: params.DefaultPragueBlobConfig,
+		}
+	})
+	var osaka = cpy(prague, func(p *params.ChainConfig) {
+		p.OsakaTime = new(uint64)
+		p.BlobScheduleConfig = &params.BlobScheduleConfig{
+			Cancun: params.DefaultCancunBlobConfig,
+			Prague: params.DefaultPragueBlobConfig,
+		}
+	})
+	var amsterdam = cpy(osaka, func(p *params.ChainConfig) {
+		p.BPO1Time = new(uint64)
+		p.BPO2Time = new(uint64)
+		p.AmsterdamTime = new(uint64)
+		p.BlobScheduleConfig = &params.BlobScheduleConfig{
+			Cancun: params.DefaultCancunBlobConfig,
+			Prague: params.DefaultPragueBlobConfig,
+			BPO1:   params.DefaultBPO1BlobConfig,
+			BPO2:   params.DefaultBPO2BlobConfig,
+		}
+	})
 
 	switch fork {
 	case "Frontier":
@@ -447,10 +476,14 @@ func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 		return merge, nil
 	case "Shanghai":
 		return shanghai, nil
+	case "Cancun":
+		return cancun, nil
 	case "Prague":
 		return prague, nil
 	case "Osaka":
 		return osaka, nil
+	case "Amsterdam":
+		return amsterdam, nil
 	}
 	return nil, fmt.Errorf("unknown fork %v", fork)
 }

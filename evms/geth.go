@@ -23,6 +23,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -83,7 +85,7 @@ func (evm *GethEVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -97,10 +99,10 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 		cmd = exec.Command(evm.path, "statetest", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -109,7 +111,7 @@ func (evm *GethEVM) RunStateTest(path string, out io.Writer, speedTest bool) (*t
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
 
-	return &tracingResult{
+	return &TracingResult{
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      cmd.String(),
@@ -188,3 +190,91 @@ func (evm *GethEVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 func (evm *GethEVM) Stats() []any {
 	return evm.stats.Stats()
 }
+
+// RunBlockTest implements the Evm interface
+func (evm *GethEVM) RunBlockTest(path string, out io.Writer, mode BlockTestMode) (*TracingResult, error) {
+	if mode.Engine && !evm.supportsEngineTests() {
+		return &TracingResult{}, fmt.Errorf("%w: %v cannot run engine fixtures", ErrBlockTestUnsupported, evm.path)
+	}
+	var (
+		t0   = time.Now()
+		cmd  = exec.Command(evm.path, evm.blockTestArgs(mode, path)...)
+		wg   sync.WaitGroup
+		sout []byte
+	)
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return &TracingResult{Cmd: cmd.String()}, err
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return &TracingResult{Cmd: cmd.String()}, err
+	}
+	if err = cmd.Start(); err != nil {
+		return &TracingResult{Cmd: cmd.String()}, err
+	}
+	// The result array is written to stdout, the trace to stderr.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		sout, _ = io.ReadAll(stdout)
+	}()
+	var end *blockTestEnd
+	if mode.Trace {
+		end = copyBlockTestTrace("geth", out, stderr, true)
+	}
+	_, _ = io.ReadAll(stderr)
+	wg.Wait()
+	err = cmd.Wait()
+	if end == nil {
+		// No end marker in the trace stream (older evm binary, or untraced
+		// execution): use the results on stdout.
+		var rerr error
+		if end, rerr = decodeBlockTestResults(json.NewDecoder(bytes.NewReader(sout))); rerr != nil {
+			log.Error("Failed to parse blocktest result", "vm", evm.Name(), "cmd", cmd.String(), "err", rerr)
+			if err == nil {
+				err = rerr
+			}
+		}
+	}
+	writeBlockTestEnd(out, end)
+	duration, slow := evm.stats.TraceDone(t0)
+	return &TracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      cmd.String(),
+	}, err
+}
+
+// blockTestArgs returns the arguments for running a blocktest. If path is
+// empty, the filenames are read from stdin (batch mode).
+func (evm *GethEVM) blockTestArgs(mode BlockTestMode, path string) []string {
+	args := []string{"blocktest", "--fuzz"}
+	if mode.Trace {
+		args = append(args, "--trace", "--trace.format=json", "--trace.nomemory=true", "--trace.noreturndata=true")
+	}
+	if len(path) > 0 {
+		args = append(args, path)
+	}
+	return args
+}
+
+// supportsEngineTests probes whether the evm binary can execute engine-flavour
+// fixtures (blockchain_test_engine). The probe looks for the --noparallel flag,
+// which was added together with the engine fixture support.
+func (evm *GethEVM) supportsEngineTests() bool {
+	engineSupportMu.Lock()
+	defer engineSupportMu.Unlock()
+	if v, ok := engineSupport[evm.path]; ok {
+		return v
+	}
+	out, _ := exec.Command(evm.path, "blocktest", "--help").CombinedOutput()
+	v := strings.Contains(string(out), "noparallel")
+	engineSupport[evm.path] = v
+	return v
+}
+
+var (
+	engineSupportMu sync.Mutex
+	engineSupport   = make(map[string]bool)
+)

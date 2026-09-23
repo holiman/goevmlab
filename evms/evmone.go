@@ -82,7 +82,7 @@ func (evm *EvmoneVM) ParseStateRoot(data []byte) (root string, err error) {
 	return string(data[start:end]), nil
 }
 
-func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -109,7 +109,7 @@ func (evm *EvmoneVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		err = nil
 	}
 
-	return &tracingResult{
+	return &TracingResult{
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      cmd.String(),
@@ -155,4 +155,9 @@ func (evm *EvmoneVM) Copy(out io.Writer, input io.Reader) {
 
 func (evm *EvmoneVM) Stats() []any {
 	return evm.stats.Stats()
+}
+
+// RunBlockTest implements the Evm interface.
+func (evm *EvmoneVM) RunBlockTest(string, io.Writer, BlockTestMode) (*TracingResult, error) {
+	return &TracingResult{}, ErrBlockTestUnsupported
 }

@@ -29,7 +29,12 @@ import (
 type Evm interface {
 	// RunStateTest runs the statetest on the underlying EVM, and writes
 	// the output to the given writer
-	RunStateTest(path string, writer io.Writer, skipTrace bool) (*tracingResult, error)
+	RunStateTest(path string, writer io.Writer, skipTrace bool) (*TracingResult, error)
+	// RunBlockTest runs the blocktest on the underlying EVM, and writes the
+	// canonical output to the given writer. The output ends with a line
+	// {"stateRoot":..,"pass":..}. Evms which cannot run blocktests return
+	// ErrBlockTestUnsupported.
+	RunBlockTest(path string, writer io.Writer, mode BlockTestMode) (*TracingResult, error)
 	// GetStateRoot runs the test and returns the stateroot
 	GetStateRoot(path string) (root, command string, err error)
 	// ParseStateRoot reads the stateroot from the combined output.

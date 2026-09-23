@@ -85,7 +85,7 @@ func (evm *ErigonVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		stderr io.ReadCloser
@@ -96,10 +96,10 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 		cmd = exec.Command(evm.path, "statetest", "--jsonout", "--nomemory", "--noreturndata", "--nostack", path)
 	}
 	if stderr, err = cmd.StderrPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stderr)
@@ -107,7 +107,7 @@ func (evm *ErigonVM) RunStateTest(path string, out io.Writer, speedTest bool) (*
 	err = cmd.Wait()
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
-	return &tracingResult{
+	return &TracingResult{
 			Slow:     slow,
 			ExecTime: duration,
 			Cmd:      cmd.String()},
@@ -176,4 +176,11 @@ func (evm *ErigonVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode bool
 
 func (evm *ErigonVM) Stats() []any {
 	return evm.stats.Stats()
+}
+
+// RunBlockTest implements the Evm interface.
+// The binary may have a `blocktest` subcommand; its output format has not been
+// integrated yet.
+func (evm *ErigonVM) RunBlockTest(string, io.Writer, BlockTestMode) (*TracingResult, error) {
+	return &TracingResult{}, ErrBlockTestUnsupported
 }

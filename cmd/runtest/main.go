@@ -54,7 +54,7 @@ func main() {
 
 func startFuzzer(c *cli.Context) error {
 	loglevel := slog.Level(c.Int(common.VerbosityFlag.Name))
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
+	common.SetupLogging(loglevel)
 
 	if c.NArg() != 1 {
 		return fmt.Errorf("file (or regexp) needed")
@@ -63,12 +63,24 @@ func startFuzzer(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if len(files) == 0 {
+		return fmt.Errorf("no files matching %v", c.Args().First())
+	}
+	// Detect the test kind from the first file. Mixing kinds is not supported.
+	kind, err := common.DetectTestKind(files[0])
+	if err != nil {
+		return err
+	}
+	log.Info("Running tests", "count", len(files), "kind", kind)
 	var nextFile atomic.Int64
-	return common.ExecuteFuzzer(c, true, func(_, _ int) (string, error) {
+	return common.ExecuteFuzzerWithOptions(c, func(_, _ int) (string, error) {
 		index := int(nextFile.Add(1)) - 1
 		if index < len(files) {
 			return files[index], nil
 		}
 		return "", io.EOF
-	}, false)
+	}, common.FuzzOptions{
+		AllClients: true,
+		BlockTests: kind == common.BlockTest,
+	})
 }

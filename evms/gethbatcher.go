@@ -31,6 +31,9 @@ type GethBatchVM struct {
 	stdout io.ReadCloser
 	stdin  io.WriteCloser
 	mu     sync.Mutex
+
+	// The 'master' process for blocktests
+	bt *batchProc
 }
 
 func NewGethBatchVM(path, name string) Evm {
@@ -50,7 +53,7 @@ func (evm *GethBatchVM) Instance(threadID int) Evm {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		err    error
@@ -69,13 +72,13 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 
 		}
 		if stdout, err = cmd.StderrPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.stdout = stdout
@@ -88,7 +91,7 @@ func (evm *GethBatchVM) RunStateTest(path string, out io.Writer, speedTest bool)
 	evm.copyUntilEnd(out, evm.stdout)
 	// release resources, handle error but ignore non-zero exit codes
 	duration, slow := evm.stats.TraceDone(t0)
-	return &tracingResult{
+	return &TracingResult{
 			Slow:     slow,
 			ExecTime: duration,
 			Cmd:      evm.cmd.String()},
@@ -102,6 +105,58 @@ func (evm *GethBatchVM) Close() {
 	if evm.cmd != nil {
 		_ = evm.cmd.Wait()
 	}
+	evm.bt.close()
+}
+
+// RunBlockTest implements the Evm interface. It uses a persistent process,
+// which reads the test file paths from stdin. In traced mode, the trace stream
+// must contain an end marker per test; otherwise the test boundary cannot be
+// determined. Older evm binaries lack the marker, which is detected by a
+// one-shot probe on the first test.
+func (evm *GethBatchVM) RunBlockTest(path string, out io.Writer, mode BlockTestMode) (*TracingResult, error) {
+	var (
+		t0  = time.Now()
+		err error
+	)
+	if mode.Engine && !evm.supportsEngineTests() {
+		return &TracingResult{}, fmt.Errorf("%w: %v cannot run engine fixtures", ErrBlockTestUnsupported, evm.path)
+	}
+	evm.mu.Lock()
+	defer evm.mu.Unlock()
+	if !evm.bt.reusable(mode) {
+		evm.bt.close()
+		if mode.Trace {
+			// Probe for the end marker
+			probe := exec.Command(evm.path, evm.blockTestArgs(mode, path)...)
+			stderr, err := probe.StderrPipe()
+			if err != nil {
+				return &TracingResult{Cmd: probe.String()}, err
+			}
+			if err := probe.Start(); err != nil {
+				return &TracingResult{Cmd: probe.String()}, err
+			}
+			end := copyBlockTestTrace("geth", io.Discard, stderr, true)
+			_, _ = io.ReadAll(stderr)
+			_ = probe.Wait()
+			if end == nil {
+				return &TracingResult{Cmd: probe.String()},
+					fmt.Errorf("%w: %v emits no blocktest end marker, use --geth instead of --gethbatch", ErrBlockTestUnsupported, evm.path)
+			}
+		}
+		if evm.bt, err = startBatchProc(evm.path, evm.blockTestArgs(mode, ""), mode); err != nil {
+			return &TracingResult{Cmd: evm.bt.String()}, err
+		}
+	}
+	end, err := evm.bt.run(path, func(input io.Reader) *blockTestEnd {
+		return copyBlockTestTrace("geth", out, input, true)
+	})
+	writeBlockTestEnd(out, end)
+	duration, slow := evm.stats.TraceDone(t0)
+	return &TracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      evm.bt.String(),
+	}, err
 }
 
 func (evm *GethBatchVM) GetStateRoot(path string) (root, command string, err error) {

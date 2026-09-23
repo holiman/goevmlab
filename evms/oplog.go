@@ -31,6 +31,11 @@ type opLog struct {
 	StateRoot1 string `json:"stateRoot"`
 	// stateroot as output by besu
 	StateRoot2 string `json:"postHash"`
+
+	// Pass is the verdict, emitted alongside the stateroot by geth in blocktest mode
+	Pass *bool `json:"pass,omitempty"`
+	// TestEnd is the end marker emitted by nethermind in blocktest mode
+	TestEnd *btTestEnd `json:"testEnd,omitempty"`
 }
 
 // overrides for gencodec

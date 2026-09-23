@@ -251,6 +251,14 @@ func RootsEqual(path string, c *cli.Context) (bool, error) {
 // - false, nil: a consensus issue found
 func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 	var outputs []*os.File
+	kind, err := DetectTestKind(path)
+	if err != nil {
+		return true, err
+	}
+	if kind == BlockTest {
+		vms = filterBlockTestVMs(vms)
+	}
+	mode := modeForFile(path, kind == BlockTest, false)
 	if len(vms) == 0 {
 		return true, fmt.Errorf("no vms specified")
 	}
@@ -278,7 +286,7 @@ func RunSingleTest(path string, outdir string, vms []evms.Evm) (bool, error) {
 		go func(evm evms.Evm, i int) {
 			defer wg.Done()
 			bufout := bufio.NewWriter(outputs[i])
-			res, err := evm.RunStateTest(path, bufout, false)
+			res, err := runTest(evm, mode, path, bufout)
 			bufout.Flush()
 			if res != nil {
 				commands[i] = res.Cmd
@@ -381,20 +389,44 @@ func GenerateAndExecute(c *cli.Context, generatorFn GeneratorFn, name string) er
 	return ExecuteFuzzer(c, false, fn, c.Bool(RemoveFilesFlag.Name))
 }
 
+// FuzzOptions configures the fuzzing loop.
+type FuzzOptions struct {
+	// AllClients: if set, every test is executed on all clients, instead of
+	// only two of them.
+	AllClients bool
+	// CleanupFiles: if set, test files are removed after execution.
+	CleanupFiles bool
+	// BlockTests: if set, the provided test files are blocktests. Vms which
+	// cannot execute blocktests are dropped.
+	BlockTests bool
+}
+
 func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, cleanupFiles bool) error {
+	return ExecuteFuzzerWithOptions(c, providerFn, FuzzOptions{
+		AllClients:   allClients,
+		CleanupFiles: cleanupFiles,
+		BlockTests:   BlockTestsRequested(c),
+	})
+}
+
+func ExecuteFuzzerWithOptions(c *cli.Context, providerFn TestProviderFn, opts FuzzOptions) error {
 	var (
-		vms        = InitVMs(c)
-		numThreads = c.Int(ThreadFlag.Name)
-		skipTrace  = c.Bool(SkipTraceFlag.Name)
-		numClients = 2
+		vms          = InitVMs(c)
+		numThreads   = c.Int(ThreadFlag.Name)
+		skipTrace    = c.Bool(SkipTraceFlag.Name)
+		cleanupFiles = opts.CleanupFiles
+		numClients   = 2
 	)
-	if allClients {
+	if opts.BlockTests {
+		vms = filterBlockTestVMs(vms)
+	}
+	if opts.AllClients {
 		numClients = len(vms)
 	}
 	if len(vms) == 0 {
 		return fmt.Errorf("need at least one vm to participate")
 	}
-	log.Info("Fuzzing started", "threads", numThreads, "cleanup", cleanupFiles)
+	log.Info("Fuzzing started", "threads", numThreads, "cleanup", cleanupFiles, "blocktests", opts.BlockTests)
 	meta := &testMeta{
 		testCh:              make(chan string, 4), // channel where we'll deliver tests
 		consensusCh:         make(chan string, 4), // channel for signalling consensus errors
@@ -403,6 +435,7 @@ func ExecuteFuzzer(c *cli.Context, allClients bool, providerFn TestProviderFn, c
 		outdir:              c.String(LocationFlag.Name),
 		notifyTopic:         c.String(NotifyFlag.Name),
 		rawDebug:            c.Bool(RawDebugFlag.Name),
+		blockTests:          opts.BlockTests,
 	}
 	// Routines to deliver tests
 	meta.startTestFactories((numThreads+1)/2, providerFn)
@@ -533,6 +566,8 @@ type testMeta struct {
 	rawDebug bool
 
 	deleteFilesWhenDone bool
+
+	blockTests bool // whether the tests are blocktests
 }
 
 // startTestFactories creates a number of go-routines that write tests to disk, and delivers
@@ -572,10 +607,10 @@ func (meta *testMeta) startTestFactories(numFactories int, providerFn TestProvid
 
 type task struct {
 	// pre-execution fields:
-	file      string // file is the input statetest
-	testIdx   int    // testIdx is a global index of the test
-	vmIdx     int    // vmIdx is a global index of the vm
-	skipTrace bool   // skipTrace: if true, ignore output and just exec as fast as possible
+	file    string   // file is the input statetest
+	testIdx int      // testIdx is a global index of the test
+	vmIdx   int      // vmIdx is a global index of the vm
+	mode    testMode // mode: how to execute the test (kind, tracing)
 
 	// post-execution fields:
 	execSpeed time.Duration
@@ -626,7 +661,7 @@ func (meta *testMeta) vmLoop(evm evms.Evm, taskCh, resultCh chan *task) {
 	}
 	for t := range taskCh {
 		hasher.Reset()
-		res, err := evm.RunStateTest(t.file, hasher, t.skipTrace)
+		res, err := runTest(evm, t.mode, t.file, hasher)
 		if err != nil {
 			if res != nil {
 				log.Error("Error running vm", "err", err, "evm", evm.Name(), "file", t.file, "cmd", res.Cmd)
@@ -697,7 +732,7 @@ func (meta *testMeta) handleConsensusFlaw(testfile string) {
 			log.Error("Failed opening file", "err", err)
 			panic(err)
 		}
-		res, err := evm.RunStateTest(testfile, out, false)
+		res, err := runTest(evm, modeForFile(testfile, meta.blockTests, false), testfile, out)
 		if err != nil {
 			log.Error("Failed running vm", "err", err)
 			panic(err)
@@ -832,10 +867,10 @@ func (meta *testMeta) fuzzingLoop(skipTrace bool, clientCount int) {
 		for range clientCount {
 			id := ready[0]
 			taskChannels[id] <- &task{
-				file:      testfile,
-				testIdx:   testIndex,
-				vmIdx:     id,
-				skipTrace: skipTrace,
+				file:    testfile,
+				testIdx: testIndex,
+				vmIdx:   id,
+				mode:    modeForFile(testfile, meta.blockTests, skipTrace),
 			}
 			ready = ready[1:]
 		}

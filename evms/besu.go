@@ -54,7 +54,7 @@ func (evm *BesuVM) Name() string {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0     = time.Now()
 		stdout io.ReadCloser
@@ -67,10 +67,10 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 		cmd = exec.Command(evm.path, "--nomemory", "--notime", "--json", "state-test", path) // exclude memory
 	}
 	if stdout, err = cmd.StdoutPipe(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.Copy(out, stdout)
@@ -79,7 +79,7 @@ func (evm *BesuVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tr
 	// release resources
 	duration, slow := evm.stats.TraceDone(t0)
 
-	return &tracingResult{
+	return &TracingResult{
 			Slow:     slow,
 			ExecTime: duration,
 			Cmd:      cmd.String()},
@@ -160,4 +160,11 @@ func (evm *BesuVM) copyUntilEnd(out io.Writer, input io.Reader) stateRoot {
 
 func (evm *BesuVM) Stats() []any {
 	return evm.stats.Stats()
+}
+
+// RunBlockTest implements the Evm interface.
+// The binary may have a `block-test` subcommand; its output format has not been
+// integrated yet.
+func (evm *BesuVM) RunBlockTest(string, io.Writer, BlockTestMode) (*TracingResult, error) {
+	return &TracingResult{}, ErrBlockTestUnsupported
 }

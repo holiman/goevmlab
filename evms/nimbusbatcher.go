@@ -56,7 +56,7 @@ func (evm *NimbusBatchVM) Instance(threadID int) Evm {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0      = time.Now()
 		err     error
@@ -70,21 +70,21 @@ func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 		if !speedTest {
 			// in normal execution, we read traces from standard error
 			if procOut, err = cmd.StderrPipe(); err != nil {
-				return &tracingResult{Cmd: cmd.String()}, err
+				return &TracingResult{Cmd: cmd.String()}, err
 			}
 		} else {
 			// In speedtest-mode, we don't want the actual traces, but we do
 			// need to read the stateroot. The stateroot can be found on stdout
 			cmd = exec.Command(evm.path)
 			if procOut, err = cmd.StdoutPipe(); err != nil {
-				return &tracingResult{Cmd: cmd.String()}, err
+				return &TracingResult{Cmd: cmd.String()}, err
 			}
 		}
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		if err = cmd.Start(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 		evm.cmd = cmd
 		evm.procOut = procOut
@@ -97,7 +97,7 @@ func (evm *NimbusBatchVM) RunStateTest(path string, out io.Writer, speedTest boo
 	// copy everything for the _current_ statetest to the given writer
 	evm.copyUntilEnd(out, evm.procOut, speedTest)
 	duration, slow := evm.stats.TraceDone(t0)
-	return &tracingResult{
+	return &TracingResult{
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      evm.cmd.String(),

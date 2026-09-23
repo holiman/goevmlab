@@ -53,6 +53,7 @@ func initApp() *cli.App {
 	app.Authors = []*cli.Author{{Name: "Martin Holst Swende"}}
 	app.Usage = "Fuzzer with various targets"
 	app.Flags = append(app.Flags, common.VMFlags...)
+	app.Flags = append(app.Flags, common.BlockTestFlags...)
 	app.Flags = append(app.Flags,
 		common.SkipTraceFlag,
 		common.ThreadFlag,
@@ -81,8 +82,7 @@ func startFuzzer(ctx *cli.Context) (err error) {
 			strings.NewReader("Fuzzer starting"))
 	}
 	loglevel := slog.Level(ctx.Int(common.VerbosityFlag.Name))
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, loglevel, true)))
-	log.Root().Write(loglevel, "Set loglevel", "level", loglevel)
+	common.SetupLogging(loglevel)
 	var (
 		fNames = ctx.StringSlice(engineFlag.Name)
 		fork   = ctx.String(forkFlag.Name)
@@ -91,6 +91,17 @@ func startFuzzer(ctx *cli.Context) (err error) {
 		fmt.Printf("At least one fuzzer engine needed. ")
 		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
 		return errors.New("missing engine")
+	}
+	if common.BlockTestsRequested(ctx) {
+		factory, err := fuzzing.BtFactory(fork, fuzzing.BtOptions{
+			Fillers:     fNames,
+			Blocks:      ctx.Int(common.BlocksFlag.Name),
+			TxsPerBlock: ctx.Int(common.TxsPerBlockFlag.Name),
+		})
+		if err != nil {
+			return err
+		}
+		return common.GenerateAndExecuteBlockTests(ctx, factory, "blocks")
 	}
 	var factory common.GeneratorFn
 	if len(fNames) == 1 {

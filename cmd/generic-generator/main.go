@@ -58,13 +58,16 @@ func initApp() *cli.App {
 		common.TraceFlag,
 		engineFlag,
 		forkFlag,
+		common.BlockTestFlag,
+		common.BlocksFlag,
+		common.TxsPerBlockFlag,
 	}
 	app.Action = generate
 	return app
 }
 
 func main() {
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelInfo, true)))
+	common.SetupLogging(log.LevelInfo)
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -99,6 +102,17 @@ func generate(ctx *cli.Context) error {
 		fmt.Printf("At least one fuzzer engine needed. ")
 		fmt.Printf("Available targets: %v\n", fuzzing.FactoryNames())
 		return errors.New("missing engine")
+	}
+	if common.BlockTestsRequested(ctx) {
+		factory, err := fuzzing.BtFactory(fork, fuzzing.BtOptions{
+			Fillers:     fNames,
+			Blocks:      ctx.Int(common.BlocksFlag.Name),
+			TxsPerBlock: ctx.Int(common.TxsPerBlockFlag.Name),
+		})
+		if err != nil {
+			return err
+		}
+		return createBlockTests(factory, prefix, count, location, ctx.String(common.BlockTestFlag.Name))
 	}
 	var factory common.GeneratorFn
 	if len(fNames) == 1 {
@@ -185,6 +199,33 @@ func createTests(conf *config) error {
 			return err
 		}
 		close()
+	}
+	return nil
+}
+
+// createBlockTests generates blocktests, in the flavours selected by mode.
+func createBlockTests(factory common.BtGeneratorFn, prefix string, count int, location, mode string) error {
+	log.Info("Generating blocktests", "location", location, "prefix", prefix, "count", count, "mode", mode)
+	for i := 0; i < count; i++ {
+		testName := fmt.Sprintf("%vblocks-%04d", prefix, i)
+		var (
+			files []string
+			err   error
+		)
+		for attempt := 0; attempt < 10; attempt++ {
+			bt, ferr := factory()
+			if ferr != nil {
+				return ferr
+			}
+			if files, err = common.WriteBlockTest(bt, location, testName, mode, true); err == nil {
+				break
+			}
+			log.Debug("Blocktest generation failed, retrying", "err", err)
+		}
+		if err != nil {
+			return err
+		}
+		log.Info("Wrote test", "files", files)
 	}
 	return nil
 }

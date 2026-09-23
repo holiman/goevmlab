@@ -83,7 +83,7 @@ func (evm *NethermindVM) ParseStateRoot(data []byte) (string, error) {
 }
 
 // RunStateTest implements the Evm interface
-func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (*tracingResult, error) {
+func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool) (*TracingResult, error) {
 	var (
 		t0      = time.Now()
 		procOut io.ReadCloser
@@ -93,18 +93,18 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	if !speedTest {
 		// in normal execution, we read traces from standard error
 		if procOut, err = cmd.StderrPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 	} else {
 		// In speedtest-mode, we don't want the actual traces, but we do
 		// need to read the stateroot. The stateroot can be found on stdout
 		cmd = exec.Command(evm.path, "-m", "--neverTrace", "--stateTest", "--input", path)
 		if procOut, err = cmd.StdoutPipe(); err != nil {
-			return &tracingResult{Cmd: cmd.String()}, err
+			return &TracingResult{Cmd: cmd.String()}, err
 		}
 	}
 	if err = cmd.Start(); err != nil {
-		return &tracingResult{Cmd: cmd.String()}, err
+		return &TracingResult{Cmd: cmd.String()}, err
 	}
 	// copy everything to the given writer
 	evm.copyUntilEnd(out, procOut, speedTest)
@@ -112,7 +112,7 @@ func (evm *NethermindVM) RunStateTest(path string, out io.Writer, speedTest bool
 	_, _ = io.ReadAll(procOut)
 	_ = cmd.Wait()
 	duration, slow := evm.stats.TraceDone(t0)
-	return &tracingResult{
+	return &TracingResult{
 		Slow:     slow,
 		ExecTime: duration,
 		Cmd:      cmd.String()}, nil
@@ -176,4 +176,65 @@ func (evm *NethermindVM) copyUntilEnd(out io.Writer, input io.Reader, speedMode 
 
 func (evm *NethermindVM) Stats() []any {
 	return evm.stats.Stats()
+}
+
+// RunBlockTest implements the Evm interface
+func (evm *NethermindVM) RunBlockTest(path string, out io.Writer, mode BlockTestMode) (*TracingResult, error) {
+	var (
+		t0      = time.Now()
+		cmd     = exec.Command(evm.path, evm.blockTestArgs(mode, path)...)
+		procOut io.ReadCloser
+		err     error
+		end     *blockTestEnd
+	)
+	if mode.Trace {
+		// The trace, ending with the testEnd marker, is on stderr
+		if procOut, err = cmd.StderrPipe(); err != nil {
+			return &TracingResult{Cmd: cmd.String()}, err
+		}
+	} else {
+		// The result array is on stdout
+		if procOut, err = cmd.StdoutPipe(); err != nil {
+			return &TracingResult{Cmd: cmd.String()}, err
+		}
+	}
+	if err = cmd.Start(); err != nil {
+		return &TracingResult{Cmd: cmd.String()}, err
+	}
+	if mode.Trace {
+		end = copyBlockTestTrace("neth", out, procOut, false)
+	} else {
+		if end, err = decodeBlockTestResults(json.NewDecoder(procOut)); err != nil {
+			log.Error("Failed to parse blocktest result", "vm", evm.Name(), "cmd", cmd.String(), "err", err)
+		}
+	}
+	_, _ = io.ReadAll(procOut)
+	_ = cmd.Wait()
+	end = fixupBlockTestRoot(end, path, mode)
+	writeBlockTestEnd(out, end)
+	duration, slow := evm.stats.TraceDone(t0)
+	return &TracingResult{
+		Slow:     slow,
+		ExecTime: duration,
+		Cmd:      cmd.String()}, err
+}
+
+// blockTestArgs returns the arguments for running a blocktest. If path is
+// empty, the filenames are read from stdin (batch mode).
+func (evm *NethermindVM) blockTestArgs(mode BlockTestMode, path string) []string {
+	args := []string{"-m"}
+	if mode.Engine {
+		args = append(args, "--engineTest", "--parallelExecution", "true")
+	} else {
+		args = append(args, "--blockTest")
+	}
+	if mode.Trace {
+		args = append(args, "--trace")
+	}
+	if len(path) > 0 {
+		args = append(args, "--input", path)
+	} else {
+		args = append(args, "-x")
+	}
+	return args
 }
