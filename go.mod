@@ -5,9 +5,9 @@ go 1.26.0
 require (
 	github.com/consensys/gnark-crypto v0.18.1
 	github.com/crate-crypto/go-kzg-4844 v1.1.0
-	github.com/ethereum/go-ethereum v1.17.2
+	github.com/ethereum/go-ethereum v1.17.7
 	github.com/gdamore/tcell/v2 v2.13.8
-	github.com/golang/snappy v1.0.0
+	github.com/golang/snappy v1.0.1-0.20260716114414-9ae09f520e93
 	github.com/holiman/uint256 v1.3.2
 	github.com/rivo/tview v0.42.0
 	github.com/urfave/cli/v2 v2.27.7
@@ -15,7 +15,6 @@ require (
 )
 
 require (
-	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20260403213135-1d43121312d4 // indirect
 	github.com/VictoriaMetrics/fastcache v1.13.3 // indirect
 	github.com/bits-and-blooms/bitset v1.24.4 // indirect
@@ -25,11 +24,11 @@ require (
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
 	github.com/emicklei/dot v1.11.0 // indirect
-	github.com/ethereum/c-kzg-4844/v2 v2.1.7 // indirect
+	github.com/ethereum/c-kzg-4844/v2 v2.1.8 // indirect
 	github.com/ethereum/go-bigmodexpfix v0.0.0-20250911101455-f9e208c548ab // indirect
 	github.com/ferranbt/fastssz v1.0.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
@@ -47,9 +46,9 @@ require (
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/otel v1.40.0 // indirect
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/otel v1.46.0 // indirect
+	go.opentelemetry.io/otel/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
