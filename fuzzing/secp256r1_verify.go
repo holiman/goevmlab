@@ -63,8 +63,9 @@ func randCallSecp256R() []byte {
 		data = append(data, uint256.MustFromBig(r).PaddedBytes(32)...)
 		data = append(data, uint256.MustFromBig(s).PaddedBytes(32)...)
 
-		data = append(data, uint256.MustFromBig(privKey.PublicKey.X).PaddedBytes(32)...)
-		data = append(data, uint256.MustFromBig(privKey.PublicKey.Y).PaddedBytes(32)...)
+		// Uncompressed point: 0x04 || X || Y, with 32-byte coordinates.
+		pub, _ := privKey.PublicKey.Bytes()
+		data = append(data, pub[1:]...)
 
 		// Mutate it randomly a bit
 		mutate(data)
