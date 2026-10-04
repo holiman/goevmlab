@@ -6,6 +6,7 @@ The evm binaries are available as ENV vars:
 - `$NIMB_BIN`=/nimbvm
 - `$EVMO_BIN`=/evmone
 - `$RETH_BIN`=/revme
+- `$EVM2_BIN`=/evm2
 - `$NETH_BIN`=/neth/nethtest
 - `$BESU_BIN`=/evmtool/bin/evmtool
 - `$EELS_BIN`=/ethereum-spec-evm

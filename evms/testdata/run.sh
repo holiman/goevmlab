@@ -6,6 +6,7 @@ erigonvm=$ERIG_BIN #"/home/martin/workspace/erigon-evm"
 nimbus=$NIMB_BIN   #"/home/martin/workspace/evmstate"
 evmone=$EVMO_BIN   #"/home/martin/workspace/evmone-statetest"
 revm=$RETH_BIN     #"/home/user/workspace/revme"
+evm2=$EVM2_BIN     #"/home/user/workspace/evm2"
 eels=$EELS_BIN
 
 ### Geth
@@ -154,6 +155,28 @@ if [[ -n "$revm" ]]; then
         $revm statetest --json-outcome $i \
          2>../roots/$i.revm.stderr.txt \
          1>/dev/null
+    done
+    cd ..
+fi
+
+# evm2
+if [[ -n "$evm2" ]]; then
+    echo "evm2"
+    cd ./cases
+    # The traces. evm2 emits the EIP-3155 trace on stdout.
+    for i in *.json; do
+	echo " tracing $i"
+        $evm2 replay --json-traces $i \
+         1>../traces/$i.evm2.stdout.txt \
+         2>/dev/null
+    done
+    # And the stateroots, where we invoke evm2 the same way that
+    # GetStateRoot does
+    for i in *.json; do
+	echo " testing $i"
+        $evm2 replay --json-output $i \
+         1>../roots/$i.evm2.stdout.txt \
+         2>/dev/null
     done
     cd ..
 fi

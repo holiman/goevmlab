@@ -60,6 +60,7 @@ func testVmsOutput(t *testing.T, testfile string) {
 		{NewNimbusBatchVM("", "nimbusba"), "", fmt.Sprintf("%v.nimbus.stderr.txt", testfile)},
 		{NewEvmoneVM("", "evmone"), "", fmt.Sprintf("%v.evmone.stderr.txt", testfile)},
 		{NewRethVM("", "rethvm"), "", fmt.Sprintf("%v.revm.stderr.txt", testfile)},
+		{NewEvm2VM("", "evm2vm"), fmt.Sprintf("%v.evm2.stdout.txt", testfile), ""},
 		{NewEelsEVM("", "eelsvm"), "", fmt.Sprintf("%v.eels.stderr.txt", testfile)},
 	}
 	var readers []io.Reader
@@ -114,6 +115,10 @@ func TestStateRootEvmone(t *testing.T) {
 
 func TestStateRootRethVM(t *testing.T) {
 	testStateRootOnly(t, NewRethVM("", ""), "revm")
+}
+
+func TestStateRootEvm2VM(t *testing.T) {
+	testStateRootOnly(t, NewEvm2VM("", ""), "evm2")
 }
 
 func TestStateRootEelsVM(t *testing.T) {
@@ -184,6 +189,9 @@ func createEvmsFromEnv() []Evm {
 	}
 	if k := "RETH_BIN"; os.Getenv(k) != "" {
 		vms = append(vms, NewRethVM(os.Getenv(k), "reth"))
+	}
+	if k := "EVM2_BIN"; os.Getenv(k) != "" {
+		vms = append(vms, NewEvm2VM(os.Getenv(k), "evm2"))
 	}
 	if k := "ERIG_BIN"; os.Getenv(k) != "" {
 		vms = append(vms, NewErigonVM(os.Getenv(k), "erigon"))
