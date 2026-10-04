@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/tests"
+	"github.com/holiman/goevmlab/ops"
 )
 
 // DisallowEOF makes it so that any statetest that are created never
@@ -186,6 +187,10 @@ func (g *GstMaker) ToStateTest() (tests.StateTest, error) {
 
 func (g *GstMaker) EnableFork(fork string) {
 	g.forks = append(g.forks, fork)
+	// EIP-7843: from Amsterdam on, SLOTNUM reads the slot number from the env.
+	if ops.LookupRules(fork).IsAmsterdam && g.env.SlotNumber == nil {
+		g.env.SlotNumber = new(uint64)
+	}
 }
 
 // Fill uses go-ethereum internally to determine the state root and logs, and optionally
